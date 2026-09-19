@@ -1,0 +1,32 @@
+# ROS 2 / colcon build artifacts -- nikdy necommitovať
+build/
+install/
+log/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Kompilátor
+*.o
+*.obj
+*.so
+*.a
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rosbagy -- vieš dokopy pridať konkrétny priečinok s finálnym bagom výnimkou,
+# ale surové nahrávky sú väčšinou príliš veľké na git
+*.bag
+*.mcap
+rosbag2_*/
+
+# Python cache, ak sa niekde objaví
+__pycache__/
+*.pyc
+
+# Point cloud mapy
+*.pcd
