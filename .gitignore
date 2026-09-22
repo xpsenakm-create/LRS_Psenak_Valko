@@ -28,5 +28,3 @@ rosbag2_*/
 __pycache__/
 *.pyc
 
-# Point cloud mapy
-*.pcd
