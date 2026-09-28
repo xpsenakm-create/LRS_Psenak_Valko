@@ -1,0 +1,1642 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="fei_lrs_hangar">
+    <static>true</static>
+    <link name="body">
+        <visual name="biela_visual">
+          <geometry><mesh><uri>model://hangar/biela.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.42 0.44 0.46 1</ambient>
+            <diffuse>0.72 0.73 0.72 1</diffuse>
+            <specular>0.08 0.08 0.08 1</specular>
+            <pbr><metal>
+              <albedo_map>model://hangar/materials/textures/concrete_sum.jpg</albedo_map>
+              <metalness>0.0</metalness><roughness>0.9</roughness>
+            </metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="biela_000_stena4">
+          <pose>-0.100001 6.274 2.153788 0 -0 1.570796</pose>
+          <geometry><box><size>12.548 0.2 4.307576</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_001_stena3">
+          <pose>17.985 6.274 2.17656 0 -0 1.570796</pose>
+          <geometry><box><size>12.548 0.2 4.35312</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_002_ram_011">
+          <pose>15.00671 12.4757 0.1984949 0 -0 0</pose>
+          <geometry><box><size>5.785 0.15 0.42</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_003_ram_010">
+          <pose>15.0065 12.4757 0.5284948 0 -0 0</pose>
+          <geometry><box><size>5.785 0.15 0.08</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_004_ram_009">
+          <pose>4.573248 12.4757 0.5284948 0 -0 0</pose>
+          <geometry><box><size>9.43 0.15 0.08</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_005_ram_008">
+          <pose>4.570749 12.47568 0.1984949 0 -0 0</pose>
+          <geometry><box><size>9.425002 0.15 0.42</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_006_ram_005">
+          <pose>4.60763 0.075 0.198495 0 -0 0</pose>
+          <geometry><box><size>9.21526 0.15 0.42</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_007_ram_004">
+          <pose>4.60763 0.075 0.5284948 0 -0 0</pose>
+          <geometry><box><size>9.21526 0.15 0.08</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_008_ram_003">
+          <pose>15.01032 0.075 0.5284948 0 -0 0</pose>
+          <geometry><box><size>5.785 0.15 0.08</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_009_ram">
+          <pose>15.01032 0.075 0.198495 0 -0 0</pose>
+          <geometry><box><size>5.785 0.15 0.42</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_010_Krychle_030">
+          <pose>3.749 1.495 3 0 -0 0</pose>
+          <geometry><box><size>7.498 2.99 0.01</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_011_Krychle_029">
+          <pose>3.649 2.89 1.505 0 -0 0</pose>
+          <geometry><box><size>7.298 0.2 3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="biela_012_Krychle_028">
+          <pose>7.398 1.495 1.505 0 -0 0</pose>
+          <geometry><box><size>0.2 2.99 3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="bokdvere_visual">
+          <geometry><mesh><uri>model://hangar/bokdvere.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.28 0.20 0.08 1</ambient>
+            <diffuse>0.55 0.38 0.14 1</diffuse>
+            <specular>0.04 0.04 0.04 1</specular>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="bokdvere_000_hore_024">
+          <pose>10.2457 12.50106 1.108118 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.05000001 0.6000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_001_hore_023">
+          <pose>10.70631 12.47653 0.07981859 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.1 0.09999999 2.799999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_002_hore_022">
+          <pose>10.2457 12.50106 0.2005107 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.05000001 0.6000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_003_hore_021">
+          <pose>9.977892 12.47578 2.029819 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.09999999 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_004_hore_020">
+          <pose>10.2457 12.50106 1.950144 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.05000001 0.6000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_005_hore_019">
+          <pose>10.70631 12.47653 2.779819 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.1 0.09999999 2.799999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_006_hore_018">
+          <pose>11.40631 12.47726 1.119819 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.09999999 1.4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_007_hore_017">
+          <pose>11.40631 12.47726 2.029819 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.09999999 1.4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_008_hore_016">
+          <pose>9.602649 12.47539 1.119819 3.14056 1.570796 0</pose>
+          <geometry><box><size>0.05 0.09999999 0.5000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_009_hore_007">
+          <pose>11.39842 0.08771724 1.37826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_010_hore_006">
+          <pose>9.970009 0.08771724 2.05826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_011_hore_005">
+          <pose>9.970009 0.08771724 0.7082602 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_012_hore_004">
+          <pose>10.67001 0.08771736 2.80826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.1 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_013_hore_003">
+          <pose>11.39842 0.08771724 0.7082602 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_014_hore_002">
+          <pose>11.39842 0.08771724 2.05826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_015_hore_001">
+          <pose>9.970009 0.08771724 1.37826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.05 0.1 1.4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_016_hore">
+          <pose>10.67001 0.08771736 0.10826 3.141592 1.570796 3.141593</pose>
+          <geometry><box><size>0.1 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_017_celedvere_002">
+          <pose>10.70622 12.56653 1.429819 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>2.799999 0.09999999 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_018_celedvere">
+          <pose>10.67001 -0.002282802 1.45826 -1.629206e-07 -0 0</pose>
+          <geometry><box><size>2.8 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_019_bocna2_002">
+          <pose>9.356312 12.47514 1.429819 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.09999999 0.09999999 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_020_bocna2">
+          <pose>12.02001 0.08771736 1.45826 -1.629206e-07 -0 0</pose>
+          <geometry><box><size>0.1 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_021_bocna1_011">
+          <pose>9.968801 12.50077 1.074741 -1.629208e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.05000001 0.05000001 1.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_022_bocna1_010">
+          <pose>9.872369 12.47567 1.064692 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.05000001 0.09999999 1.9</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_023_bocna1_009">
+          <pose>10.51995 12.50134 1.074741 -1.629208e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.05000001 0.05000001 1.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_024_bocna1_008">
+          <pose>10.63131 12.47645 1.429819 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.05000001 0.09999999 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_025_bocna1_007">
+          <pose>10.73131 12.47656 1.429819 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.05000001 0.09999999 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_026_bocna1_006">
+          <pose>12.05631 12.47793 1.429819 -1.629206e-07 -0 -3.14056</pose>
+          <geometry><box><size>0.09999999 0.09999999 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_027_bocna1_002">
+          <pose>9.320009 0.08771736 1.45826 -1.629206e-07 -0 0</pose>
+          <geometry><box><size>0.1 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_028_bocna1_001">
+          <pose>10.64501 0.08771736 1.45826 -1.629206e-07 -0 0</pose>
+          <geometry><box><size>0.05 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokdvere_029_bocna1">
+          <pose>10.74501 0.08771736 1.45826 -1.629206e-07 -0 0</pose>
+          <geometry><box><size>0.05 0.1 2.8</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="zarubna_visual">
+          <geometry><mesh><uri>model://hangar/zarubna.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.20 0.22 0.24 1</ambient>
+            <diffuse>0.46 0.50 0.53 1</diffuse>
+            <specular>0.55 0.55 0.55 1</specular>
+            <pbr><metal><metalness>0.72</metalness><roughness>0.38</roughness></metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="zarubna_000_Krychle_033">
+          <pose>1.514464 2.89 2.014708 0 -0 0</pose>
+          <geometry><box><size>0.70797 0.21 0.060585</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_001_Krychle_032">
+          <pose>1.130187 2.89 1.025 0 -0 0</pose>
+          <geometry><box><size>0.060585 0.21 2.04</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_002_Krychle_031">
+          <pose>1.898758 2.89 1.025 0 -0 0</pose>
+          <geometry><box><size>0.060585 0.21 2.04</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_003_Group_009_001">
+          <pose>1.753711 2.912545 1.069821 3.141593 -0 -3.140804</pose>
+          <geometry><box><size>0.1262777 0.04800001 0.01788618</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_004_Group_008_001">
+          <pose>1.811566 2.940591 0.9872695 1.570796 -0 0.0007879079</pose>
+          <geometry><box><size>0.01099556 0.02048785 0.008000003</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_005_Group_007_001">
+          <pose>1.811566 2.941591 0.9872695 4.371139e-08 -0 0.0007879101</pose>
+          <geometry><box><size>0.06518302 0.01 0.05681618</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_006_Group_005_001">
+          <pose>1.753607 3.020595 1.069821 -4.37114e-08 -0 -3.141593</pose>
+          <geometry><box><size>0.1262777 0.048 0.01788618</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_007_Group_004_001">
+          <pose>1.811827 2.990976 0.9949169 1.570796 -0 -3.140804</pose>
+          <geometry><box><size>0.008035556 0.01497253 0.005846402</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_008_Group_003_001">
+          <pose>1.811824 2.990264 0.9949169 -4.371141e-08 -0 -3.141593</pose>
+          <geometry><box><size>0.04763573 0.007308 0.04152126</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_009_Component_63_002_001">
+          <pose>1.811565 2.941591 1.069821 -1.570796 1.339932e-07 -3.140804</pose>
+          <geometry><box><size>0.06518303 0.05681618 0.01</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="zarubna_010_Component_63_001_001">
+          <pose>1.81153 2.99161 1.069821 1.570796 -0 -3.141593</pose>
+          <geometry><box><size>0.06518301 0.05681618 0.01</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="strecha_visual">
+          <geometry><mesh><uri>model://hangar/strecha.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.35 0.20 0.15 1</ambient>
+            <diffuse>0.68 0.42 0.31 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal>
+              <albedo_map>model://hangar/materials/textures/brick_texture.png</albedo_map>
+              <metalness>0.0</metalness><roughness>0.92</roughness>
+            </metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="strecha_000_stlp2_006">
+          <pose>3.004961 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_001_stlp2_005">
+          <pose>6.011709 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_002_stlp2_004">
+          <pose>-0.09214139 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_003_stlp2_003">
+          <pose>12.27949 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_004_stlp2_002">
+          <pose>9.093868 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_005_stlp2_001">
+          <pose>15.1122 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_006_stlp2">
+          <pose>17.92397 12.25163 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_007_stlp1_138">
+          <pose>3.009209 11.0445 4.66065 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_008_stlp1_137">
+          <pose>3.009209 10.5681 4.634373 1.146681 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_009_stlp1_136">
+          <pose>3.009209 9.629386 4.812187 0.8587022 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_010_stlp1_135">
+          <pose>3.009209 10.10155 4.767269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_011_stlp1_134">
+          <pose>3.009209 9.158549 4.967269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_012_stlp1_133">
+          <pose>3.009209 6.477806 5.46727 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_013_stlp1_132">
+          <pose>3.009209 8.215549 5.167269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_014_stlp1_131">
+          <pose>3.009209 7.272548 5.367269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_015_stlp1_130">
+          <pose>3.009209 7.752649 5.194862 0.555015 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_016_stlp1_129">
+          <pose>3.009209 8.683405 5.006536 0.6859147 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_017_stlp1_128">
+          <pose>3.009209 6.896393 5.400768 0.3996807 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_018_stlp1_127">
+          <pose>3.004958 5.621193 5.400768 0.3996807 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_019_stlp1_126">
+          <pose>3.004958 3.834182 5.006536 0.6859147 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_020_stlp1_125">
+          <pose>3.004958 4.764936 5.194862 0.555015 -0 0</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_021_stlp1_124">
+          <pose>3.004958 5.245037 5.367269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_022_stlp1_123">
+          <pose>3.004958 4.302037 5.167269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_023_stlp1_122">
+          <pose>3.004958 6.039779 5.46727 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_024_stlp1_121">
+          <pose>3.004958 3.359037 4.967269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_025_stlp1_120">
+          <pose>3.004958 2.416037 4.767269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_026_stlp1_119">
+          <pose>3.004958 2.8882 4.812187 0.8587022 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_027_stlp1_118">
+          <pose>3.004958 1.949488 4.634373 1.146681 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_028_stlp1_117">
+          <pose>3.004961 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_029_stlp1_116">
+          <pose>3.004961 3.170784 5.5811 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_030_stlp1_115">
+          <pose>3.004961 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_031_stlp1_114">
+          <pose>3.004961 9.328897 5.5811 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_032_stlp1_113">
+          <pose>3.004958 1.473084 4.66065 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_033_stlp1_112">
+          <pose>6.015957 11.0445 4.66065 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_034_stlp1_111">
+          <pose>6.015957 10.5681 4.634373 1.146681 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_035_stlp1_110">
+          <pose>6.015957 9.629386 4.812187 0.8587022 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_036_stlp1_109">
+          <pose>6.015957 10.10155 4.767269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_037_stlp1_108">
+          <pose>6.015957 9.158549 4.967269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_038_stlp1_107">
+          <pose>6.015957 6.477806 5.46727 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_039_stlp1_106">
+          <pose>6.015957 8.215549 5.167269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_040_stlp1_105">
+          <pose>6.015957 7.272548 5.367269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_041_stlp1_104">
+          <pose>6.015957 7.752649 5.194862 0.555015 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_042_stlp1_103">
+          <pose>12.28374 11.0445 4.66065 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_043_stlp1_102">
+          <pose>12.28374 10.5681 4.634373 1.146681 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_044_stlp1_101">
+          <pose>12.28374 9.629386 4.812187 0.8587022 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_045_stlp1_100">
+          <pose>12.28374 10.10155 4.767269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_046_stlp1_099">
+          <pose>12.28374 9.158549 4.967269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_047_stlp1_098">
+          <pose>12.28374 6.477806 5.46727 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_048_stlp1_097">
+          <pose>12.28374 8.215549 5.167269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_049_stlp1_096">
+          <pose>12.28374 7.272548 5.367269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_050_stlp1_095">
+          <pose>12.28374 7.752649 5.194862 0.555015 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_051_stlp1_094">
+          <pose>12.28374 8.683405 5.006536 0.6859147 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_052_stlp1_093">
+          <pose>12.28374 6.896393 5.400768 0.3996807 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_053_stlp1_092">
+          <pose>12.27949 5.621193 5.400768 0.3996807 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_054_stlp1_091">
+          <pose>12.27949 3.834182 5.006536 0.6859147 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_055_stlp1_090">
+          <pose>12.27949 4.764936 5.194862 0.555015 -0 0</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_056_stlp1_089">
+          <pose>12.27949 5.245037 5.367269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_057_stlp1_088">
+          <pose>12.27949 4.302037 5.167269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_058_stlp1_087">
+          <pose>12.27949 6.039779 5.46727 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_059_stlp1_086">
+          <pose>12.27949 3.359037 4.967269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_060_stlp1_085">
+          <pose>12.27949 2.416037 4.767269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_061_stlp1_084">
+          <pose>12.27949 2.8882 4.812187 0.8587022 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_062_stlp1_083">
+          <pose>12.27949 1.949488 4.634373 1.146681 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_063_stlp1_082">
+          <pose>12.27949 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_064_stlp1_081">
+          <pose>12.27949 3.170784 5.5811 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_065_stlp1_080">
+          <pose>12.27949 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_066_stlp1_079">
+          <pose>12.27949 9.328897 5.5811 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_067_stlp1_078">
+          <pose>12.27949 1.473084 4.66065 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_068_stlp1_077">
+          <pose>9.098116 11.0445 4.66065 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_069_stlp1_076">
+          <pose>9.098116 10.5681 4.634373 1.146681 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_070_stlp1_075">
+          <pose>9.098116 9.629386 4.812187 0.8587022 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_071_stlp1_074">
+          <pose>9.098116 10.10155 4.767269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_072_stlp1_073">
+          <pose>9.098116 9.158549 4.967269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_073_stlp1_072">
+          <pose>9.098116 6.477806 5.46727 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_074_stlp1_071">
+          <pose>9.098116 8.215549 5.167269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_075_stlp1_070">
+          <pose>9.098116 7.272548 5.367269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_076_stlp1_069">
+          <pose>9.098116 7.752649 5.194862 0.555015 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_077_stlp1_068">
+          <pose>9.098116 8.683405 5.006536 0.6859147 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_078_stlp1_067">
+          <pose>9.098116 6.896393 5.400768 0.3996807 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_079_stlp1_066">
+          <pose>9.093866 5.621193 5.400768 0.3996807 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_080_stlp1_065">
+          <pose>9.093866 3.834182 5.006536 0.6859147 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_081_stlp1_064">
+          <pose>9.093866 4.764936 5.194862 0.555015 -0 0</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_082_stlp1_063">
+          <pose>9.093866 5.245037 5.367269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_083_stlp1_062">
+          <pose>9.093866 4.302037 5.167269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_084_stlp1_061">
+          <pose>9.093866 6.039779 5.46727 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_085_stlp1_060">
+          <pose>9.093866 3.359037 4.967269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_086_stlp1_059">
+          <pose>9.093866 2.416037 4.767269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_087_stlp1_058">
+          <pose>9.093866 2.8882 4.812187 0.8587022 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_088_stlp1_057">
+          <pose>9.093866 1.949488 4.634373 1.146681 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_089_stlp1_056">
+          <pose>9.093868 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_090_stlp1_055">
+          <pose>9.093868 3.170784 5.5811 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_091_stlp1_054">
+          <pose>9.093868 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_092_stlp1_053">
+          <pose>9.093868 9.328897 5.5811 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_093_stlp1_052">
+          <pose>9.093866 1.473084 4.66065 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_094_stlp1_051">
+          <pose>15.11645 11.0445 4.66065 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_095_stlp1_050">
+          <pose>15.11645 10.5681 4.634373 1.146681 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_096_stlp1_049">
+          <pose>15.11645 9.629386 4.812187 0.8587022 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_097_stlp1_048">
+          <pose>15.11645 10.10155 4.767269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_098_stlp1_047">
+          <pose>15.11645 9.158549 4.967269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_099_stlp1_046">
+          <pose>15.11645 6.477806 5.46727 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_100_stlp1_045">
+          <pose>15.11645 8.215549 5.167269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_101_stlp1_044">
+          <pose>15.11645 7.272548 5.367269 0 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_102_stlp1_043">
+          <pose>15.11645 7.752649 5.194862 0.555015 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_103_stlp1_042">
+          <pose>15.11645 8.683405 5.006536 0.6859147 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_104_stlp1_041">
+          <pose>15.11645 6.896393 5.400768 0.3996807 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_105_stlp1_040">
+          <pose>15.1122 5.621193 5.400768 0.3996807 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_106_stlp1_039">
+          <pose>15.1122 3.834182 5.006536 0.6859147 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_107_stlp1_038">
+          <pose>15.1122 4.764936 5.194862 0.555015 -0 0</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_108_stlp1_037">
+          <pose>15.1122 5.245037 5.367269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_109_stlp1_036">
+          <pose>15.1122 4.302037 5.167269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_110_stlp1_035">
+          <pose>15.1122 6.039779 5.46727 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_111_stlp1_034">
+          <pose>15.1122 3.359037 4.967269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_112_stlp1_033">
+          <pose>15.1122 2.416037 4.767269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_113_stlp1_032">
+          <pose>15.1122 2.8882 4.812187 0.8587022 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_114_stlp1_031">
+          <pose>15.1122 1.949488 4.634373 1.146681 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_115_stlp1_030">
+          <pose>15.1122 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_116_stlp1_029">
+          <pose>15.1122 3.170784 5.5811 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_117_stlp1_028">
+          <pose>15.1122 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_118_stlp1_027">
+          <pose>15.1122 9.328897 5.5811 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_119_stlp1_026">
+          <pose>15.1122 1.473084 4.66065 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_120_stlp1_025">
+          <pose>6.015957 8.683405 5.006536 0.6859147 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_121_stlp1_024">
+          <pose>6.015957 6.896393 5.400768 0.3996807 -0 3.141593</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_122_stlp1_023">
+          <pose>6.011706 5.621193 5.400768 0.3996807 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_123_stlp1_022">
+          <pose>6.011706 3.834182 5.006536 0.6859147 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_124_stlp1_021">
+          <pose>6.011706 4.764936 5.194862 0.555015 -0 0</pose>
+          <geometry><box><size>0.05 0.04999999 1.900001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_125_stlp1_020">
+          <pose>6.011706 5.245037 5.367269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_126_stlp1_019">
+          <pose>6.011706 4.302037 5.167269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.700001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_127_stlp1_018">
+          <pose>6.011706 6.039779 5.46727 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 2.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_128_stlp1_017">
+          <pose>6.011706 3.359037 4.967269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.300001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_129_stlp1_016">
+          <pose>6.011706 2.416037 4.767269 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.9000005</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_130_stlp1_015">
+          <pose>6.011706 2.8882 4.812187 0.8587022 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_131_stlp1_014">
+          <pose>6.011706 1.949488 4.634373 1.146681 -0 0</pose>
+          <geometry><box><size>0.05 0.05 1.200001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_132_stlp1_013">
+          <pose>6.011709 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_133_stlp1_012">
+          <pose>6.011709 3.170784 5.5811 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_134_stlp1_011">
+          <pose>6.011709 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_135_stlp1_010">
+          <pose>6.011709 9.328897 5.5811 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_136_stlp1_009">
+          <pose>6.011706 1.473084 4.66065 0 -0 0</pose>
+          <geometry><box><size>0.05 0.05 0.6000007</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_137_stlp1_008">
+          <pose>-0.09214139 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_138_stlp1_007">
+          <pose>-0.09214139 3.170784 5.763685 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_139_stlp1_006">
+          <pose>-0.09214139 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_140_stlp1_005">
+          <pose>-0.09214139 9.328897 5.745298 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_141_stlp1_004">
+          <pose>17.92397 0.3047458 2.130851 0 -0 0</pose>
+          <geometry><box><size>0.28 0.28 4.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_142_stlp1_003">
+          <pose>17.92397 3.170784 5.70535 1.939061 -0 0</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_143_stlp1_002">
+          <pose>17.92397 6.252321 4.347912 1.570796 -0 0</pose>
+          <geometry><box><size>0.18 0.18 12.2</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_144_stlp1_001">
+          <pose>17.92397 9.328897 5.712916 1.939061 -0 -3.141593</pose>
+          <geometry><box><size>0.18 0.18 6.600001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_145_Cube_066">
+          <pose>8.980897 6.601882 6.764848 -2.774625 -0 -3.141593</pose>
+          <geometry><box><size>17.95651 0.1 0.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_146_Cube_065">
+          <pose>8.980897 9.970844 5.539523 -2.774625 -0 -3.141593</pose>
+          <geometry><box><size>17.95651 8.0782 0.03</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_147_Cube_064">
+          <pose>8.978253 5.897295 6.798314 -2.774625 -0 0</pose>
+          <geometry><box><size>17.95651 0.1 0.1</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_148_Cube_063">
+          <pose>8.978248 2.484785 5.556251 -2.774625 -0 0</pose>
+          <geometry><box><size>17.95651 7.9849 0.03</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_149_Cube_062">
+          <pose>2.996931 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_150_Cube_061">
+          <pose>3.002122 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_151_Cube_060">
+          <pose>3.100267 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_152_Cube_059">
+          <pose>3.005132 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_153_Cube_058">
+          <pose>2.90912 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_154_Cube_057">
+          <pose>3.100557 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_155_Cube_056">
+          <pose>3.004545 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_156_Cube_055">
+          <pose>2.90941 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_157_Cube_054">
+          <pose>3.000738 6.264509 4.248239 0 -0 0</pose>
+          <geometry><box><size>0.1 10.62634 0.1499999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_158_Cube_053">
+          <pose>6.003679 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_159_Cube_052">
+          <pose>6.008871 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_160_Cube_051">
+          <pose>6.107015 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_161_Cube_050">
+          <pose>6.01188 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_162_Cube_049">
+          <pose>5.915868 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_163_Cube_048">
+          <pose>6.107305 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_164_Cube_047">
+          <pose>6.011293 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_165_Cube_046">
+          <pose>5.916158 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_166_Cube_045">
+          <pose>6.007486 6.264509 4.248239 0 -0 0</pose>
+          <geometry><box><size>0.1 10.62634 0.1499999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_167_Cube_043">
+          <pose>-0.1001713 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_168_Cube_042">
+          <pose>-0.09497952 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_169_Cube_041">
+          <pose>0.003165007 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_170_Cube_040">
+          <pose>-0.09196973 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_171_Cube_039">
+          <pose>-0.1879818 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_172_Cube_038">
+          <pose>0.003454926 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_173_Cube_037">
+          <pose>-0.09255719 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_174_Cube_036">
+          <pose>12.27146 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_175_Cube_035">
+          <pose>12.27665 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_176_Cube_034">
+          <pose>12.3748 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_177_Cube_033">
+          <pose>12.27966 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_178_Cube_032">
+          <pose>12.18365 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_179_Cube_031">
+          <pose>12.37509 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_180_Cube_030">
+          <pose>12.27907 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_181_Cube_029">
+          <pose>12.18394 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_182_Cube_028">
+          <pose>12.27527 6.251604 4.248239 0 -0 0</pose>
+          <geometry><box><size>0.1 10.65215 0.1499999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_183_Cube_027">
+          <pose>9.085838 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_184_Cube_026">
+          <pose>9.09103 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_185_Cube_025">
+          <pose>9.189175 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_186_Cube_024">
+          <pose>9.09404 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_187_Cube_023">
+          <pose>8.998028 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_188_Cube_022">
+          <pose>9.189465 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_189_Cube_021">
+          <pose>9.093452 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_190_Cube_020">
+          <pose>8.998318 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_191_Cube_019">
+          <pose>9.089645 6.251604 4.248239 0 -0 0</pose>
+          <geometry><box><size>0.1 10.65215 0.1499999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_192_Cube_018">
+          <pose>15.10417 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_193_Cube_017">
+          <pose>15.10936 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_194_Cube_016">
+          <pose>15.2075 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_195_Cube_015">
+          <pose>15.11237 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_196_Cube_014">
+          <pose>15.01636 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_197_Cube_013">
+          <pose>15.20779 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_198_Cube_012">
+          <pose>15.11178 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_199_Cube_011">
+          <pose>15.01665 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_200_Cube_010">
+          <pose>15.10798 6.251604 4.248239 0 -0 0</pose>
+          <geometry><box><size>0.1 10.65215 0.1499999</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_201_Cube_009">
+          <pose>17.91594 6.254617 4.350101 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_202_Cube_008">
+          <pose>17.92113 6.254617 6.77512 0 -0 0</pose>
+          <geometry><box><size>0.3 0.03 0.3</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_203_Cube_007">
+          <pose>18.01927 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_204_Cube_006">
+          <pose>17.92414 12.24453 4.254375 0 -0 3.141593</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_205_Cube_005">
+          <pose>17.82813 12.2443 4.460639 -3.141593 1.570796 0</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_206_Cube_004">
+          <pose>18.01956 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_207_Cube_003">
+          <pose>17.92355 0.2843959 4.254375 0 -0 0</pose>
+          <geometry><box><size>0.4 0.4215858 0.05</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_208_Cube_002">
+          <pose>17.82842 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="strecha_209_Cube_001">
+          <pose>-0.1876919 0.284628 4.460639 3.141593 1.570796 3.141593</pose>
+          <geometry><box><size>0.3869591 0.4211216 0.01000001</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="bokstrecha_visual">
+          <geometry><mesh><uri>model://hangar/bokstrecha.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.35 0.20 0.15 1</ambient>
+            <diffuse>0.68 0.42 0.31 1</diffuse>
+            <specular>0.05 0.05 0.05 1</specular>
+            <pbr><metal>
+              <albedo_map>model://hangar/materials/textures/brick_texture.png</albedo_map>
+              <metalness>0.0</metalness><roughness>0.92</roughness>
+            </metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="bokstrecha_000_stena6">
+          <pose>8.9425 -0.086 4.235 0 -0 0</pose>
+          <geometry><box><size>17.885 0.1 0.47</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokstrecha_001_stena5">
+          <pose>8.9425 12.634 4.235 0 -0 0</pose>
+          <geometry><box><size>17.885 0.1 0.47</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokstrecha_002_Cube_001">
+          <pose>-0.1068487 6.270828 5.60095 0 -0 1.570796</pose>
+          <geometry><box><size>12.69357 0.1000004 2.567584</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokstrecha_003_Cube_002">
+          <pose>17.90926 6.27805 5.562282 0 -0 1.570796</pose>
+          <geometry><box><size>12.63252 0.1000004 2.490247</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokstrecha_004_Cube_044">
+          <pose>-0.1068487 6.270828 5.60095 0 -0 1.570796</pose>
+          <geometry><box><size>12.69357 0.1000004 2.567584</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="bokstrecha_005_Cube">
+          <pose>17.90926 6.27805 5.562282 0 -0 1.570796</pose>
+          <geometry><box><size>12.63252 0.1000004 2.490247</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="budkaoknadverebiela_visual">
+          <geometry><mesh><uri>model://hangar/budkaoknadverebiela.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.66 0.68 0.69 1</ambient>
+            <diffuse>0.86 0.87 0.86 1</diffuse>
+            <specular>0.12 0.12 0.12 1</specular>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="budkaoknadverebiela_000_Group_4_001_001">
+          <pose>1.518693 2.96607 0.9918799 0 4.37114e-08 -1.570796</pose>
+          <geometry><box><size>0.04 0.7039888 1.97376</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="budkaoknadverebiela_001_Cube_074">
+          <pose>7.461829 2.033563 1.441059 0 -0 0</pose>
+          <geometry><box><size>0.072341 0.85 0.85</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="budkaoknadverebiela_002_Cube_072">
+          <pose>7.461829 1.128595 1.441059 0 -0 0</pose>
+          <geometry><box><size>0.072341 0.85 0.85</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="budkaoknadverebiela_003_Cube_069">
+          <pose>3.63412 2.95383 1.53004 0 -0 1.570796</pose>
+          <geometry><box><size>0.072341 1.12433 1.02796</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="budkaoknadverebiela_004_Cube_068">
+          <pose>5.909131 2.95383 1.53004 0 -0 -1.570796</pose>
+          <geometry><box><size>0.072341 1.22433 1.02796</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="oknobok_visual">
+          <geometry><mesh><uri>model://hangar/oknobok.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.66 0.68 0.69 1</ambient>
+            <diffuse>0.86 0.87 0.86 1</diffuse>
+            <specular>0.12 0.12 0.12 1</specular>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="oknobok_000_Cube_089">
+          <pose>4.789281 -0.1 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.21 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_001_Cube_088">
+          <pose>4.029283 -0.1 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.21 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_002_Cube_085">
+          <pose>4.029283 12.573 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.36 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_003_Cube_084">
+          <pose>4.789281 12.573 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.36 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_004_Cube_081">
+          <pose>16.72 12.573 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.36 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_005_Cube_080">
+          <pose>15.96 12.573 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.36 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_006_Cube_077">
+          <pose>15.96 -0.1 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.21 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="oknobok_007_Cube_076">
+          <pose>16.72 -0.1 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.21 0.76 0.76</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="plechbok_visual">
+          <geometry><mesh><uri>model://hangar/plechbok.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.42 0.44 0.46 1</ambient>
+            <diffuse>0.72 0.73 0.72 1</diffuse>
+            <specular>0.08 0.08 0.08 1</specular>
+            <pbr><metal>
+              <albedo_map>model://hangar/materials/textures/concrete_sum.jpg</albedo_map>
+              <metalness>0.0</metalness><roughness>0.9</roughness>
+            </metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="plechbok_000_stena2">
+          <pose>8.9425 -0.1 2 0 -0 0</pose>
+          <geometry><box><size>17.885 0.2 4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="plechbok_001_stena1">
+          <pose>8.9425 12.648 2 0 -0 0</pose>
+          <geometry><box><size>17.885 0.2 4</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="plechbok_002_ram_007">
+          <pose>8.9425 0.075 3.75 0 -0 0</pose>
+          <geometry><box><size>17.885 0.15 0.06</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="plechbok_003_ram_006">
+          <pose>8.9425 12.48218 3.75 0 -0 0</pose>
+          <geometry><box><size>17.885 0.15 0.06</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="plechbok_004_ram_002">
+          <pose>8.9425 0.075 2.93 0 -0 0</pose>
+          <geometry><box><size>17.885 0.15 0.06</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="plechbok_005_ram_001">
+          <pose>8.9425 12.48218 2.93 0 -0 0</pose>
+          <geometry><box><size>17.885 0.15 0.06</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="sklo_visual">
+          <geometry><mesh><uri>model://hangar/sklo.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.22 0.30 0.34 0.35</ambient>
+            <diffuse>0.48 0.68 0.76 0.35</diffuse>
+            <specular>0.75 0.75 0.75 1</specular>
+          </material>
+          <transparency>0.65</transparency>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="sklo_000_Cube_094">
+          <pose>16.72 12.648 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_001_Cube_093">
+          <pose>15.96 12.648 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_002_Cube_090">
+          <pose>4.789281 -0.1 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_003_Cube_087">
+          <pose>4.029282 -0.1 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_004_Cube_086">
+          <pose>4.029282 12.648 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_005_Cube_083">
+          <pose>4.789281 12.648 3.34 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_006_Cube_078">
+          <pose>15.96 -0.1 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_007_Cube_075">
+          <pose>16.72 -0.1 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.7 0.7</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_008_Cube_073">
+          <pose>7.461829 2.033563 1.441059 0 -0 0</pose>
+          <geometry><box><size>0.002 0.78 0.78</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_009_Cube_071">
+          <pose>7.461829 1.128595 1.441059 0 -0 0</pose>
+          <geometry><box><size>0.002 0.78 0.78</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_010_Cube_070">
+          <pose>3.63412 2.95383 1.53004 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 1.026367 0.929997</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="sklo_011_Cube_067">
+          <pose>5.909131 2.95383 1.53004 0 -0 -1.570796</pose>
+          <geometry><box><size>0.002 1.13637 0.939997</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <visual name="tienidlanaokno_visual">
+          <geometry><mesh><uri>model://hangar/tienidlanaokno.dae</uri></mesh></geometry>
+          <material>
+            <ambient>0.20 0.22 0.24 1</ambient>
+            <diffuse>0.46 0.50 0.53 1</diffuse>
+            <specular>0.55 0.55 0.55 1</specular>
+            <pbr><metal><metalness>0.72</metalness><roughness>0.38</roughness></metal></pbr>
+          </material>
+          <cast_shadows>true</cast_shadows>
+        </visual>
+        <collision name="tienidlanaokno_000_Cube_092">
+          <pose>4.791172 12.394 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.69 0.69</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="tienidlanaokno_001_Cube_091">
+          <pose>4.031173 12.394 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.69 0.69</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="tienidlanaokno_002_Cube_082">
+          <pose>16.72189 12.394 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.69 0.69</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+        <collision name="tienidlanaokno_003_Cube_079">
+          <pose>15.96189 12.394 3.341213 0 -0 1.570796</pose>
+          <geometry><box><size>0.002 0.69 0.69</size></box></geometry>
+          <surface><friction><ode><mu>0.9</mu><mu2>0.9</mu2></ode></friction></surface>
+        </collision>
+    </link>
+  </model>
+</sdf>

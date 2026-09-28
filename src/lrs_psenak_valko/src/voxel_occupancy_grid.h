@@ -161,7 +161,7 @@ private:
   static int64_t encodeVoxel(int64_t ix, int64_t iy, int64_t iz)
   {
     ix += OFFSET; iy += OFFSET; iz += OFFSET;
-    return (ix << 42) ^ (iy << 21) ^ iz;
+    return (ix << 42) | (iy << 21) | iz;
   }
 
   static void decodeVoxel(int64_t key, int64_t& ix, int64_t& iy, int64_t& iz)
