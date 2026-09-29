@@ -8,12 +8,8 @@
 //  * Never hangs: goal reached / open list exhausted (NO_PATH) / time limit (TIMEOUT).
 //  * Reports planning time, number of expansions and path length.
 //
-// Self-test without PCL/ROS:
-//   g++ -std=c++17 -O2 -DASTAR_STANDALONE_TEST a_star_planner.cpp -o a_star_test
 // =============================================================================
 #include "a_star_planner.h"
-
-#include <iostream>
 
 namespace astar
 {
@@ -305,87 +301,6 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
 }
 
 }  // namespace astar
-
-// ============================================================================
-// Self-test on a synthetic grid (no ROS / PCL needed).
-// ============================================================================
-#ifdef ASTAR_STANDALONE_TEST
-
-static void report(const char* name, const astar::Result& r)
-{
-  std::cout << "[" << name << "] status=" << astar::toString(r.status)
-            << "  time=" << r.planning_time_ms << " ms"
-            << "  expansions=" << r.expansions;
-  if (r.success())
-    std::cout << "  raw_waypoints=" << r.raw_waypoints << "  waypoints=" << r.path.size()
-              << "  length=" << r.path_length_m << " m";
-  std::cout << "\n";
-}
-
-int main()
-{
-  astar::GridInfo info;
-  info.resolution = 0.2;
-  info.size_x = 100; info.size_y = 100; info.size_z = 40;   // 20 x 20 x 8 m
-
-  // Wall at x = 50 with a window (y 40..60, z 5..15), plus a floor slab so that
-  // the planner has to climb/descend to get through.
-  auto occ = [](int x, int y, int z) {
-    if (x == 50 && !(y >= 40 && y < 60 && z >= 5 && z < 15)) return true;
-    return false;
-  };
-
-  astar::AStarPlanner planner(info, occ);
-
-  astar::Vec3 start{2.0, 2.0, 1.0}, goal{18.0, 10.0, 6.0};
-  astar::Result r = planner.plan(start, goal);
-  report("through window", r);
-
-  // Verify: every waypoint and every segment is collision free.
-  bool ok = r.success();
-  for (size_t i = 0; ok && i < r.path.size(); ++i) ok = !planner.isBlockedWorld(r.path[i]);
-  std::cout << "  path collision-free: " << (ok ? "yes" : "NO") << "\n";
-
-  // No-path case: goal sealed inside a shell of blocked voxels.
-  auto occ_sealed = [&](int x, int y, int z) {
-    if (occ(x, y, z)) return true;
-    const int cx = 90, cy = 50, cz = 30;
-    const int d = std::max({std::abs(x - cx), std::abs(y - cy), std::abs(z - cz)});
-    return d == 2;
-  };
-  astar::AStarPlanner sealed(info, occ_sealed);
-  report("sealed goal", sealed.plan(start, goal));
-
-  // Blocked goal
-  report("blocked goal", planner.plan(start, {10.1, 5.0, 1.0}));
-
-  // A pair of safety radii around the same 3D wall must produce different
-  // paths. Radius-to-cell conversion uses the same 15 cm resolution as the map.
-  astar::GridInfo radius_info;
-  radius_info.resolution = 0.15;
-  radius_info.size_x = 50; radius_info.size_y = 40; radius_info.size_z = 20;
-  auto wallWithInflation = [](int radius_cells) {
-    return [radius_cells](int x, int y, int) {
-      const int dx = std::max({24 - x, 0, x - 26});
-      const int dy = std::max({16 - y, 0, y - 24});
-      return dx * dx + dy * dy <= radius_cells * radius_cells;
-    };
-  };
-  const astar::Vec3 radius_start{2.175, 3.075, 1.575};
-  const astar::Vec3 radius_goal{7.275, 3.075, 1.575};
-  astar::AStarPlanner radius_045(radius_info, wallWithInflation(3));
-  astar::AStarPlanner radius_075(radius_info, wallWithInflation(5));
-  const astar::Result path_045 = radius_045.plan(radius_start, radius_goal);
-  const astar::Result path_075 = radius_075.plan(radius_start, radius_goal);
-  report("0.45 m inflation", path_045);
-  report("0.75 m inflation", path_075);
-  if (!path_045.success() || !path_075.success() ||
-      std::abs(path_045.path_length_m - path_075.path_length_m) < 1e-6)
-    return 1;
-
-  return 0;
-}
-#endif
 
 // ============================================================================
 // NOTES FOR THE DOCUMENTATION

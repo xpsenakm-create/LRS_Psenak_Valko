@@ -38,6 +38,8 @@ public:
     const std::string default_map = ament_index_cpp::get_package_share_directory("lrs_psenak_valko") +
                                     "/maps/FEI_LRS_PCD/map.pcd";
     const std::string map_path = declare_parameter<std::string>("map_path", default_map);
+    const std::string occupancy_pcd_path =
+      declare_parameter<std::string>("occupancy_pcd_path", "map_voxels_with_racks_inflated.pcd");
     const double leaf_size = declare_parameter<double>("voxel_size", 0.15);
     const double safety_radius = declare_parameter<double>("safety_radius", 0.45);
     const std::vector<double> rack_boxes =
@@ -68,8 +70,12 @@ public:
     occupancy_publisher_ = create_publisher<sensor_msgs::msg::PointCloud2>(
       "inflated_occupancy", rclcpp::QoS(1).transient_local());
     path_marker_publisher_ = create_publisher<visualization_msgs::msg::Marker>("planned_path_marker", 10);
+    rack_marker_publisher_ = create_publisher<visualization_msgs::msg::Marker>(
+      "rack_boxes_marker", rclcpp::QoS(1).transient_local());
     occupancy_result_publisher_ = create_publisher<std_msgs::msg::Bool>("occupancy_result", 10);
-    loadMap(map_path, static_cast<float>(leaf_size), static_cast<float>(safety_radius), rack_boxes);
+        loadMap(map_path, occupancy_pcd_path, static_cast<float>(leaf_size),
+          static_cast<float>(safety_radius), rack_boxes);
+    publishRackBoxes(rack_boxes);
 
     path_publisher_ = create_publisher<geometry_msgs::msg::PoseArray>("planned_path", 10);
     status_publisher_ = create_publisher<std_msgs::msg::String>("planning_status", 10);
@@ -86,7 +92,8 @@ public:
   }
 
 private:
-  void loadMap(const std::string& path, float leaf_size, float safety_radius,
+  void loadMap(const std::string& path, const std::string& occupancy_pcd_path,
+               float leaf_size, float safety_radius,
                const std::vector<double>& rack_boxes)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr raw(new pcl::PointCloud<pcl::PointXYZ>);
@@ -125,6 +132,10 @@ private:
     map_publisher_->publish(map_message);
 
     const pcl::PointCloud<pcl::PointXYZ> inflated_points = grid_->inflatedPointCloud();
+    if (pcl::io::savePCDFileBinary(occupancy_pcd_path, inflated_points) < 0)
+      throw std::runtime_error("could not write inflated occupancy PCD: " + occupancy_pcd_path);
+    RCLCPP_INFO(get_logger(), "Saved inflated voxel centers (including racks) to %s",
+                occupancy_pcd_path.c_str());
     sensor_msgs::msg::PointCloud2 occupancy_message;
     pcl::toROSMsg(inflated_points, occupancy_message);
     occupancy_message.header.frame_id = "map";
@@ -179,6 +190,53 @@ private:
       }
     }
     return true;
+  }
+
+  void publishRackBoxes(const std::vector<double>& boxes)
+  {
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = "map";
+    marker.header.stamp = now();
+    marker.ns = "rack_collision_boxes";
+    marker.id = 0;
+    marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 0.045;
+    marker.color.r = 1.0f;
+    marker.color.g = 0.72f;
+    marker.color.b = 0.08f;
+    marker.color.a = 1.0f;
+
+    constexpr int edges[12][2] = {
+      {0, 1}, {0, 2}, {0, 4}, {1, 3}, {1, 5}, {2, 3},
+      {2, 6}, {3, 7}, {4, 5}, {4, 6}, {5, 7}, {6, 7}
+    };
+    for (size_t offset = 0; offset < boxes.size(); offset += 7)
+    {
+      const double cx = boxes[offset], cy = boxes[offset + 1], cz = boxes[offset + 2];
+      const double hx = 0.5 * boxes[offset + 3];
+      const double hy = 0.5 * boxes[offset + 4];
+      const double hz = 0.5 * boxes[offset + 5];
+      const double c = std::cos(boxes[offset + 6]);
+      const double s = std::sin(boxes[offset + 6]);
+      geometry_msgs::msg::Point corners[8];
+      for (int corner = 0; corner < 8; ++corner)
+      {
+        const double lx = (corner & 1) ? hx : -hx;
+        const double ly = (corner & 2) ? hy : -hy;
+        const double lz = (corner & 4) ? hz : -hz;
+        corners[corner].x = cx + c * lx - s * ly;
+        corners[corner].y = cy + s * lx + c * ly;
+        corners[corner].z = cz + lz;
+      }
+      for (const auto& edge : edges)
+      {
+        marker.points.push_back(corners[edge[0]]);
+        marker.points.push_back(corners[edge[1]]);
+      }
+    }
+    rack_marker_publisher_->publish(marker);
   }
 
   void handleRequest(const geometry_msgs::msg::PoseArray::SharedPtr request)
@@ -260,6 +318,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr map_publisher_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr occupancy_publisher_;
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr path_marker_publisher_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr rack_marker_publisher_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr occupancy_result_publisher_;
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr path_publisher_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;

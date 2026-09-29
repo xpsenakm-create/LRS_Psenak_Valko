@@ -39,15 +39,19 @@ raw and simplified waypoint counts, and path length are published as status.
 
 ## Run
 
-Build and source the workspace, then start the ROS control node with the
-parameter file:
+From the workspace root, run the executable launcher:
 
 ```sh
-colcon build --packages-select lrs_psenak_valko
-source install/setup.bash
-ros2 run lrs_psenak_valko map_planner_node --ros-args --params-file \
-  src/lrs_psenak_valko/config/planner.yaml
+./run_a1_1.sh
 ```
+
+It builds the package, starts the planner, opens RViz with the occupancy and
+path displays enabled, and requests a demonstration route. The final inflated
+occupancy voxel centers, including rack volumes, are also written as
+`map_voxels_with_racks_inflated.pcd` in the workspace root. Use
+`./run_a1_1.sh --radius 0.75` to change inflation, or `./run_a1_1.sh --no-rviz`
+to generate the PCD and run the planner without opening RViz. Press Ctrl+C to
+stop the processes.
 
 Publish a `geometry_msgs/msg/PoseArray` to `/plan_request` containing exactly
 two poses: start, then goal. Coordinates are in the map frame, in metres. The
@@ -69,24 +73,27 @@ file, not custom command-line arguments.
 ## Visualize and Query
 
 RViz is part of the installed ROS environment; no extra packages are needed.
-Start it in another terminal:
+The launcher opens the saved view in `config/planner.rviz`. To open RViz
+separately:
 
 ```sh
 source install/setup.bash
 rviz2
 ```
 
-In RViz, set **Fixed Frame** to `map`, then add these displays:
+The saved view uses Fixed Frame `map` and displays:
 
 - **PointCloud2**, topic `/map_cloud`, for the downsampled PCD.
 - **PointCloud2**, topic `/inflated_occupancy`, for occupied voxel centers,
-  including the filled rack boxes and their safety inflation.
+  shown as small, low-opacity points so the cloud does not obscure the scene.
+- **Marker**, topic `/rack_boxes_marker`, for amber wireframes of the solid
+  rack collision volumes.
 - **Marker**, topic `/planned_path_marker`, for the collision-checked path line.
 - **Grid**, as a spatial reference if useful.
 
-After RViz is open, submit either plan request shown above; the map point clouds
-use transient-local QoS and should appear automatically. The successful path
-will appear as a green line. To query the center of a configured rack box, run:
+Map point clouds use transient-local QoS and should appear automatically. The
+successful path appears as a green line. To query the center of a configured
+rack box, run:
 
 ```sh
 ros2 topic echo --once /occupancy_result
@@ -104,18 +111,16 @@ also return `true`, matching the planner's rule that out-of-bounds is blocked.
 
 ## Validation Results
 
-The synthetic planner self-test produces a collision-free 3D route with 81 raw
-waypoints reduced to 3, and reports `NO_PATH` for a sealed goal. The ROS node
-was also exercised on the included PCD with the rack boxes from the parameter
-file; all successful paths passed the independent inflated-map check.
+The ROS node was exercised on the included PCD with the rack boxes from the
+parameter file; successful paths passed the independent inflated-map check.
+The final occupied voxel cloud is available as both `/inflated_occupancy` and
+the saved PCD file, so the filled rack volumes can be inspected directly.
 
 | Start -> goal (m) | Radius (m) | Raw -> simplified | Path length (m) | Planning time (ms) |
 | --- | ---: | ---: | ---: | ---: |
-| (12, 4, 2) -> (16, 4, 2) | 0.45 | 28 -> 2 | 4.000 | 1.70 |
-| (12, 4, 2) -> (12, 8, 2) | 0.45 | 28 -> 2 | 4.000 | 0.34 |
+| (12, 4, 2) -> (16, 4, 2) | 0.45 | 28 -> 2 | 4.000 | measured at runtime |
+| (12, 4, 2) -> (12, 8, 2) | 0.45 | 28 -> 2 | 4.000 | measured at runtime |
 
-For a deterministic radius A/B check, the standalone test plans around the same
-3D wall at both radii: 0.45 m produced a 5.777 m path; 0.75 m produced a
-6.172 m path. Both plans succeeded, and the larger radius selected a visibly
-longer detour. A separate sealed-goal synthetic case terminates with `NO_PATH`
-rather than hanging.
+Planning time varies with machine load and is printed by the node on each
+request. Change `safety_radius` and repeat a route request to compare the
+resulting path and occupancy visualization.
