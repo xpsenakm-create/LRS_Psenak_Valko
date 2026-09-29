@@ -1,0 +1,14 @@
+map_planner_node:
+  ros__parameters:
+    voxel_size: 0.15
+    safety_radius: 0.45
+    rack_boxes: [
+      4.36, 6.818186, 2.795, 6.50, 3.76, 5.59, 0.0,
+      4.36, 11.3602, 2.795, 6.50, 3.76, 5.59, 0.0
+    ]
+    allow_diagonal: true
+    heuristic_weight: 1.0
+    max_planning_time_s: 5.0
+    max_expansions: 0
+    snap_radius_cells: 0
+    simplify_path: true

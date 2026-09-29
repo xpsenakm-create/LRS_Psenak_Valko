@@ -126,6 +126,23 @@ public:
     return inflated_.count(encodeVoxel(ix, iy, iz)) > 0;
   }
 
+  pcl::PointCloud<pcl::PointXYZ> inflatedPointCloud() const
+  {
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    cloud.points.reserve(inflated_.size());
+    for (const int64_t key : inflated_) {
+      int64_t ix, iy, iz;
+      decodeVoxel(key, ix, iy, iz);
+      cloud.points.emplace_back((static_cast<float>(ix) + 0.5f) * leaf_size_,
+                                (static_cast<float>(iy) + 0.5f) * leaf_size_,
+                                (static_cast<float>(iz) + 0.5f) * leaf_size_);
+    }
+    cloud.width = static_cast<uint32_t>(cloud.points.size());
+    cloud.height = 1;
+    cloud.is_dense = true;
+    return cloud;
+  }
+
   /// Index range covered by the inflated map (O(N), call once).
   IndexBounds inflatedBounds() const
   {

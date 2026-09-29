@@ -11,8 +11,13 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 include_directories(${PCL_INCLUDE_DIRS} src)
@@ -23,9 +28,12 @@ add_executable(map_planner_node
   src/map_planner_node.cpp
   src/a_star_planner.cpp)
 target_link_libraries(map_planner_node ${PCL_LIBRARIES})
+ament_target_dependencies(map_planner_node ament_index_cpp rclcpp geometry_msgs std_msgs sensor_msgs
+  pcl_conversions visualization_msgs)
 
 install(TARGETS map_planner_node DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY maps/ DESTINATION share/${PROJECT_NAME}/maps)
+install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 
 ament_package()

@@ -359,6 +359,30 @@ int main()
   // Blocked goal
   report("blocked goal", planner.plan(start, {10.1, 5.0, 1.0}));
 
+  // A pair of safety radii around the same 3D wall must produce different
+  // paths. Radius-to-cell conversion uses the same 15 cm resolution as the map.
+  astar::GridInfo radius_info;
+  radius_info.resolution = 0.15;
+  radius_info.size_x = 50; radius_info.size_y = 40; radius_info.size_z = 20;
+  auto wallWithInflation = [](int radius_cells) {
+    return [radius_cells](int x, int y, int) {
+      const int dx = std::max({24 - x, 0, x - 26});
+      const int dy = std::max({16 - y, 0, y - 24});
+      return dx * dx + dy * dy <= radius_cells * radius_cells;
+    };
+  };
+  const astar::Vec3 radius_start{2.175, 3.075, 1.575};
+  const astar::Vec3 radius_goal{7.275, 3.075, 1.575};
+  astar::AStarPlanner radius_045(radius_info, wallWithInflation(3));
+  astar::AStarPlanner radius_075(radius_info, wallWithInflation(5));
+  const astar::Result path_045 = radius_045.plan(radius_start, radius_goal);
+  const astar::Result path_075 = radius_075.plan(radius_start, radius_goal);
+  report("0.45 m inflation", path_045);
+  report("0.75 m inflation", path_075);
+  if (!path_045.success() || !path_075.success() ||
+      std::abs(path_045.path_length_m - path_075.path_length_m) < 1e-6)
+    return 1;
+
   return 0;
 }
 #endif
