@@ -27,5 +27,6 @@ rosbag2_*/
 # Python cache, ak sa niekde objaví
 __pycache__/
 *.pyc
-
-echo "map_voxels_with_racks_inflated.pcd" >> .gitignore
+*.pyo
+*.pyd
+map_voxels_with_racks_inflated.pcd/
