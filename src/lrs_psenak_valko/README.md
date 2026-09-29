@@ -15,7 +15,9 @@ visual-mesh gaps. The centers use the two rack-row locations in the checked-in
 update these ROS parameter values. The node refuses to start without at least
 one rack box, so it cannot silently plan through unconfigured shelves.
 
-The configured `safety_radius` is 0.45 m. The drone collision body's horizontal
+The `safety_radius` ROS parameter controls the 3D obstacle inflation radius.
+Its value is supplied in `config/planner.yaml` and can be overridden at launch.
+The drone collision body's horizontal
 half-width is about 0.174 m; the remaining 0.276 m is a conservative allowance
 for controller position error (0.15 m) plus an additional 0.126 m clearance
 margin. These allowances are explicit engineering assumptions and should be
@@ -48,10 +50,21 @@ From the workspace root, run the executable launcher:
 It builds the package, starts the planner, opens RViz with the occupancy and
 path displays enabled, and requests a demonstration route. The final inflated
 occupancy voxel centers, including rack volumes, are also written as
-`map_voxels_with_racks_inflated.pcd` in the workspace root. Use
-`./run_a1_1.sh --radius 0.75` to change inflation, or `./run_a1_1.sh --no-rviz`
-to generate the PCD and run the planner without opening RViz. Press Ctrl+C to
-stop the processes.
+`map_voxels_with_racks_inflated.pcd` in the workspace root. Set the effective
+3D obstacle inflation/safety radius with `./run_a1_1.sh --safety-radius 0.75`
+or its alias `./run_a1_1.sh --inflation-radius 0.75` (`--radius` remains an
+alias). These all set the same ROS parameter; inflation radius and safety radius
+are not separate quantities in this planner. Use `./run_a1_1.sh --no-rviz`
+to generate the PCD and run without opening RViz. The initial
+start and goal can be supplied as coordinate triples:
+
+```sh
+./run_a1_1.sh --start 12 4 2 --goal 16 8 2
+```
+
+The planner stays running after the initial route. Publish another request to
+`/plan_request` at any time to replace the displayed trajectory; no restart is
+needed. Press Ctrl+C to stop the processes.
 
 Publish a `geometry_msgs/msg/PoseArray` to `/plan_request` containing exactly
 two poses: start, then goal. Coordinates are in the map frame, in metres. The

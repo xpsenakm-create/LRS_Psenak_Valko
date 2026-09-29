@@ -4,17 +4,34 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 RADIUS="0.45"
 OPEN_RVIZ=1
+START=(12.0 4.0 2.0)
+GOAL=(16.0 4.0 2.0)
+START_SET=0
+GOAL_SET=0
 
 usage() {
-  printf 'Usage: %s [--radius METERS] [--no-rviz]\n' "$0"
+  printf 'Usage: %s [--safety-radius METERS] [--inflation-radius METERS] [--start X Y Z] [--goal X Y Z] [--no-rviz]\n' "$0"
+  printf '       --radius is retained as an alias; radius options set the same 3D inflation parameter.\n'
 }
 
 while (($#)); do
   case "$1" in
-    --radius)
+    --radius|--safety-radius|--inflation-radius)
       if (($# < 2)); then usage >&2; exit 2; fi
       RADIUS="$2"
       shift 2
+      ;;
+    --start)
+      if (($# < 4)); then usage >&2; exit 2; fi
+      START=("$2" "$3" "$4")
+      START_SET=1
+      shift 4
+      ;;
+    --goal)
+      if (($# < 4)); then usage >&2; exit 2; fi
+      GOAL=("$2" "$3" "$4")
+      GOAL_SET=1
+      shift 4
       ;;
     --no-rviz)
       OPEN_RVIZ=0
@@ -36,6 +53,17 @@ if ! [[ "$RADIUS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   printf 'Invalid radius: %s\n' "$RADIUS" >&2
   exit 2
 fi
+if ((START_SET != GOAL_SET)); then
+  printf 'Specify both --start and --goal, or neither.\n' >&2
+  exit 2
+fi
+COORD_RE='^-?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][-+]?[0-9]+)?$'
+for coordinate in "${START[@]}" "${GOAL[@]}"; do
+  if ! [[ "$coordinate" =~ $COORD_RE ]]; then
+    printf 'Invalid waypoint coordinate: %s\n' "$coordinate" >&2
+    exit 2
+  fi
+done
 
 ROS_SETUP="/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash"
 if [[ ! -f "$ROS_SETUP" ]]; then
@@ -98,7 +126,7 @@ if ((!READY)); then
 fi
 
 ros2 topic pub --once /plan_request geometry_msgs/msg/PoseArray \
-  "{header: {frame_id: map}, poses: [{position: {x: 12.0, y: 4.0, z: 2.0}, orientation: {w: 1.0}}, {position: {x: 16.0, y: 4.0, z: 2.0}, orientation: {w: 1.0}}]}"
+  "{header: {frame_id: map}, poses: [{position: {x: ${START[0]}, y: ${START[1]}, z: ${START[2]}}, orientation: {w: 1.0}}, {position: {x: ${GOAL[0]}, y: ${GOAL[1]}, z: ${GOAL[2]}}, orientation: {w: 1.0}}]}"
 
 printf '\nFinal inflated voxel PCD will be saved to:\n  %s\n' "$PCD_OUTPUT"
 printf 'Planner topics: /plan_request, /planned_path, /planning_status\n'
