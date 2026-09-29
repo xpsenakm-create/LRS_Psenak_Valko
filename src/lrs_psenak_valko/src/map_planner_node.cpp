@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -35,9 +36,13 @@ public:
   MapPlannerNode()
   : Node("map_planner_node")
   {
-    const std::string default_map = ament_index_cpp::get_package_share_directory("lrs_psenak_valko") +
-                                    "/maps/FEI_LRS_PCD/map.pcd";
-    const std::string map_path = declare_parameter<std::string>("map_path", default_map);
+    const std::string package_share = ament_index_cpp::get_package_share_directory("lrs_psenak_valko");
+    const std::string map_path = declare_parameter<std::string>(
+      "map_path", "maps/FEI_LRS_PCD/map.pcd");
+    const std::filesystem::path configured_map_path(map_path);
+    const std::string resolved_map_path = configured_map_path.is_absolute()
+      ? configured_map_path.string()
+      : (std::filesystem::path(package_share) / configured_map_path).lexically_normal().string();
     const std::string occupancy_pcd_path =
       declare_parameter<std::string>("occupancy_pcd_path", "map_voxels_with_racks_inflated.pcd");
     const double leaf_size = declare_parameter<double>("voxel_size", 0.15);
@@ -73,7 +78,7 @@ public:
     rack_marker_publisher_ = create_publisher<visualization_msgs::msg::Marker>(
       "rack_boxes_marker", rclcpp::QoS(1).transient_local());
     occupancy_result_publisher_ = create_publisher<std_msgs::msg::Bool>("occupancy_result", 10);
-        loadMap(map_path, occupancy_pcd_path, static_cast<float>(leaf_size),
+        loadMap(resolved_map_path, occupancy_pcd_path, static_cast<float>(leaf_size),
           static_cast<float>(safety_radius), rack_boxes);
     publishRackBoxes(rack_boxes);
 
@@ -88,7 +93,7 @@ public:
 
     RCLCPP_INFO(get_logger(), "Ready: plan via 'plan_request'; query inflated occupancy via 'occupancy_query'");
     RCLCPP_INFO(get_logger(), "Map: %s; raw voxels: %zu; inflated voxels: %zu; safety radius: %.2f m",
-                map_path.c_str(), grid_->voxelCount(), grid_->inflatedVoxelCount(), safety_radius);
+                resolved_map_path.c_str(), grid_->voxelCount(), grid_->inflatedVoxelCount(), safety_radius);
   }
 
 private:

@@ -28,3 +28,4 @@ rosbag2_*/
 __pycache__/
 *.pyc
 
+echo "map_voxels_with_racks_inflated.pcd" >> .gitignore

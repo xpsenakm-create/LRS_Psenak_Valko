@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-RADIUS="0.45"
+RADIUS=""
+RADIUS_SET=0
 OPEN_RVIZ=1
 START=(12.0 4.0 2.0)
 GOAL=(16.0 4.0 2.0)
@@ -19,6 +20,7 @@ while (($#)); do
     --radius|--safety-radius|--inflation-radius)
       if (($# < 2)); then usage >&2; exit 2; fi
       RADIUS="$2"
+      RADIUS_SET=1
       shift 2
       ;;
     --start)
@@ -49,7 +51,7 @@ while (($#)); do
   esac
 done
 
-if ! [[ "$RADIUS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+if ((RADIUS_SET)) && ! [[ "$RADIUS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   printf 'Invalid radius: %s\n' "$RADIUS" >&2
   exit 2
 fi
@@ -97,10 +99,12 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-ros2 run lrs_psenak_valko map_planner_node --ros-args \
-  --params-file "$ROOT_DIR/src/lrs_psenak_valko/config/planner.yaml" \
-  -p "safety_radius:=$RADIUS" \
-  -p "occupancy_pcd_path:=$PCD_OUTPUT" &
+ROS_ARGS=(--ros-args --params-file "$ROOT_DIR/src/lrs_psenak_valko/config/planner.yaml"
+  -p "occupancy_pcd_path:=$PCD_OUTPUT")
+if ((RADIUS_SET)); then
+  ROS_ARGS+=(-p "safety_radius:=$RADIUS")
+fi
+ros2 run lrs_psenak_valko map_planner_node "${ROS_ARGS[@]}" &
 NODE_PID=$!
 
 if ((OPEN_RVIZ)); then

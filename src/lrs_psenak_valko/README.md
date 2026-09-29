@@ -16,7 +16,8 @@ update these ROS parameter values. The node refuses to start without at least
 one rack box, so it cannot silently plan through unconfigured shelves.
 
 The `safety_radius` ROS parameter controls the 3D obstacle inflation radius.
-Its value is supplied in `config/planner.yaml` and can be overridden at launch.
+Its default value is supplied in `config/planner.yaml`; the launcher preserves
+that value unless a radius option is explicitly provided.
 The drone collision body's horizontal
 half-width is about 0.174 m; the remaining 0.276 m is a conservative allowance
 for controller position error (0.15 m) plus an additional 0.126 m clearance
@@ -50,7 +51,9 @@ From the workspace root, run the executable launcher:
 It builds the package, starts the planner, opens RViz with the occupancy and
 path displays enabled, and requests a demonstration route. The final inflated
 occupancy voxel centers, including rack volumes, are also written as
-`map_voxels_with_racks_inflated.pcd` in the workspace root. Set the effective
+`map_voxels_with_racks_inflated.pcd` in the workspace root. The input `map_path`
+is configured in the YAML relative to the installed package share directory;
+an absolute path can also be used for another map. Set the effective
 3D obstacle inflation/safety radius with `./run_a1_1.sh --safety-radius 0.75`
 or its alias `./run_a1_1.sh --inflation-radius 0.75` (`--radius` remains an
 alias). These all set the same ROS parameter; inflation radius and safety radius
