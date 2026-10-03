@@ -65,6 +65,13 @@ struct Result
   size_t            expansions = 0;       ///< nodes popped from the open list
   double            path_length_m = 0;    ///< sum of segment lengths of `path`
   size_t            raw_waypoints = 0;    ///< waypoints before simplification
+  double            raw_path_length_m = 0;///< length of the path before simplification
+
+  // --- diagnostics (used for the human readable report) ---
+  bool   start_snapped = false, goal_snapped = false;  ///< endpoint moved to nearest free voxel
+  Vec3   start_used, goal_used;                        ///< endpoints actually used by the search
+  Vec3   closest_to_goal;                              ///< explored voxel closest to the goal
+  double closest_dist_m = std::numeric_limits<double>::infinity();  ///< its distance to the goal
 
   bool success() const { return status == Status::SUCCESS; }
 };
@@ -113,4 +120,3 @@ private:
 };
 
 }  // namespace astar
-

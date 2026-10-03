@@ -201,6 +201,10 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
       return finish(Status::GOAL_OCCUPIED);
     goal_snapped = true;
   }
+  res.start_snapped = start_snapped;
+  res.goal_snapped  = goal_snapped;
+  res.start_used = start_snapped ? indexToWorld(sx, sy, sz) : start;
+  res.goal_used  = goal_snapped  ? indexToWorld(gx, gy, gz) : goal;
 
   // ---- 2. A* ------------------------------------------------------------------
   const size_t N = blocked_.size();
@@ -227,6 +231,8 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
 
   const std::vector<Move>& moves = params_.allow_diagonal ? moves26_ : moves6_;
   bool found = false, timed_out = false;
+  double best_d2 = std::numeric_limits<double>::infinity();   // closest approach to goal (diagnostics)
+  int best_x = sx, best_y = sy, best_z = sz;
 
   while (!open.empty())
   {
@@ -249,6 +255,12 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
     const int cy = static_cast<int>((cur.idx / info_.size_x) % info_.size_y);
     const int cz = static_cast<int>(cur.idx / (static_cast<size_t>(info_.size_x) * info_.size_y));
 
+    {
+      const double ddx = cx - gx, ddy = cy - gy, ddz = cz - gz;
+      const double d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+      if (d2 < best_d2) { best_d2 = d2; best_x = cx; best_y = cy; best_z = cz; }
+    }
+
     for (const Move& m : moves)
     {
       const int nx = cx + m.dx, ny = cy + m.dy, nz = cz + m.dz;
@@ -269,6 +281,11 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
     }
   }
 
+  if (std::isfinite(best_d2))
+  {
+    res.closest_to_goal = indexToWorld(best_x, best_y, best_z);
+    res.closest_dist_m  = std::sqrt(best_d2) * info_.resolution;
+  }
   if (!found) return finish(timed_out ? Status::TIMEOUT : Status::NO_PATH);
 
   // ---- 3. reconstruct path -----------------------------------------------------
@@ -287,6 +304,11 @@ Result AStarPlanner::plan(const Vec3& start, const Vec3& goal) const
   if (!start_snapped) raw.front() = start;
   if (!goal_snapped)  raw.back()  = goal;
   res.raw_waypoints = raw.size();
+  for (size_t i = 1; i < raw.size(); ++i)
+  {
+    const double dx = raw[i].x - raw[i - 1].x, dy = raw[i].y - raw[i - 1].y, dz = raw[i].z - raw[i - 1].z;
+    res.raw_path_length_m += std::sqrt(dx * dx + dy * dy + dz * dz);
+  }
 
   res.path = params_.simplify_path ? simplify(raw) : raw;
 
