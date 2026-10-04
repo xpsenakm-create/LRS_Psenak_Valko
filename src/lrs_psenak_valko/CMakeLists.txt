@@ -18,6 +18,8 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(mavros_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 include_directories(${PCL_INCLUDE_DIRS} src)
@@ -31,9 +33,18 @@ target_link_libraries(map_planner_node ${PCL_LIBRARIES})
 ament_target_dependencies(map_planner_node ament_index_cpp rclcpp geometry_msgs std_msgs sensor_msgs
   pcl_conversions visualization_msgs)
 
-install(TARGETS map_planner_node DESTINATION lib/${PROJECT_NAME})
+add_library(mission_model src/mission_model.cpp)
+target_include_directories(mission_model PUBLIC src)
+
+add_executable(mission_executor_node src/mission_executor_node.cpp)
+target_link_libraries(mission_executor_node mission_model)
+ament_target_dependencies(mission_executor_node rclcpp geometry_msgs mavros_msgs std_msgs)
+
+install(TARGETS map_planner_node mission_executor_node DESTINATION lib/${PROJECT_NAME})
+install(TARGETS mission_model DESTINATION lib)
 
 install(DIRECTORY maps/ DESTINATION share/${PROJECT_NAME}/maps)
 install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
+install(DIRECTORY missions/ DESTINATION share/${PROJECT_NAME}/missions)
 
 ament_package()
