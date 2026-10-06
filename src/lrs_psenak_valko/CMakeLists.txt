@@ -20,6 +20,15 @@ find_package(pcl_conversions REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
+find_package(mavros_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+
+add_executable(outdoor_mission_node src/outdoor_mission_node.cpp)
+ament_target_dependencies(outdoor_mission_node
+  rclcpp mavros_msgs sensor_msgs geometry_msgs nav_msgs std_msgs std_srvs)
+install(TARGETS outdoor_mission_node DESTINATION lib/${PROJECT_NAME})
+
 include_directories(${PCL_INCLUDE_DIRS} src)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
