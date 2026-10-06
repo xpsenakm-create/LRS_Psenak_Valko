@@ -50,7 +50,13 @@ Yaw task angles such as `yaw90` are **absolute world-frame ENU headings**, not r
 turns: 0 degrees faces +X/East, and positive angles rotate counter-clockwise when viewed
 from above. MAVROS local pose and position setpoints use ENU; MAVROS performs the
 ENU-to-NED conversion for MAVLink/ArduPilot, so the executor does not apply a second
-manual conversion. `yaw_tolerance_deg=5` must be held for `yaw_hold_time_sec=0.5` before
+manual NED conversion. This Gazebo world/SITL combination has an additional 90-degree
+rotation between its Gazebo map axes and MAVROS local axes: the observed Gazebo drone
+position `(13, 7)` corresponds to MAVROS local `(-7, 13)`. The executor therefore uses
+`map_to_local_yaw_offset_deg=90` by default for both position and heading conversion;
+its startup log prints both positions so the mapping is visible. Do not start a mission
+if that displayed map position is outside the planner's bounds. `yaw_tolerance_deg=5`
+must be held for `yaw_hold_time_sec=0.5` before
 a yaw task completes, with a `yaw_timeout_sec=15` limit. Each route aligns to its first
 travel segment before translating; at bends of at least
 `turn_alignment_threshold_deg=20`, it holds near the corner and aligns before the next
@@ -60,39 +66,118 @@ movement begins.
 
 ## Build and run
 
-The supplied checkout contains the ROS package but not the upstream Gazebo world,
-models, or `scripts/run_*.sh`. In a checkout of `KocurMaros/LRS-URK`, start the
-simulation manually in three terminals as described by its README:
+The current environment has the upstream simulation checkout at `~/LRS-URK`,
+ArduPilot at `~/ardupilot`, and this A1.2 workspace at
+`~/Zadania/LRS_Psenak_Valko`. Start each simulation component in its own terminal.
+Source ROS Jazzy in each shell first.
 
-1. `cd ~/LRS-URK && scripts/run_gazebo.sh`
-2. `cd ~/LRS-URK && scripts/run_sitl.sh`
-3. `cd ~/LRS-URK && scripts/run_mavros.sh`
-
-Build this workspace, source it in each ROS terminal, then start the planner and
-executor in two additional terminals:
+Once the three simulation terminals below are running, the workspace helper can
+build the package, start the planner, wait for MAVROS readiness, and launch the mission:
 
 ```bash
 cd ~/Zadania/LRS_Psenak_Valko
+./run_a1_2.sh
+```
+
+Pass another mission file as the first argument, for example
+`./run_a1_2.sh /absolute/path/to/defence_mission.csv`. For a relative mission path,
+the helper resolves it from the directory where you invoke it. Set
+`A1_2_READY_TIMEOUT=180` to allow more startup time. The helper does not start or stop
+Gazebo, SITL, or MAVROS; those remain the required manually operated terminals.
+While waiting, it reports planner, MAVROS service, FCU connection, and local-pose
+readiness every ten seconds. If it times out, it will not start the executor; check
+the three simulation terminals, then run the helper again after fixing the missing
+prerequisite. Starting the helper after readiness succeeds automatically starts the
+mission and can arm/fly the simulated vehicle.
+
+The helper expects the ROS names `/mavros/state`, `/mavros/local_position/pose`,
+`/mavros/set_mode`, `/mavros/cmd/arming`, `/mavros/cmd/takeoff`, and `/mavros/cmd/land`.
+Confirm the actual names with `ros2 node list`, `ros2 topic list`, and
+`ros2 service list` if the readiness report says they are missing. A SITL message such
+as `Mission is stale` does not mean the A1.2 executor started: A1.2 sends Guided mode
+setpoints, and movement only begins once `mission_executor_node` is running. Check
+`ros2 node list` for that node after starting the helper.
+
+Terminal 1, Gazebo:
+
+```bash
 source /opt/ros/jazzy/setup.bash
+cd ~/LRS-URK
+scripts/run_gazebo.sh
+```
+
+Terminal 2, ArduPilot SITL (start after Gazebo is running):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/LRS-URK
+scripts/run_sitl.sh
+```
+
+The SITL script selects `gazebo-iris`, explicitly enables `--model JSON`, loads
+`gazebo-iris.parm`, and uses the FEI hangar home location. Keep the SITL console
+visible because it reports pre-arm failures.
+
+Terminal 3, MAVROS (start after SITL):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/LRS-URK
+scripts/run_mavros.sh
+```
+
+Build and source the A1.2 workspace in Terminal 4:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/Zadania/LRS_Psenak_Valko
 colcon build --packages-select lrs_psenak_valko
 source install/setup.bash
 ```
 
-Planner terminal (run from the workspace root so its generated occupancy file lands
-here):
+Terminal 5, planner (run from the workspace root so the occupancy PCD is written
+there):
 
 ```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/Zadania/LRS_Psenak_Valko
+source install/setup.bash
 ros2 run lrs_psenak_valko map_planner_node --ros-args \
   --params-file src/lrs_psenak_valko/config/planner.yaml \
   -p occupancy_pcd_path:=$PWD/map_voxels_with_racks_inflated.pcd
 ```
 
-Executor terminal:
+Terminal 6, first verify MAVROS and planner are ready:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd ~/Zadania/LRS_Psenak_Valko
+source install/setup.bash
+ros2 topic info /mavros/local_position/pose
+ros2 service list | grep -E '^/mavros/(set_mode|cmd/arming|cmd/takeoff|cmd/land)$'
+ros2 node list
+```
+
+First, wait for a connected FCU instead of trusting the first state sample:
+
+```bash
+ros2 topic echo /mavros/state
+```
+
+Once a message shows `connected: true`, press Ctrl+C. Then check that local pose has a
+publisher, the four MAVROS services are listed, and `/map_planner_node` is in the node
+list. Start the mission only after these checks pass:
 
 ```bash
 ros2 run lrs_psenak_valko mission_executor_node --ros-args \
   -p mission_file:=$PWD/src/lrs_psenak_valko/missions/hangar_example.csv
 ```
+
+The executor will arm and fly automatically; have the Gazebo and SITL windows visible.
+Watch for `Mission state:` and `Completed task` logs, and wait for final `DONE` and
+disarm confirmation. Do not use a manual `/plan_request` test while the executor is
+running, because it shares the planner's request/result topics. To test the planner
+manually, stop the executor first and use the examples in the package README.
 
 The node logs `IDLE`, then waits for both `/mavros/state.connected` and local pose
 telemetry. Watch its timestamped `Mission state:` log and the SITL console for

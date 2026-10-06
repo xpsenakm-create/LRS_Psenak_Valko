@@ -49,6 +49,7 @@ public:
     yaw_hold_time_sec_ = declare_parameter<double>("yaw_hold_time_sec", 0.5);
     yaw_timeout_sec_ = declare_parameter<double>("yaw_timeout_sec", 15.0);
     turn_alignment_threshold_deg_ = declare_parameter<double>("turn_alignment_threshold_deg", 20.0);
+    map_to_local_yaw_offset_deg_ = declare_parameter<double>("map_to_local_yaw_offset_deg", 90.0);
     if (hard_radius_ <= 0.0 || soft_radius_ <= hard_radius_ || pass_radius_ <= 0.0 ||
       settle_speed_ <= 0.0 || settle_time_ <= 0.0 || setpoint_rate_hz_ < 10.0 ||
       setpoint_rate_hz_ > 20.0 || handshake_timeout_sec_ <= 0.0 ||
@@ -56,7 +57,8 @@ public:
       navigation_timeout_sec_ <= 0.0 || takeoff_timeout_sec_ <= 0.0 || landing_timeout_sec_ <= 0.0 ||
       yaw_tolerance_deg_ <= 0.0 || yaw_tolerance_deg_ >= 45.0 ||
       yaw_hold_time_sec_ <= 0.0 || yaw_timeout_sec_ <= 0.0 ||
-      turn_alignment_threshold_deg_ <= 0.0 || turn_alignment_threshold_deg_ >= 180.0)
+      turn_alignment_threshold_deg_ <= 0.0 || turn_alignment_threshold_deg_ >= 180.0 ||
+      !std::isfinite(map_to_local_yaw_offset_deg_))
       throw std::invalid_argument("invalid waypoint precision/controller parameters");
 
     state_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -154,8 +156,8 @@ private:
   {
     RCLCPP_ERROR(get_logger(), "Mission failed in %s: %s", stateName(state_), reason.c_str());
     if (have_pose_) {
-      target_ = pose_;
-      target_yaw_ = yawFromQuaternion(pose_.pose.orientation);
+      target_.pose = localToMapPose(pose_.pose);
+      target_yaw_ = yawFromQuaternion(target_.pose.orientation);
       target_initialized_ = true;
     }
     transition(State::ERROR);
@@ -222,10 +224,14 @@ private:
     have_pose_ = true;
     pose_received_at_ = std::chrono::steady_clock::now();
     if (!target_initialized_) {
-      target_ = pose_;
+      target_.pose = localToMapPose(pose_.pose);
       target_initialized_ = true;
-      current_yaw_ = yawFromQuaternion(pose_.pose.orientation);
-      target_yaw_ = current_yaw_;
+      target_yaw_ = yawFromQuaternion(target_.pose.orientation);
+      RCLCPP_INFO(get_logger(),
+        "Coordinate frames: MAVROS local=(%.2f, %.2f, %.2f), planner map=(%.2f, %.2f, %.2f), yaw offset=%.1f deg",
+        pose_.pose.position.x, pose_.pose.position.y, pose_.pose.position.z,
+        target_.pose.position.x, target_.pose.position.y, target_.pose.position.z,
+        map_to_local_yaw_offset_deg_);
     }
   }
   void onVelocity(const geometry_msgs::msg::TwistStamped::SharedPtr message)
@@ -280,11 +286,39 @@ private:
     return q;
   }
 
+  geometry_msgs::msg::Pose localToMapPose(const geometry_msgs::msg::Pose& local_pose) const
+  {
+    const double offset = map_to_local_yaw_offset_deg_ * M_PI / 180.0;
+    const double c = std::cos(offset), s = std::sin(offset);
+    geometry_msgs::msg::Pose map_pose = local_pose;
+    map_pose.position.x = c * local_pose.position.x + s * local_pose.position.y;
+    map_pose.position.y = -s * local_pose.position.x + c * local_pose.position.y;
+    map_pose.orientation = quaternionFromYaw(yawFromQuaternion(local_pose.orientation) - offset);
+    return map_pose;
+  }
+
+  geometry_msgs::msg::Pose mapToLocalPose(const geometry_msgs::msg::Pose& map_pose) const
+  {
+    const double offset = map_to_local_yaw_offset_deg_ * M_PI / 180.0;
+    const double c = std::cos(offset), s = std::sin(offset);
+    geometry_msgs::msg::Pose local_pose = map_pose;
+    local_pose.position.x = c * map_pose.position.x - s * map_pose.position.y;
+    local_pose.position.y = s * map_pose.position.x + c * map_pose.position.y;
+    local_pose.orientation = quaternionFromYaw(yawFromQuaternion(map_pose.orientation) + offset);
+    return local_pose;
+  }
+
+  double currentMapYaw() const
+  {
+    return yawFromQuaternion(pose_.pose.orientation) - map_to_local_yaw_offset_deg_ * M_PI / 180.0;
+  }
+
   double distanceTo(const mission::Waypoint& point) const
   {
-    const double dx = pose_.pose.position.x - point.x;
-    const double dy = pose_.pose.position.y - point.y;
-    const double dz = pose_.pose.position.z - point.z;
+    const geometry_msgs::msg::Pose map_pose = localToMapPose(pose_.pose);
+    const double dx = map_pose.position.x - point.x;
+    const double dy = map_pose.position.y - point.y;
+    const double dz = map_pose.position.z - point.z;
     return std::sqrt(dx * dx + dy * dy + dz * dz);
   }
 
@@ -305,8 +339,10 @@ private:
     if (!have_pose_ || !target_initialized_) return;
     target_.header.stamp = now();
     target_.header.frame_id = "map";
-    target_.pose.orientation = quaternionFromYaw(target_yaw_);
-    setpoint_publisher_->publish(target_);
+    geometry_msgs::msg::PoseStamped local_target = target_;
+    local_target.pose = mapToLocalPose(target_.pose);
+    local_target.pose.orientation = quaternionFromYaw(target_yaw_ + map_to_local_yaw_offset_deg_ * M_PI / 180.0);
+    setpoint_publisher_->publish(local_target);
   }
 
   void setTarget(const geometry_msgs::msg::Pose& pose, double yaw)
@@ -322,7 +358,7 @@ private:
     geometry_msgs::msg::PoseArray request;
     request.header.frame_id = "map";
     request.header.stamp = now();
-    geometry_msgs::msg::Pose start = pose_.pose;
+    geometry_msgs::msg::Pose start = localToMapPose(pose_.pose);
     geometry_msgs::msg::Pose finish;
     finish.position.x = goal.x;
     finish.position.y = goal.y;
@@ -408,7 +444,7 @@ private:
   {
     if (path_.size() > 1) {
       path_index_ = 1;
-      setTarget(pose_.pose, segmentYaw(path_index_));
+      setTarget(localToMapPose(pose_.pose), segmentYaw(path_index_));
       transition(State::ALIGN_PATH);
     } else {
       path_index_ = 0;
@@ -623,9 +659,10 @@ private:
     if (path_index_ < path_.size()) {
       const auto& pose = path_[path_index_];
       setTarget(pose, segmentYaw(path_index_));
-      const double dx = pose_.pose.position.x - pose.position.x;
-      const double dy = pose_.pose.position.y - pose.position.y;
-      const double dz = pose_.pose.position.z - pose.position.z;
+      const geometry_msgs::msg::Pose map_pose = localToMapPose(pose_.pose);
+      const double dx = map_pose.position.x - pose.position.x;
+      const double dy = map_pose.position.y - pose.position.y;
+      const double dz = map_pose.position.z - pose.position.z;
       if (std::sqrt(dx * dx + dy * dy + dz * dz) <= pass_radius_) {
         const size_t reached_index = path_index_;
         ++path_index_;
@@ -667,7 +704,7 @@ private:
   void alignPathTick()
   {
     const double heading_error = std::abs(std::remainder(
-      target_yaw_ - yawFromQuaternion(pose_.pose.orientation), 2.0 * M_PI));
+      target_yaw_ - currentMapYaw(), 2.0 * M_PI));
     if (heading_error > yaw_tolerance_deg_ * M_PI / 180.0) {
       stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type());
       return;
@@ -705,7 +742,7 @@ private:
         const double commanded = task.yaw_degrees * M_PI / 180.0;
         target_yaw_ = unwrapNear(target_yaw_, commanded);
         const double heading_error = std::abs(std::remainder(
-          yawFromQuaternion(pose_.pose.orientation) - commanded, 2.0 * M_PI));
+          currentMapYaw() - commanded, 2.0 * M_PI));
         if (heading_error > yaw_tolerance_deg_ * M_PI / 180.0) {
           stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type());
           return;
@@ -791,12 +828,13 @@ private:
   double settle_speed_ = 0.20, settle_time_ = 1.0;
   double yaw_tolerance_deg_ = 5.0, yaw_hold_time_sec_ = 0.5, yaw_timeout_sec_ = 15.0;
   double turn_alignment_threshold_deg_ = 20.0;
+  double map_to_local_yaw_offset_deg_ = 90.0;
   double setpoint_rate_hz_ = 20.0, handshake_timeout_sec_ = 60.0;
   double service_timeout_sec_ = 5.0, planner_timeout_sec_ = 10.0;
   double navigation_timeout_sec_ = 120.0;
   double takeoff_timeout_sec_ = 60.0, landing_timeout_sec_ = 90.0;
   double takeoff_start_altitude_ = 0.0;
-  double current_yaw_ = 0.0, target_yaw_ = 0.0;
+  double target_yaw_ = 0.0;
   std::chrono::steady_clock::time_point state_started_at_ = std::chrono::steady_clock::now();
   std::chrono::steady_clock::time_point last_wait_log_at_ = state_started_at_;
   std::chrono::steady_clock::time_point service_started_at_ = state_started_at_;
