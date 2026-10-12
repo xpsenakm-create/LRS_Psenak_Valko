@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 MISSION_FILE="${1:-$ROOT_DIR/src/lrs_psenak_valko/missions/hangar_example.csv}"
 READY_TIMEOUT="${A1_2_READY_TIMEOUT:-120}"
+POLL_INTERVAL="${A1_2_POLL_INTERVAL:-5}"
+SKIP_BUILD="${A1_2_SKIP_BUILD:-0}"
 READY_DEADLINE=0
 PLANNER_PID=""
 EXECUTOR_PID=""
@@ -33,6 +35,14 @@ if ! [[ "$READY_TIMEOUT" =~ ^[0-9]+$ ]] || ((READY_TIMEOUT < 1)); then
   printf 'A1_2_READY_TIMEOUT must be a positive integer number of seconds.\n' >&2
   exit 2
 fi
+if ! [[ "$POLL_INTERVAL" =~ ^[0-9]+$ ]] || ((POLL_INTERVAL < 1)); then
+  printf 'A1_2_POLL_INTERVAL must be a positive integer number of seconds.\n' >&2
+  exit 2
+fi
+if [[ "$SKIP_BUILD" != 0 && "$SKIP_BUILD" != 1 ]]; then
+  printf 'A1_2_SKIP_BUILD must be 0 or 1.\n' >&2
+  exit 2
+fi
 
 ROS_SETUP="/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash"
 if [[ ! -f "$ROS_SETUP" ]]; then
@@ -44,7 +54,14 @@ source "$ROS_SETUP"
 set -u
 
 cd "$ROOT_DIR"
-colcon build --packages-select lrs_psenak_valko
+if [[ "$SKIP_BUILD" == 0 ]]; then
+  colcon build --packages-select lrs_psenak_valko
+elif [[ ! -x "$ROOT_DIR/install/lrs_psenak_valko/lib/lrs_psenak_valko/mission_executor_node" ]]; then
+  printf 'Built mission_executor_node not found; run colcon build or unset A1_2_SKIP_BUILD.\n' >&2
+  exit 1
+else
+  printf 'Skipping colcon build (A1_2_SKIP_BUILD=1).\n'
+fi
 set +u
 source "$ROOT_DIR/install/setup.bash"
 set -u
@@ -94,20 +111,23 @@ while ((SECONDS < READY_DEADLINE)); do
     fi
   done
 
-  FCU_STATE="$(timeout 5s ros2 topic echo --once /mavros/state 2>/dev/null || true)"
   FCU_CONNECTED=0
   POSE_READY=0
-  if [[ "$FCU_STATE" != *"connected: true"* ]]; then
-    MAVROS_READY=0
-  else
-    FCU_CONNECTED=1
-    POSE_READY=0
-    POSE_SAMPLE="$(timeout 5s ros2 topic echo --once /mavros/local_position/pose 2>/dev/null || true)"
-    if [[ "$POSE_SAMPLE" != *"position:"* ]]; then
+  if ((SERVICES_READY)); then
+    FCU_STATE="$(timeout 7s ros2 topic echo --once /mavros/state 2>/dev/null || true)"
+    if [[ "$FCU_STATE" != *"connected: true"* ]]; then
       MAVROS_READY=0
     else
-      POSE_READY=1
+      FCU_CONNECTED=1
+      POSE_SAMPLE="$(timeout 7s ros2 topic echo --once /mavros/local_position/pose 2>/dev/null || true)"
+      if [[ "$POSE_SAMPLE" != *"position:"* ]]; then
+        MAVROS_READY=0
+      else
+        POSE_READY=1
+      fi
     fi
+  else
+    MAVROS_READY=0
   fi
 
   if ((PLANNER_READY && MAVROS_READY)); then
@@ -123,7 +143,7 @@ while ((SECONDS < READY_DEADLINE)); do
     printf '\n'
     LAST_WAIT_REPORT=$SECONDS
   fi
-  sleep 1
+  sleep "$POLL_INTERVAL"
 done
 
 if ((!READY)); then

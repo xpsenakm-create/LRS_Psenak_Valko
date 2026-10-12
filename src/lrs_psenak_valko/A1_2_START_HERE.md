@@ -35,7 +35,8 @@ recompiling.
 The hangar map uses 0.15 m voxels. Controller defaults are `hard_radius=0.15 m`
 (one voxel), `soft_radius=0.55 m` (about 3.7 voxels, allowing a visible fly-through
 window), and `pass_radius=0.45 m` (three voxels, so path samples are pass-through
-targets). Hard arrival also requires speed below `0.20 m/s` continuously for `1.0 s`;
+targets). Hard arrival also requires speed below `0.20 m/s` across at least two distinct
+velocity samples spanning `1.0 s`;
 soft arrival does not require stopping. Setpoint rate defaults to 20 Hz and accepts
 values from 10 to 20 Hz. Handshake, service-response, planner-response, takeoff, and
 landing waits are bounded by configurable timeouts. The executor plans the following
@@ -84,6 +85,10 @@ Pass another mission file as the first argument, for example
 the helper resolves it from the directory where you invoke it. Set
 `A1_2_READY_TIMEOUT=180` to allow more startup time. The helper does not start or stop
 Gazebo, SITL, or MAVROS; those remain the required manually operated terminals.
+To avoid rebuilding while Gazebo/SITL are under load, build once with
+`colcon build --packages-select lrs_psenak_valko`, then launch with
+`A1_2_SKIP_BUILD=1 ./run_a1_2.sh`. Readiness polling defaults to every five seconds;
+override it with `A1_2_POLL_INTERVAL` if needed.
 While waiting, it reports planner, MAVROS service, FCU connection, and local-pose
 readiness every ten seconds. If it times out, it will not start the executor; check
 the three simulation terminals, then run the helper again after fixing the missing
@@ -96,7 +101,10 @@ Confirm the actual names with `ros2 node list`, `ros2 topic list`, and
 `ros2 service list` if the readiness report says they are missing. A SITL message such
 as `Mission is stale` does not mean the A1.2 executor started: A1.2 sends Guided mode
 setpoints, and movement only begins once `mission_executor_node` is running. Check
-`ros2 node list` for that node after starting the helper.
+`ros2 node list` for that node after starting the helper. MAVROS local pose and velocity
+use best-effort QoS; the executor subscribes using `SensorDataQoS` so it receives those
+telemetry messages. If the executor remains in `WAIT_FCU`, inspect both its FCU state
+and `/mavros/local_position/pose` endpoint QoS/subscriber count.
 
 Terminal 1, Gazebo:
 
@@ -190,13 +198,48 @@ it holds the most recently measured local pose and logs the state and reason.
 `/mavros/setpoint_position/local` is published at 20 Hz; the planner and executor use
 the package's relative `plan_request`, `planned_path`, and `planning_status` topics.
 
-Takeoff is complete only after MAVROS accepts the `CommandTOL` request, the FCU still
-reports armed, and fresh local-pose telemetry confirms a climb of at least 0.5 m and
-altitude within the 0.15 m hard tolerance of the requested waypoint Z. Landing waits
+Takeoff uses both MAVROS `/mavros/cmd/takeoff` (`MAV_CMD_NAV_TAKEOFF`) and a continuously
+published GUIDED position target at the current map-frame X/Y and requested waypoint Z.
+The command response is checked and rejected requests are retried every 2 seconds
+within the TAKEOFF state timeout. Takeoff is complete only while the FCU remains
+connected, armed, and in GUIDED, and fresh local-pose telemetry confirms a climb of at
+least 0.5 m and altitude within the 0.15 m hard tolerance of the requested waypoint Z.
+Landing waits
 for fresh low-speed telemetry at ground level, requests disarm if still armed, and
 waits until `/mavros/state.armed` is false before declaring `DONE`. For
 `landtakeoff`, that confirmed ground/disarmed state is followed by a `GUIDED` mode
 check, re-arm confirmation, and a new acknowledged takeoff before navigation resumes.
+During TAKEOFF, the executor streams a position target at the current map-frame X/Y
+and requested waypoint Z while the explicit takeoff command starts the climb. The log
+should show `Takeoff setpoint: holding map x=... y=... and commanding z=... m`, a
+`MAVROS accepted NAV_TAKEOFF` line, followed by measured takeoff confirmation and
+`PLAN`.
+If arming is rejected, the executor logs the MAVROS `MAV_RESULT` and retries every
+`arm_retry_interval_sec` (default 2 s) for up to the 60 s ARM-state timeout; the SITL
+console gives the specific pre-arm reason. For example, `Arm: Accels inconsistent` is
+an ArduPilot accelerometer consistency pre-arm failure, not a planner or ROS
+connection error. ArduPilot requires multiple IMUs to remain consistent for 10 seconds
+before this check passes. `ArduCopter Ready` alone does not mean the IMU/GPS pre-arm
+checks have cleared; leave the SITL terminal running and let the executor's bounded
+retries continue. Before each arm attempt, the executor waits for local-pose telemetry
+within `pose_stale_timeout_sec`; temporary pre-arm telemetry gaps while disarmed do
+not trip the in-flight watchdog. If the check remains unresolved for the full
+timeout, the mission stops in `ERROR`; restarting the executor after the SITL pre-arm
+failure clears will automatically proceed into takeoff.
+
+When entering `SET_MODE`, the executor requests `GUIDED` mode via `/mavros/set_mode`.
+If the request is rejected (e.g. while the estimator is still initializing), it retries
+every 2 seconds until `GUIDED` is acknowledged or the handshake timeout expires. Once in
+`GUIDED` mode, the executor proceeds directly to `ARM`, retrying arming until ArduPilot
+pre-arm checks clear, and then initiates takeoff.
+
+MAVROS may publish local pose/velocity more slowly than the setpoint loop. Before mode
+and arming, the executor requests MAVLink `LOCAL_POSITION_NED` (message 32) at
+`local_position_rate_hz=10`. The defaults tolerate pose gaps up to
+`pose_stale_timeout_sec=5` and velocity gaps up to
+`velocity_stale_timeout_sec=3`; once armed, longer pose loss still fails the mission.
+Hard settling counts distinct low-speed velocity messages, so repeating one cached
+sample at the control-loop rate cannot falsely satisfy the one-second settle interval.
 
 ## Important first-flight checks
 

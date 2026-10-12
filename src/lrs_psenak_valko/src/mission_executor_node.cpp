@@ -15,11 +15,15 @@
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
+#include <mavros_msgs/msg/estimator_status.hpp>
+#include <mavros_msgs/msg/home_position.hpp>
 #include <mavros_msgs/msg/state.hpp>
 #include <mavros_msgs/srv/command_bool.hpp>
 #include <mavros_msgs/srv/command_tol.hpp>
+#include <mavros_msgs/srv/message_interval.hpp>
 #include <mavros_msgs/srv/set_mode.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <std_msgs/msg/string.hpp>
 
 using namespace std::chrono_literals;
@@ -38,8 +42,13 @@ public:
     pass_radius_ = declare_parameter<double>("pass_radius", 0.45);
     settle_speed_ = declare_parameter<double>("settle_speed", 0.20);
     settle_time_ = declare_parameter<double>("settle_time", 1.0);
+    pose_stale_timeout_sec_ = declare_parameter<double>("pose_stale_timeout_sec", 5.0);
+    velocity_stale_timeout_sec_ = declare_parameter<double>("velocity_stale_timeout_sec", 3.0);
+    local_position_rate_hz_ = declare_parameter<double>("local_position_rate_hz", 10.0);
     setpoint_rate_hz_ = declare_parameter<double>("setpoint_rate_hz", 20.0);
     handshake_timeout_sec_ = declare_parameter<double>("handshake_timeout_sec", 60.0);
+    mode_retry_interval_sec_ = declare_parameter<double>("mode_retry_interval_sec", 2.0);
+    arm_retry_interval_sec_ = declare_parameter<double>("arm_retry_interval_sec", 2.0);
     service_timeout_sec_ = declare_parameter<double>("service_timeout_sec", 5.0);
     planner_timeout_sec_ = declare_parameter<double>("planner_timeout_sec", 10.0);
     navigation_timeout_sec_ = declare_parameter<double>("navigation_timeout_sec", 120.0);
@@ -53,6 +62,9 @@ public:
     if (hard_radius_ <= 0.0 || soft_radius_ <= hard_radius_ || pass_radius_ <= 0.0 ||
       settle_speed_ <= 0.0 || settle_time_ <= 0.0 || setpoint_rate_hz_ < 10.0 ||
       setpoint_rate_hz_ > 20.0 || handshake_timeout_sec_ <= 0.0 ||
+      pose_stale_timeout_sec_ <= 1.0 || velocity_stale_timeout_sec_ <= 0.5 ||
+      local_position_rate_hz_ <= 0.0 ||
+      mode_retry_interval_sec_ <= 0.0 || arm_retry_interval_sec_ <= 0.0 ||
       service_timeout_sec_ <= 0.0 || planner_timeout_sec_ <= 0.0 ||
       navigation_timeout_sec_ <= 0.0 || takeoff_timeout_sec_ <= 0.0 || landing_timeout_sec_ <= 0.0 ||
       yaw_tolerance_deg_ <= 0.0 || yaw_tolerance_deg_ >= 45.0 ||
@@ -68,14 +80,25 @@ public:
     state_subscription_ = create_subscription<mavros_msgs::msg::State>(
       "/mavros/state", 10,
       std::bind(&MissionExecutorNode::onState, this, std::placeholders::_1), state_options);
+    const rclcpp::QoS telemetry_qos = rclcpp::SensorDataQoS();
+    const rclcpp::QoS latched_qos = rclcpp::QoS(1).reliable().transient_local();
     rclcpp::SubscriptionOptions telemetry_options;
     telemetry_options.callback_group = state_group_;
     pose_subscription_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-      "/mavros/local_position/pose", 10,
+      "/mavros/local_position/pose", telemetry_qos,
       std::bind(&MissionExecutorNode::onPose, this, std::placeholders::_1), telemetry_options);
     velocity_subscription_ = create_subscription<geometry_msgs::msg::TwistStamped>(
-      "/mavros/local_position/velocity_local", 10,
+      "/mavros/local_position/velocity_local", telemetry_qos,
       std::bind(&MissionExecutorNode::onVelocity, this, std::placeholders::_1), telemetry_options);
+    gps_subscription_ = create_subscription<sensor_msgs::msg::NavSatFix>(
+      "/mavros/global_position/global", telemetry_qos,
+      std::bind(&MissionExecutorNode::onGps, this, std::placeholders::_1), telemetry_options);
+    home_subscription_ = create_subscription<mavros_msgs::msg::HomePosition>(
+      "/mavros/home_position/home", latched_qos,
+      std::bind(&MissionExecutorNode::onHome, this, std::placeholders::_1), telemetry_options);
+    estimator_subscription_ = create_subscription<mavros_msgs::msg::EstimatorStatus>(
+      "/mavros/estimator_status", telemetry_qos,
+      std::bind(&MissionExecutorNode::onEstimatorStatus, this, std::placeholders::_1), telemetry_options);
     path_subscription_ = create_subscription<geometry_msgs::msg::PoseArray>(
       "planned_path", 10,
       std::bind(&MissionExecutorNode::onPath, this, std::placeholders::_1), telemetry_options);
@@ -90,6 +113,8 @@ public:
     arm_client_ = create_client<mavros_msgs::srv::CommandBool>("/mavros/cmd/arming");
     takeoff_client_ = create_client<mavros_msgs::srv::CommandTOL>("/mavros/cmd/takeoff");
     land_client_ = create_client<mavros_msgs::srv::CommandTOL>("/mavros/cmd/land");
+    message_interval_client_ = create_client<mavros_msgs::srv::MessageInterval>(
+      "/mavros/set_message_interval");
 
     const auto timer_period = std::chrono::duration_cast<std::chrono::nanoseconds>(
       std::chrono::duration<double>(1.0 / setpoint_rate_hz_));
@@ -142,9 +167,22 @@ private:
     state_started_at_ = std::chrono::steady_clock::now();
     last_wait_log_at_ = state_started_at_;
     if (next == State::TAKEOFF || next == State::RETAKEOFF) {
-      takeoff_requested_ = false;
-      takeoff_acknowledged_ = false;
+      takeoff_target_set_ = false;
+      takeoff_request_sent_ = false;
+      takeoff_command_accepted_ = false;
+      next_takeoff_attempt_at_ = std::chrono::steady_clock::now();
       takeoff_start_altitude_ = have_pose_ ? pose_.pose.position.z : 0.0;
+    }
+    if (next == State::SET_MODE) {
+      next_mode_attempt_at_ = std::chrono::steady_clock::now();
+      mode_rejection_count_ = 0;
+    }
+    if (next == State::ARM) {
+      next_arm_attempt_at_ = std::chrono::steady_clock::now();
+      arm_rejection_count_ = 0;
+    }
+    if (next == State::TASK || next == State::NAVIGATE || next == State::ALIGN_PATH) {
+      resetHardArrivalSamples();
     }
     RCLCPP_INFO(get_logger(), "Mission state: %s", stateName(state_));
     service_pending_ = false;
@@ -240,6 +278,27 @@ private:
     velocity_ = *message;
     have_velocity_ = true;
     velocity_received_at_ = std::chrono::steady_clock::now();
+    ++velocity_sample_sequence_;
+  }
+  void onGps(const sensor_msgs::msg::NavSatFix::SharedPtr message)
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    gps_fix_status_ = message->status.status;
+    gps_received_at_ = std::chrono::steady_clock::now();
+    have_gps_ = true;
+  }
+  void onHome(const mavros_msgs::msg::HomePosition::SharedPtr message)
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    have_home_ = std::isfinite(message->geo.latitude) && std::isfinite(message->geo.longitude) &&
+      (message->geo.latitude != 0.0 || message->geo.longitude != 0.0);
+  }
+  void onEstimatorStatus(const mavros_msgs::msg::EstimatorStatus::SharedPtr message)
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    estimator_status_ = *message;
+    estimator_received_at_ = std::chrono::steady_clock::now();
+    have_estimator_status_ = true;
   }
   void onPath(const geometry_msgs::msg::PoseArray::SharedPtr message)
   {
@@ -331,7 +390,21 @@ private:
   bool velocityFresh() const
   {
     return have_velocity_ && std::chrono::duration<double>(
-      std::chrono::steady_clock::now() - velocity_received_at_).count() <= 0.5;
+      std::chrono::steady_clock::now() - velocity_received_at_).count() <= velocity_stale_timeout_sec_;
+  }
+
+  bool poseFresh() const
+  {
+    return have_pose_ && std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - pose_received_at_).count() <= pose_stale_timeout_sec_;
+  }
+
+
+  void resetHardArrivalSamples()
+  {
+    stable_velocity_samples_ = 0;
+    last_stable_velocity_sequence_ = 0;
+    stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type());
   }
 
   void publishSetpoint()
@@ -470,16 +543,22 @@ private:
     if (state_timeout > 0.0 &&
       std::chrono::duration<double>(steady_now - state_started_at_).count() > state_timeout)
     {
-      fail("state timed out after " + std::to_string(state_timeout) + " s");
+      if (state_ == State::ARM) {
+        fail("arming timed out after " + std::to_string(state_timeout) + " s, rejected attempts=" +
+          std::to_string(arm_rejection_count_) + "; inspect SITL pre-arm messages");
+      } else {
+        fail("state timed out after " + std::to_string(state_timeout) + " s");
+      }
       return;
     }
-    if (state_ != State::IDLE && state_ != State::WAIT_FCU && have_pose_ &&
-      std::chrono::duration<double>(steady_now - pose_received_at_).count() > 1.0)
+    if (vehicle_state_.armed && have_pose_ &&
+      std::chrono::duration<double>(steady_now - pose_received_at_).count() > pose_stale_timeout_sec_)
     {
       fail("local position telemetry is stale");
       return;
     }
-    const bool requires_guided_flight = state_ == State::PLAN || state_ == State::WAIT_PLAN ||
+    const bool requires_guided_flight = state_ == State::TAKEOFF || state_ == State::RETAKEOFF ||
+      state_ == State::PLAN || state_ == State::WAIT_PLAN ||
       state_ == State::WAIT_PREFETCH || state_ == State::ALIGN_PATH || state_ == State::NAVIGATE ||
       state_ == State::TASK;
     if (requires_guided_flight && !vehicle_state_.connected) {
@@ -490,7 +569,8 @@ private:
       fail("vehicle disarmed unexpectedly during the mission");
       return;
     }
-    if ((state_ == State::ALIGN_PATH || state_ == State::NAVIGATE || state_ == State::TASK) &&
+    if ((state_ == State::TAKEOFF || state_ == State::RETAKEOFF || state_ == State::ALIGN_PATH ||
+      state_ == State::NAVIGATE || state_ == State::TASK) &&
       vehicle_state_.mode != "GUIDED")
     {
       fail("vehicle left GUIDED mode during waypoint execution");
@@ -503,12 +583,33 @@ private:
         transition(State::WAIT_FCU);
         break;
       case State::WAIT_FCU:
-        if (vehicle_state_.connected && have_pose_) transition(State::SET_MODE);
-        else logWaiting();
+        if (vehicle_state_.connected && poseFresh()) {
+          if (!position_rate_requested_ && message_interval_client_->service_is_ready()) {
+            position_rate_requested_ = true;
+            auto request = std::make_shared<mavros_msgs::srv::MessageInterval::Request>();
+            request->message_id = 32;
+            request->message_rate = static_cast<float>(local_position_rate_hz_);
+            message_interval_client_->async_send_request(request, [this](
+                std::shared_future<mavros_msgs::srv::MessageInterval::Response::SharedPtr> future) {
+              const auto response = future.get();
+              if (response && response->success) {
+                RCLCPP_INFO(get_logger(), "Requested LOCAL_POSITION_NED at %.1f Hz",
+                  local_position_rate_hz_);
+              }
+            });
+          }
+          transition(State::SET_MODE);
+        } else {
+          logWaiting();
+        }
         break;
       case State::SET_MODE:
-        if (vehicle_state_.mode == "GUIDED") { transition(State::ARM); break; }
-        if (!service_pending_ && mode_client_->service_is_ready()) {
+        if (vehicle_state_.mode == "GUIDED") {
+          transition(State::ARM);
+          break;
+        }
+        if (!service_pending_ && mode_client_->service_is_ready() &&
+          std::chrono::steady_clock::now() >= next_mode_attempt_at_) {
           const uint64_t request_id = beginServiceCall();
           auto request = std::make_shared<mavros_msgs::srv::SetMode::Request>();
           request->custom_mode = "GUIDED";
@@ -517,7 +618,17 @@ private:
             std::lock_guard<std::mutex> lock(state_mutex_);
             if (!finishServiceCall(request_id)) return;
             const auto response = future.get();
-            if (!response || !response->mode_sent) fail("MAVROS rejected GUIDED mode request");
+            if (!response || !response->mode_sent) {
+              ++mode_rejection_count_;
+              next_mode_attempt_at_ = std::chrono::steady_clock::now() +
+                std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                  std::chrono::duration<double>(mode_retry_interval_sec_));
+              RCLCPP_WARN(get_logger(),
+                "Set GUIDED mode attempt %u rejected; retrying in %.1f s",
+                mode_rejection_count_, mode_retry_interval_sec_);
+            } else {
+              RCLCPP_INFO(get_logger(), "GUIDED mode accepted by FCU");
+            }
           });
         } else logWaiting();
         break;
@@ -526,7 +637,12 @@ private:
           transition(landtakeoff_pending_ ? State::RETAKEOFF : State::TAKEOFF);
           break;
         }
-        if (!service_pending_ && arm_client_->service_is_ready()) {
+        if (!poseFresh()) {
+          logWaiting();
+          break;
+        }
+        if (!service_pending_ && arm_client_->service_is_ready() &&
+          std::chrono::steady_clock::now() >= next_arm_attempt_at_) {
           const uint64_t request_id = beginServiceCall();
           auto request = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
           request->value = true;
@@ -535,7 +651,17 @@ private:
             std::lock_guard<std::mutex> lock(state_mutex_);
             if (!finishServiceCall(request_id)) return;
             const auto response = future.get();
-            if (!response || !response->success) fail("MAVROS rejected arm request");
+            if (!response || !response->success) {
+              const uint8_t result = response ? response->result : 255;
+              ++arm_rejection_count_;
+              next_arm_attempt_at_ = std::chrono::steady_clock::now() +
+                std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                  std::chrono::duration<double>(arm_retry_interval_sec_));
+              RCLCPP_WARN(get_logger(),
+                "Arm attempt %u rejected (MAV_RESULT=%u); retrying in %.1f s. "
+                "Check SITL console for pre-arm reason.",
+                arm_rejection_count_, result, arm_retry_interval_sec_);
+            }
           });
         } else logWaiting();
         break;
@@ -624,30 +750,64 @@ private:
 
   bool takeoffService(double altitude)
   {
-    if (!takeoff_requested_ && takeoff_client_->service_is_ready()) {
-      const uint64_t request_id = beginServiceCall();
-      takeoff_requested_ = true;
-      auto request = std::make_shared<mavros_msgs::srv::CommandTOL::Request>();
-      request->altitude = static_cast<float>(altitude);
-      takeoff_client_->async_send_request(request, [this, request_id](
-          std::shared_future<mavros_msgs::srv::CommandTOL::Response::SharedPtr> future) {
-        std::lock_guard<std::mutex> lock(state_mutex_);
-        if (!finishServiceCall(request_id)) return;
-        const auto response = future.get();
-        if (!response || !response->success) fail("MAVROS rejected takeoff request");
-        else {
-          takeoff_acknowledged_ = true;
-          RCLCPP_INFO(get_logger(), "MAVROS accepted takeoff to %.2f m", mission_[waypoint_index_].z);
-        }
-      });
-    } else if (!takeoff_requested_) {
+    if (!takeoff_target_set_ && have_pose_) {
+      geometry_msgs::msg::Pose takeoff_target = localToMapPose(pose_.pose);
+      takeoff_target.position.z = altitude;
+      setTarget(takeoff_target, target_yaw_);
+      takeoff_target_set_ = true;
+      RCLCPP_INFO(get_logger(),
+        "Takeoff setpoint: holding map x=%.2f y=%.2f and commanding z=%.2f m",
+        takeoff_target.position.x, takeoff_target.position.y, altitude);
+    }
+    if (!takeoff_target_set_) {
       logWaiting();
       return true;
     }
 
-    if (!takeoff_acknowledged_) return true;
+    if (!takeoff_command_accepted_) {
+      const auto steady_now = std::chrono::steady_clock::now();
+      if (!service_pending_ && !takeoff_request_sent_ && steady_now >= next_takeoff_attempt_at_ &&
+        takeoff_client_->service_is_ready())
+      {
+        const uint64_t request_id = beginServiceCall();
+        takeoff_request_sent_ = true;
+        auto request = std::make_shared<mavros_msgs::srv::CommandTOL::Request>();
+        request->altitude = static_cast<float>(altitude);
+        takeoff_client_->async_send_request(request, [this, request_id, altitude](
+            std::shared_future<mavros_msgs::srv::CommandTOL::Response::SharedPtr> future) {
+          std::lock_guard<std::mutex> lock(state_mutex_);
+          if (!finishServiceCall(request_id)) return;
+          const auto response = future.get();
+          if (!response || !response->success) {
+            takeoff_request_sent_ = false;
+            next_takeoff_attempt_at_ = std::chrono::steady_clock::now() +
+              std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                std::chrono::duration<double>(takeoff_retry_interval_sec_));
+            RCLCPP_WARN(get_logger(),
+              "MAVROS rejected NAV_TAKEOFF (result=%u); retrying in %.1f s",
+              response ? response->result : 255, takeoff_retry_interval_sec_);
+          } else {
+            takeoff_command_accepted_ = true;
+            RCLCPP_INFO(get_logger(), "MAVROS accepted NAV_TAKEOFF to %.2f m", altitude);
+          }
+        });
+      } else if (!service_pending_ && !takeoff_client_->service_is_ready()) {
+        logWaiting();
+      }
+      if (!takeoff_command_accepted_) return true;
+    }
+
     const double confirmed_altitude = std::max(takeoff_start_altitude_ + 0.5, altitude - hard_radius_);
-    if (!vehicle_state_.armed || pose_.pose.position.z < confirmed_altitude) return true;
+    if (!vehicle_state_.armed || pose_.pose.position.z < confirmed_altitude) {
+      const auto steady_now = std::chrono::steady_clock::now();
+      if (std::chrono::duration<double>(steady_now - last_wait_log_at_).count() >= 5.0) {
+        RCLCPP_INFO(get_logger(),
+          "Takeoff progress: armed=%s local_z=%.2f m target_z=%.2f m; waiting for climb",
+          vehicle_state_.armed ? "true" : "false", pose_.pose.position.z, altitude);
+        last_wait_log_at_ = steady_now;
+      }
+      return true;
+    }
     RCLCPP_INFO(get_logger(), "Takeoff confirmed: z=%.2f m (threshold %.2f m)",
       pose_.pose.position.z, confirmed_altitude);
     return false;
@@ -681,7 +841,7 @@ private:
 
     setTarget(path_.back(), target_yaw_);
     const double radius = goal.precision == mission::Precision::HARD ? hard_radius_ : soft_radius_;
-    if (distanceTo(goal) > radius) { stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type()); return; }
+    if (distanceTo(goal) > radius) { resetHardArrivalSamples(); return; }
     if (goal.precision == mission::Precision::SOFT) {
       RCLCPP_INFO(get_logger(), "Reached soft waypoint %zu: error=%.3f m; continuing without settling",
         waypoint_index_ + 1, distanceTo(goal));
@@ -689,12 +849,16 @@ private:
       return;
     }
     if (!velocityFresh()) {
-      stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type());
+      resetHardArrivalSamples();
       return;
     }
-    if (speed() > settle_speed_) { stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type()); return; }
-    if (stable_since_.nanoseconds() == 0) stable_since_ = now();
-    if ((now() - stable_since_).seconds() >= settle_time_) {
+    if (speed() > settle_speed_) { resetHardArrivalSamples(); return; }
+    if (velocity_sample_sequence_ != last_stable_velocity_sequence_) {
+      if (stable_velocity_samples_ == 0) stable_since_ = now();
+      ++stable_velocity_samples_;
+      last_stable_velocity_sequence_ = velocity_sample_sequence_;
+    }
+    if (stable_velocity_samples_ >= 2 && (now() - stable_since_).seconds() >= settle_time_) {
       RCLCPP_INFO(get_logger(), "Settled at hard waypoint %zu: error=%.3f m, speed=%.3f m/s for %.2f s",
         waypoint_index_ + 1, distanceTo(goal), speed(), settle_time_);
       transition(State::TASK);
@@ -813,8 +977,18 @@ private:
   geometry_msgs::msg::PoseStamped pose_, target_;
   geometry_msgs::msg::TwistStamped velocity_;
   bool have_pose_ = false, have_velocity_ = false, target_initialized_ = false;
-  bool service_pending_ = false, takeoff_requested_ = false, takeoff_acknowledged_ = false;
+  bool have_gps_ = false, have_home_ = false, have_estimator_status_ = false;
+  int8_t gps_fix_status_ = sensor_msgs::msg::NavSatStatus::STATUS_UNKNOWN;
+  mavros_msgs::msg::EstimatorStatus estimator_status_;
+  bool service_pending_ = false;
+  bool takeoff_request_sent_ = false, takeoff_command_accepted_ = false;
+  bool takeoff_target_set_ = false;
+  bool position_rate_requested_ = false;
   uint64_t service_request_id_ = 0;
+  uint32_t mode_rejection_count_ = 0;
+  uint32_t arm_rejection_count_ = 0;
+  uint64_t velocity_sample_sequence_ = 0, last_stable_velocity_sequence_ = 0;
+  uint32_t stable_velocity_samples_ = 0;
   bool got_path_ = false, got_status_ = false, plan_ok_ = false;
   bool prefetch_request_pending_ = false, prefetched_path_received_ = false;
   bool prefetched_status_received_ = false, prefetched_plan_ok_ = false;
@@ -826,13 +1000,18 @@ private:
   std::mutex state_mutex_;
   double hard_radius_ = 0.15, soft_radius_ = 0.55, pass_radius_ = 0.45;
   double settle_speed_ = 0.20, settle_time_ = 1.0;
+  double pose_stale_timeout_sec_ = 5.0, velocity_stale_timeout_sec_ = 3.0;
+  double local_position_rate_hz_ = 10.0;
   double yaw_tolerance_deg_ = 5.0, yaw_hold_time_sec_ = 0.5, yaw_timeout_sec_ = 15.0;
   double turn_alignment_threshold_deg_ = 20.0;
   double map_to_local_yaw_offset_deg_ = 90.0;
   double setpoint_rate_hz_ = 20.0, handshake_timeout_sec_ = 60.0;
+  double mode_retry_interval_sec_ = 2.0;
+  double arm_retry_interval_sec_ = 2.0;
   double service_timeout_sec_ = 5.0, planner_timeout_sec_ = 10.0;
   double navigation_timeout_sec_ = 120.0;
   double takeoff_timeout_sec_ = 60.0, landing_timeout_sec_ = 90.0;
+  double takeoff_retry_interval_sec_ = 2.0;
   double takeoff_start_altitude_ = 0.0;
   double target_yaw_ = 0.0;
   std::chrono::steady_clock::time_point state_started_at_ = std::chrono::steady_clock::now();
@@ -840,16 +1019,25 @@ private:
   std::chrono::steady_clock::time_point service_started_at_ = state_started_at_;
   std::chrono::steady_clock::time_point pose_received_at_ = state_started_at_;
   std::chrono::steady_clock::time_point velocity_received_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point gps_received_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point estimator_received_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point next_mode_attempt_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point next_arm_attempt_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point next_takeoff_attempt_at_ = state_started_at_;
   rclcpp::Time stable_since_{0, 0, RCL_ROS_TIME};
   rclcpp::CallbackGroup::SharedPtr state_group_, timer_group_;
   rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr state_subscription_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_subscription_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr velocity_subscription_;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_subscription_;
+  rclcpp::Subscription<mavros_msgs::msg::HomePosition>::SharedPtr home_subscription_;
+  rclcpp::Subscription<mavros_msgs::msg::EstimatorStatus>::SharedPtr estimator_subscription_;
   rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr path_subscription_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_subscription_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr setpoint_publisher_;
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr plan_publisher_;
   rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr mode_client_;
+  rclcpp::Client<mavros_msgs::srv::MessageInterval>::SharedPtr message_interval_client_;
   rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr arm_client_;
   rclcpp::Client<mavros_msgs::srv::CommandTOL>::SharedPtr takeoff_client_, land_client_;
   rclcpp::TimerBase::SharedPtr timer_;
