@@ -10,11 +10,17 @@ fi
 WORLD="fei_lrs_outdoor.world"
 RECORD_BAG=0
 BAG_NAME=""
+SQUARE_SIDE=""
+AMPLITUDE=""
+ALTITUDE=""
 EXTRA_NODE_ARGS=()
 
 usage() {
-  printf 'Použitie: %s [--world WORLD_NAME] [--record [BAG_NAME]] [ROS_ARGS...]\n' "$0"
+  printf 'Použitie: %s [--world WORLD_NAME] [--square METRE] [--amplitude METRE] [--altitude METRE] [--record [BAG_NAME]] [ROS_ARGS...]\n' "$0"
   printf '  --world NAZOV       Svet v Gazebo (predvolené: %s)\n' "$WORLD"
+  printf '  --square METRE      Dĺžka strany štvorca S (predvolené: 5.0 m)\n'
+  printf '  --amplitude METRE   Amplitúda/polomer osmičky A (predvolené: 3.0 m)\n'
+  printf '  --altitude METRE    Letová výška v metroch (predvolené: 5.0 m)\n'
   printf '  --record [BAG_NAME] Automaticky nahrávať ROS 2 bag letu\n'
   printf '  -h, --help          Zobraziť túto nápovedu\n'
 }
@@ -24,6 +30,21 @@ while (($#)); do
     --world)
       if (($# < 2)); then usage >&2; exit 2; fi
       WORLD="$2"
+      shift 2
+      ;;
+    --square|--square-side|--side)
+      if (($# < 2)); then usage >&2; exit 2; fi
+      SQUARE_SIDE="$2"
+      shift 2
+      ;;
+    --amplitude|--amp)
+      if (($# < 2)); then usage >&2; exit 2; fi
+      AMPLITUDE="$2"
+      shift 2
+      ;;
+    --altitude|--alt)
+      if (($# < 2)); then usage >&2; exit 2; fi
+      ALTITUDE="$2"
       shift 2
       ;;
     --record)
@@ -113,7 +134,48 @@ sleep 4
 
 # 4. Terminál: outdoor_mission_node
 echo "[4/4] Otváram terminál pre outdoor_mission_node..."
-NODE_CMD="source '$ROS_SETUP' && source '$INSTALL_SETUP' && ros2 run lrs_psenak_valko outdoor_mission_node ${EXTRA_NODE_ARGS[*]:-}"
+
+to_double() {
+  python3 -c "print(f'{float(\"$1\"):.2f}')"
+}
+
+NODE_PARAMS=()
+if [[ -n "$SQUARE_SIDE" ]]; then
+  NODE_PARAMS+=("-p" "square_side_m:=$(to_double "$SQUARE_SIDE")")
+fi
+if [[ -n "$AMPLITUDE" ]]; then
+  NODE_PARAMS+=("-p" "figure8_amplitude_m:=$(to_double "$AMPLITUDE")")
+fi
+if [[ -n "$ALTITUDE" ]]; then
+  NODE_PARAMS+=("-p" "flight_altitude_m:=$(to_double "$ALTITUDE")")
+fi
+
+# Bezpečnostné limity (geofence) automaticky prispôsobíme, aby nedošlo k abortu
+if [[ -n "$SQUARE_SIDE" || -n "$AMPLITUDE" || -n "$ALTITUDE" ]]; then
+  S_VAL="${SQUARE_SIDE:-5.0}"
+  A_VAL="${AMPLITUDE:-3.0}"
+  Z_VAL="${ALTITUDE:-5.0}"
+  LIMITS=$(python3 -c "
+import math
+s = float('$S_VAL')
+a = float('$A_VAL')
+z = float('$Z_VAL')
+req_r = max(s * math.sqrt(2.0) / 2.0, a)
+max_h = float(max(4.0, math.ceil(req_r + 1.0)))
+max_z = float(max(5.5, math.ceil(z + 1.0)))
+print(f'{max_h:.2f} {max_z:.2f}')
+")
+  MAX_H=$(echo "$LIMITS" | cut -d' ' -f1)
+  MAX_Z=$(echo "$LIMITS" | cut -d' ' -f2)
+  NODE_PARAMS+=("-p" "max_horizontal_from_launch_m:=$MAX_H" "-p" "max_altitude_m:=$MAX_Z")
+fi
+
+ROS_ARGS=()
+if ((${#NODE_PARAMS[@]} > 0)); then
+  ROS_ARGS=(--ros-args "${NODE_PARAMS[@]}")
+fi
+
+NODE_CMD="source '$ROS_SETUP' && source '$INSTALL_SETUP' && ros2 run lrs_psenak_valko outdoor_mission_node ${EXTRA_NODE_ARGS[*]:-} ${ROS_ARGS[*]:-}"
 open_terminal "4 - Outdoor Mission Node" "$NODE_CMD"
 
 # 5. Voliteľný terminál: ros2 bag record

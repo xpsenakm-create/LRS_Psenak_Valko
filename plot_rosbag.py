@@ -42,30 +42,47 @@ def parse_csv_log(csv_path):
         'yaw_err': [], 'poi_err': [],
         'track_err': [], 'rel_alt': []
     }
+    def to_float(val, default=0.0):
+        if val is None or val == '' or str(val).lower() == 'nan':
+            return default
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return default
+
+    def to_float_or_nan(val):
+        if val is None or val == '' or str(val).lower() == 'nan':
+            return float('nan')
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return float('nan')
+
     with open(csv_path, 'r', newline='') as f:
         reader = csv.DictReader(f)
         for row in reader:
             try:
-                t = float(row.get('t_s', 0))
-                state = row.get('state', '').strip()
-                cx = float(row.get('cmd_x', 0))
-                cy = float(row.get('cmd_y', 0))
-                cz = float(row.get('cmd_z', 0))
-                cyaw = float(row.get('cmd_yaw_deg', 0))
+                # Ak je riadok neúplný (napr. prerušený pri Ctrl+C)
+                if not row or row.get('t_s') is None or row.get('x') is None:
+                    continue
 
-                x = float(row.get('x', 0))
-                y = float(row.get('y', 0))
-                z = float(row.get('z', 0))
-                yaw = float(row.get('yaw_deg', 0))
+                t = to_float(row.get('t_s'))
+                state = str(row.get('state') or '').strip()
+                cx = to_float(row.get('cmd_x'))
+                cy = to_float(row.get('cmd_y'))
+                cz = to_float(row.get('cmd_z'))
+                cyaw = to_float(row.get('cmd_yaw_deg'))
 
-                yerr_str = row.get('yaw_err_deg', 'nan')
-                yerr = float(yerr_str) if yerr_str != 'nan' else float('nan')
+                x = to_float(row.get('x'))
+                y = to_float(row.get('y'))
+                z = to_float(row.get('z'))
+                yaw = to_float(row.get('yaw_deg'))
 
-                perr_str = row.get('poi_bearing_err_deg', 'nan')
-                perr = float(perr_str) if perr_str != 'nan' else float('nan')
+                yerr = to_float_or_nan(row.get('yaw_err_deg'))
+                perr = to_float_or_nan(row.get('poi_bearing_err_deg'))
 
-                err = float(row.get('track_err_m', 0))
-                rel = float(row.get('rel_alt', z))
+                err = to_float(row.get('track_err_m'))
+                rel = to_float(row.get('rel_alt'), default=z)
 
                 data['t'].append(t)
                 data['state'].append(state)
@@ -81,7 +98,7 @@ def parse_csv_log(csv_path):
                 data['poi_err'].append(perr)
                 data['track_err'].append(err)
                 data['rel_alt'].append(rel)
-            except (ValueError, KeyError):
+            except (ValueError, KeyError, TypeError):
                 continue
     return data
 
@@ -186,16 +203,35 @@ def filter_by_states(data, valid_states):
     return sub
 
 
-def plot_single_square(data_sq, output_file=None):
+def detect_geometry(data, user_square=None, user_amp=None):
+    """Zistí alebo automaticky deteguje dĺžku štvorca a amplitúdu osmičky."""
+    if user_square is not None:
+        square_side = user_square
+    else:
+        sq_x = [abs(data['cmd_x'][i]) for i in range(len(data.get('cmd_x', [])))
+                if data.get('state', [''])[i] == 'SQUARE']
+        square_side = round(2.0 * max(sq_x), 2) if sq_x else 5.0
+
+    if user_amp is not None:
+        amplitude = user_amp
+    else:
+        f8_x = [abs(data['cmd_x'][i]) for i in range(len(data.get('cmd_x', [])))
+                if data.get('state', [''])[i] == 'FIGURE8']
+        amplitude = round(max(f8_x), 2) if f8_x else 3.0
+
+    return square_side, amplitude
+
+
+def plot_single_square(data_sq, square_side=5.0, output_file=None):
     """Vykreslí samostatný detailný graf štvorca s orientáciou na POI."""
     fig, ax = plt.subplots(figsize=(8, 7))
-    ax.set_title('A1.3 — Pôdorys dráhy: Štvorec s orientáciou nosa na POI', fontsize=12, fontweight='bold')
+    ax.set_title(f'A1.3 — Pôdorys dráhy: Štvorec ({square_side}×{square_side} m) s orientáciou nosa na POI', fontsize=12, fontweight='bold')
 
-    # Požadovaný štvorec (5x5 m)
-    w_corners = [(-2.5, 2.5), (2.5, 2.5), (2.5, -2.5), (-2.5, -2.5), (-2.5, 2.5)]
+    half = square_side / 2.0
+    w_corners = [(-half, half), (half, half), (half, -half), (-half, -half), (-half, half)]
     cx = [p[0] for p in w_corners]
     cy = [p[1] for p in w_corners]
-    ax.plot(cx, cy, 'k--', linewidth=1.5, label='Požadovaný štvorec (5×5 m)')
+    ax.plot(cx, cy, 'k--', linewidth=1.5, label=f'Požadovaný štvorec ({square_side}×{square_side} m)')
 
     # Nameraná dráha štvorca
     if data_sq.get('x'):
@@ -214,7 +250,12 @@ def plot_single_square(data_sq, output_file=None):
     ax.scatter([0.0], [0.0], color='red', s=200, marker='*', zorder=6, label='POI (Point of Interest)')
 
     # Rohy W1..W4
-    labels = ['W1 (-2.5, 2.5)', 'W2 (2.5, 2.5)', 'W3 (2.5, -2.5)', 'W4 (-2.5, -2.5)']
+    labels = [
+        f'W1 (-{half:.1f}, {half:.1f})',
+        f'W2 ({half:.1f}, {half:.1f})',
+        f'W3 ({half:.1f}, -{half:.1f})',
+        f'W4 (-{half:.1f}, -{half:.1f})'
+    ]
     for i, (wx, wy) in enumerate(w_corners[:4]):
         ax.scatter([wx], [wy], color='darkorange', s=80, zorder=5)
         ax.annotate(f" {labels[i]}", (wx, wy), fontsize=9, fontweight='bold')
@@ -231,16 +272,16 @@ def plot_single_square(data_sq, output_file=None):
     plt.close(fig)
 
 
-def plot_single_figure8(data_f8, output_file=None):
+def plot_single_figure8(data_f8, amplitude=3.0, output_file=None):
     """Vykreslí samostatný detailný graf osmičky s dotyčnicovým yaw."""
     fig, ax = plt.subplots(figsize=(8, 7))
-    ax.set_title('A1.3 — Pôdorys dráhy: Osmička (Figure-8 lemniskáta A=3 m)', fontsize=12, fontweight='bold')
+    ax.set_title(f'A1.3 — Pôdorys dráhy: Osmička (Figure-8 lemniskáta A={amplitude} m)', fontsize=12, fontweight='bold')
 
     # Teoretická ideálna osmička
     t_vals = [2.0 * math.pi * i / 200.0 for i in range(201)]
-    ideal_x = [3.0 * math.sin(t) for t in t_vals]
-    ideal_y = [3.0 * math.sin(t) * math.cos(t) for t in t_vals]
-    ax.plot(ideal_x, ideal_y, 'k--', linewidth=1.5, label='Požadovaná osmička (A=3 m)')
+    ideal_x = [amplitude * math.sin(t) for t in t_vals]
+    ideal_y = [amplitude * math.sin(t) * math.cos(t) for t in t_vals]
+    ax.plot(ideal_x, ideal_y, 'k--', linewidth=1.5, label=f'Požadovaná osmička (A={amplitude} m)')
 
     # Nameraná dráha osmičky
     if data_f8.get('x'):
@@ -319,7 +360,7 @@ def plot_single_yaw_error(data, output_file=None):
     plt.close(fig)
 
 
-def plot_comprehensive(data, output_file=None, show=True):
+def plot_comprehensive(data, square_side=5.0, amplitude=3.0, output_file=None, show=True):
     """Vykreslí komplexný 6-panelový graf misie."""
     fig = plt.figure(figsize=(16, 12))
     gs = GridSpec(3, 2, figure=fig, hspace=0.35, wspace=0.25)
@@ -329,9 +370,10 @@ def plot_comprehensive(data, output_file=None, show=True):
 
     # 1. Pôdorys: ŠTVOREC (W1..W4)
     ax1 = fig.add_subplot(gs[0, 0])
-    ax1.set_title('1. Dráha štvorca (POI tracking)', fontweight='bold')
-    w_corners = [(-2.5, 2.5), (2.5, 2.5), (2.5, -2.5), (-2.5, -2.5), (-2.5, 2.5)]
-    ax1.plot([p[0] for p in w_corners], [p[1] for p in w_corners], 'k--', linewidth=1.5, label='Požadovaný štvorec')
+    ax1.set_title(f'1. Dráha štvorca ({square_side}×{square_side} m, POI tracking)', fontweight='bold')
+    half = square_side / 2.0
+    w_corners = [(-half, half), (half, half), (half, -half), (-half, -half), (-half, half)]
+    ax1.plot([p[0] for p in w_corners], [p[1] for p in w_corners], 'k--', linewidth=1.5, label=f'Požadovaný štvorec ({square_side}×{square_side} m)')
 
     data_sq = filter_by_states(data, {'TO_START', 'SQUARE'}) if has_states else data
     if data_sq.get('x'):
@@ -347,10 +389,10 @@ def plot_comprehensive(data, output_file=None, show=True):
 
     # 2. Pôdorys: OSMIČKA (Lemniskáta)
     ax2 = fig.add_subplot(gs[0, 1])
-    ax2.set_title('2. Dráha osmičky (Figure-8 A=3 m)', fontweight='bold')
+    ax2.set_title(f'2. Dráha osmičky (Figure-8 A={amplitude} m)', fontweight='bold')
     t_vals = [2.0 * math.pi * i / 200.0 for i in range(201)]
-    ax2.plot([3.0 * math.sin(t) for t in t_vals], [3.0 * math.sin(t) * math.cos(t) for t in t_vals],
-             'k--', linewidth=1.5, label='Požadovaná osmička')
+    ax2.plot([amplitude * math.sin(t) for t in t_vals], [amplitude * math.sin(t) * math.cos(t) for t in t_vals],
+             'k--', linewidth=1.5, label=f'Požadovaná osmička (A={amplitude} m)')
 
     data_f8 = filter_by_states(data, {'FIGURE8'}) if has_states else data
     if data_f8.get('x'):
@@ -439,6 +481,8 @@ def main():
     parser.add_argument("bag_path", nargs="?", default=None, help="Cesta k priečinku ROS 2 bagu.")
     parser.add_argument("--csv", default=None, help="Cesta k CSV log súboru (napr. outdoor_mission_log.csv).")
     parser.add_argument("--output", "-o", default="outdoor_mission_plot.png", help="Názov hlavného obrázka.")
+    parser.add_argument("--square", "--square-side", type=float, default=None, help="Dĺžka strany štvorca v metroch (ak nezadané, deteguje sa z dát).")
+    parser.add_argument("--amplitude", "--amp", type=float, default=None, help="Amplitúda/polomer osmičky A v metroch (ak nezadané, deteguje sa z dát).")
     parser.add_argument("--no-show", action="store_true", help="Nezobrazovať interaktívne grafické okno, iba uložiť obrázky.")
 
     args = parser.parse_args()
@@ -467,17 +511,21 @@ def main():
         print("Chyba: Nepodarilo sa načítať žiadne platné dáta na vykreslenie.", file=sys.stderr)
         sys.exit(1)
 
+    # Detekcia alebo nastavenie geometrických parametrov
+    square_side, amplitude = detect_geometry(data, args.square, args.amplitude)
+    print(f"--> Parametre geometrie: Štvorec S = {square_side:.1f} m, Osmička A = {amplitude:.1f} m")
+
     # 1. Vygenerovanie samostatných detailných grafov pre dokumentáciu:
     has_states = 'state' in data and any(s in ('SQUARE', 'FIGURE8') for s in data['state'])
     data_sq = filter_by_states(data, {'TO_START', 'SQUARE'}) if has_states else data
     data_f8 = filter_by_states(data, {'FIGURE8'}) if has_states else data
 
-    plot_single_square(data_sq, output_file="plot_1_square.png")
-    plot_single_figure8(data_f8, output_file="plot_2_figure8.png")
+    plot_single_square(data_sq, square_side=square_side, output_file="plot_1_square.png")
+    plot_single_figure8(data_f8, amplitude=amplitude, output_file="plot_2_figure8.png")
     plot_single_yaw_error(data, output_file="plot_3_yaw_error.png")
 
     # 2. Vygenerovanie hlavného súhrnného 6-panelového grafu:
-    plot_comprehensive(data, output_file=args.output, show=not args.no_show)
+    plot_comprehensive(data, square_side=square_side, amplitude=amplitude, output_file=args.output, show=not args.no_show)
 
 
 if __name__ == "__main__":
