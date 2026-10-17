@@ -83,8 +83,9 @@ cd ~/Zadania/LRS_Psenak_Valko
 Pass another mission file as the first argument, for example
 `./run_a1_2.sh /absolute/path/to/defence_mission.csv`. For a relative mission path,
 the helper resolves it from the directory where you invoke it. Set
-`A1_2_READY_TIMEOUT=180` to allow more startup time. The helper does not start or stop
-Gazebo, SITL, or MAVROS; those remain the required manually operated terminals.
+`A1_2_READY_TIMEOUT=180` to allow more startup time. By default the helper
+opens Gazebo, SITL and MAVROS in their own terminals (from `A1_2_URK_DIR`, default
+`~/LRS-URK`). If you start those three yourself, run it with `A1_2_START_SIM=0`.
 To avoid rebuilding while Gazebo/SITL are under load, build once with
 `colcon build --packages-select lrs_psenak_valko`, then launch with
 `A1_2_SKIP_BUILD=1 ./run_a1_2.sh`. Readiness polling defaults to every five seconds;
@@ -198,40 +199,31 @@ it holds the most recently measured local pose and logs the state and reason.
 `/mavros/setpoint_position/local` is published at 20 Hz; the planner and executor use
 the package's relative `plan_request`, `planned_path`, and `planning_status` topics.
 
-Takeoff uses both MAVROS `/mavros/cmd/takeoff` (`MAV_CMD_NAV_TAKEOFF`) and a continuously
-published GUIDED position target at the current map-frame X/Y and requested waypoint Z.
-The command response is checked and rejected requests are retried every 2 seconds
-within the TAKEOFF state timeout. Takeoff is complete only while the FCU remains
-connected, armed, and in GUIDED, and fresh local-pose telemetry confirms a climb of at
-least 0.5 m and altitude within the 0.15 m hard tolerance of the requested waypoint Z.
-Landing waits
-for fresh low-speed telemetry at ground level, requests disarm if still armed, and
-waits until `/mavros/state.armed` is false before declaring `DONE`. For
-`landtakeoff`, that confirmed ground/disarmed state is followed by a `GUIDED` mode
-check, re-arm confirmation, and a new acknowledged takeoff before navigation resumes.
-During TAKEOFF, the executor streams a position target at the current map-frame X/Y
-and requested waypoint Z while the explicit takeoff command starts the climb. The log
-should show `Takeoff setpoint: holding map x=... y=... and commanding z=... m`, a
-`MAVROS accepted NAV_TAKEOFF` line, followed by measured takeoff confirmation and
-`PLAN`.
-If arming is rejected, the executor logs the MAVROS `MAV_RESULT` and retries every
-`arm_retry_interval_sec` (default 2 s) for up to the 60 s ARM-state timeout; the SITL
-console gives the specific pre-arm reason. For example, `Arm: Accels inconsistent` is
-an ArduPilot accelerometer consistency pre-arm failure, not a planner or ROS
-connection error. ArduPilot requires multiple IMUs to remain consistent for 10 seconds
-before this check passes. `ArduCopter Ready` alone does not mean the IMU/GPS pre-arm
-checks have cleared; leave the SITL terminal running and let the executor's bounded
-retries continue. Before each arm attempt, the executor waits for local-pose telemetry
-within `pose_stale_timeout_sec`; temporary pre-arm telemetry gaps while disarmed do
-not trip the in-flight watchdog. If the check remains unresolved for the full
-timeout, the mission stops in `ERROR`; restarting the executor after the SITL pre-arm
-failure clears will automatically proceed into takeoff.
+Start-up sequence: `WAIT_FCU` waits for `/mavros/state.connected`, fresh local pose, and
+GPS/EKF readiness: the FCU message `EKF3 IMUx is using GPS` (from
+`/mavros/statustext/recv`) or, if the executor was started after that message, a GPS fix
+stable for `gps_stable_sec=5`. On a slow machine this can take a couple of minutes after
+SITL boots; the executor logs the reason every 5 s (`fcu_ready_timeout_sec=600`).
+All FCU text messages (PreArm reasons, mode change failures) are re-logged by the
+executor, so you do not have to read the MAVProxy console to see why arming fails.
+`SET_MODE` requests `GUIDED` every `mode_retry_interval_sec` until `/mavros/state`
+reports it, then `ARM` retries arming every `arm_retry_interval_sec` until ArduPilot
+accepts.
 
-When entering `SET_MODE`, the executor requests `GUIDED` mode via `/mavros/set_mode`.
-If the request is rejected (e.g. while the estimator is still initializing), it retries
-every 2 seconds until `GUIDED` is acknowledged or the handshake timeout expires. Once in
-`GUIDED` mode, the executor proceeds directly to `ARM`, retrying arming until ArduPilot
-pre-arm checks clear, and then initiates takeoff.
+Takeoff uses only MAVROS `/mavros/cmd/takeoff` (`MAV_CMD_NAV_TAKEOFF`). **No position
+setpoints are published while arming, taking off or landing**: ArduCopter's GUIDED mode
+abandons a running takeoff as soon as it receives a position target, the position
+controller does nothing while the vehicle is still landed, and after `DISARM_DELAY` the
+copter disarms on the ground. Takeoff is confirmed when local z reaches the waypoint Z
+minus the hard tolerance. If the vehicle does not climb within
+`takeoff_climb_timeout_sec`, the takeoff is re-sent. If it disarms on the ground, the
+mode/arm/takeoff sequence is retried (`max_takeoff_attempts=3`).
+
+Landing uses `/mavros/cmd/land` (LAND mode), waits for low-speed telemetry at ground
+level, requests disarm if still armed, and waits until `/mavros/state.armed` is false.
+For `landtakeoff` the executor then stays in `GROUND_WAIT` for `ground_wait_sec=3`,
+re-enters `GUIDED`, re-arms, and takes off again to the waypoint Z before planning the
+next leg. For `land` it declares `DONE`.
 
 MAVROS may publish local pose/velocity more slowly than the setpoint loop. Before mode
 and arming, the executor requests MAVLink `LOCAL_POSITION_NED` (message 32) at
@@ -243,7 +235,6 @@ sample at the control-loop rate cannot falsely satisfy the one-second settle int
 
 ## Important first-flight checks
 
-This is a compiling A1.2 implementation, not a recorded or validated complete flight.
 Before an unattended run, verify the local origin and takeoff altitude, the MAVROS
 service response and landed/disarmed behavior, and the planner's readiness before
 starting the executor. A timeout/fault stops the mission and holds the latest measured
