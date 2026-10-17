@@ -1,4 +1,4 @@
-#include "mission_model.h"
+#include "lrs_psenak_valko/mission_model.h"
 
 #include <algorithm>
 #include <chrono>
@@ -18,6 +18,7 @@
 #include <mavros_msgs/msg/estimator_status.hpp>
 #include <mavros_msgs/msg/home_position.hpp>
 #include <mavros_msgs/msg/state.hpp>
+#include <mavros_msgs/msg/status_text.hpp>
 #include <mavros_msgs/srv/command_bool.hpp>
 #include <mavros_msgs/srv/command_tol.hpp>
 #include <mavros_msgs/srv/message_interval.hpp>
@@ -46,13 +47,20 @@ public:
     velocity_stale_timeout_sec_ = declare_parameter<double>("velocity_stale_timeout_sec", 3.0);
     local_position_rate_hz_ = declare_parameter<double>("local_position_rate_hz", 10.0);
     setpoint_rate_hz_ = declare_parameter<double>("setpoint_rate_hz", 20.0);
-    handshake_timeout_sec_ = declare_parameter<double>("handshake_timeout_sec", 60.0);
+    handshake_timeout_sec_ = declare_parameter<double>("handshake_timeout_sec", 180.0);
+    fcu_ready_timeout_sec_ = declare_parameter<double>("fcu_ready_timeout_sec", 600.0);
+    gps_stable_sec_ = declare_parameter<double>("gps_stable_sec", 5.0);
+    ground_wait_sec_ = declare_parameter<double>("ground_wait_sec", 3.0);
+    disarm_grace_sec_ = declare_parameter<double>("disarm_grace_sec", 5.0);
     mode_retry_interval_sec_ = declare_parameter<double>("mode_retry_interval_sec", 2.0);
     arm_retry_interval_sec_ = declare_parameter<double>("arm_retry_interval_sec", 2.0);
     service_timeout_sec_ = declare_parameter<double>("service_timeout_sec", 5.0);
     planner_timeout_sec_ = declare_parameter<double>("planner_timeout_sec", 10.0);
     navigation_timeout_sec_ = declare_parameter<double>("navigation_timeout_sec", 120.0);
     takeoff_timeout_sec_ = declare_parameter<double>("takeoff_timeout_sec", 60.0);
+    takeoff_climb_timeout_sec_ = declare_parameter<double>("takeoff_climb_timeout_sec", 12.0);
+    max_takeoff_attempts_ = static_cast<uint32_t>(
+      std::max<int64_t>(0, declare_parameter<int64_t>("max_takeoff_attempts", 3)));
     landing_timeout_sec_ = declare_parameter<double>("landing_timeout_sec", 90.0);
     yaw_tolerance_deg_ = declare_parameter<double>("yaw_tolerance_deg", 5.0);
     yaw_hold_time_sec_ = declare_parameter<double>("yaw_hold_time_sec", 0.5);
@@ -62,11 +70,13 @@ public:
     if (hard_radius_ <= 0.0 || soft_radius_ <= hard_radius_ || pass_radius_ <= 0.0 ||
       settle_speed_ <= 0.0 || settle_time_ <= 0.0 || setpoint_rate_hz_ < 10.0 ||
       setpoint_rate_hz_ > 20.0 || handshake_timeout_sec_ <= 0.0 ||
+      fcu_ready_timeout_sec_ <= 0.0 || gps_stable_sec_ < 0.0 || ground_wait_sec_ < 0.0 ||
       pose_stale_timeout_sec_ <= 1.0 || velocity_stale_timeout_sec_ <= 0.5 ||
       local_position_rate_hz_ <= 0.0 ||
       mode_retry_interval_sec_ <= 0.0 || arm_retry_interval_sec_ <= 0.0 ||
       service_timeout_sec_ <= 0.0 || planner_timeout_sec_ <= 0.0 ||
       navigation_timeout_sec_ <= 0.0 || takeoff_timeout_sec_ <= 0.0 || landing_timeout_sec_ <= 0.0 ||
+      takeoff_climb_timeout_sec_ <= 0.0 ||
       yaw_tolerance_deg_ <= 0.0 || yaw_tolerance_deg_ >= 45.0 ||
       yaw_hold_time_sec_ <= 0.0 || yaw_timeout_sec_ <= 0.0 ||
       turn_alignment_threshold_deg_ <= 0.0 || turn_alignment_threshold_deg_ >= 180.0 ||
@@ -99,6 +109,11 @@ public:
     estimator_subscription_ = create_subscription<mavros_msgs::msg::EstimatorStatus>(
       "/mavros/estimator_status", telemetry_qos,
       std::bind(&MissionExecutorNode::onEstimatorStatus, this, std::placeholders::_1), telemetry_options);
+    // FCU text messages (PreArm reasons, "EKF3 IMU0 is using GPS", mode change failures) are
+    // otherwise only visible in the MAVProxy console window.
+    statustext_subscription_ = create_subscription<mavros_msgs::msg::StatusText>(
+      "/mavros/statustext/recv", telemetry_qos,
+      std::bind(&MissionExecutorNode::onStatusText, this, std::placeholders::_1), telemetry_options);
     path_subscription_ = create_subscription<geometry_msgs::msg::PoseArray>(
       "planned_path", 10,
       std::bind(&MissionExecutorNode::onPath, this, std::placeholders::_1), telemetry_options);
@@ -134,7 +149,7 @@ private:
   enum class State
   {
     IDLE, WAIT_FCU, SET_MODE, ARM, TAKEOFF, PLAN, WAIT_PLAN, WAIT_PREFETCH,
-    ALIGN_PATH, NAVIGATE, TASK, LAND, WAIT_LANDED, WAIT_DISARMED, RETAKEOFF, DONE, ERROR
+    ALIGN_PATH, NAVIGATE, TASK, LAND, WAIT_LANDED, WAIT_DISARMED, GROUND_WAIT, RETAKEOFF, DONE, ERROR
   };
 
   static const char* stateName(State state)
@@ -154,6 +169,7 @@ private:
       case State::LAND: return "LAND";
       case State::WAIT_LANDED: return "WAIT_LANDED";
       case State::WAIT_DISARMED: return "WAIT_DISARMED";
+      case State::GROUND_WAIT: return "GROUND_WAIT";
       case State::RETAKEOFF: return "RETAKEOFF";
       case State::DONE: return "DONE";
       case State::ERROR: return "ERROR";
@@ -219,6 +235,7 @@ private:
   {
     switch (state_) {
       case State::WAIT_FCU:
+        return fcu_ready_timeout_sec_;
       case State::SET_MODE:
       case State::ARM:
         return handshake_timeout_sec_;
@@ -283,6 +300,12 @@ private:
   void onGps(const sensor_msgs::msg::NavSatFix::SharedPtr message)
   {
     std::lock_guard<std::mutex> lock(state_mutex_);
+    const bool fix = message->status.status >= sensor_msgs::msg::NavSatStatus::STATUS_FIX;
+    if (!fix) gps_fix_since_valid_ = false;
+    else if (!gps_fix_since_valid_) {
+      gps_fix_since_ = std::chrono::steady_clock::now();
+      gps_fix_since_valid_ = true;
+    }
     gps_fix_status_ = message->status.status;
     gps_received_at_ = std::chrono::steady_clock::now();
     have_gps_ = true;
@@ -292,6 +315,20 @@ private:
     std::lock_guard<std::mutex> lock(state_mutex_);
     have_home_ = std::isfinite(message->geo.latitude) && std::isfinite(message->geo.longitude) &&
       (message->geo.latitude != 0.0 || message->geo.longitude != 0.0);
+  }
+  void onStatusText(const mavros_msgs::msg::StatusText::SharedPtr message)
+  {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    if (message->text.find("is using GPS") != std::string::npos && !ekf_using_gps_) {
+      ekf_using_gps_ = true;
+      RCLCPP_INFO(get_logger(), "FCU: %s -> EKF has a GPS position", message->text.c_str());
+      return;
+    }
+    if (message->severity <= mavros_msgs::msg::StatusText::WARNING) {
+      RCLCPP_WARN(get_logger(), "FCU: %s", message->text.c_str());
+    } else {
+      RCLCPP_INFO(get_logger(), "FCU: %s", message->text.c_str());
+    }
   }
   void onEstimatorStatus(const mavros_msgs::msg::EstimatorStatus::SharedPtr message)
   {
@@ -400,6 +437,23 @@ private:
   }
 
 
+  // Arming readiness: the EKF announced it uses GPS, or (when the executor was started after that
+  // message) the GPS fix has been stable for gps_stable_sec.  Without this, ArduCopter refuses
+  // GUIDED ("requires position") and arming, and the mission would burn its handshake timeout.
+  bool fcuReady(std::string* why) const
+  {
+    if (!vehicle_state_.connected) { *why = "FCU not connected"; return false; }
+    if (!poseFresh()) { *why = "no fresh local position"; return false; }
+    if (ekf_using_gps_) return true;
+    const bool gps_fresh = have_gps_ && std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - gps_received_at_).count() <= 2.0;
+    if (!gps_fresh || !gps_fix_since_valid_) { *why = "no GPS fix yet"; return false; }
+    const double stable = std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - gps_fix_since_).count();
+    if (stable < gps_stable_sec_) { *why = "GPS fix not stable yet"; return false; }
+    return true;
+  }
+
   void resetHardArrivalSamples()
   {
     stable_velocity_samples_ = 0;
@@ -407,9 +461,30 @@ private:
     stable_since_ = rclcpp::Time(0, 0, get_clock()->get_clock_type());
   }
 
+  // ArduCopter's GUIDED mode drops a running takeoff as soon as it receives a position setpoint
+  // (ModeGuided::set_destination switches the submode to Pos), and the Pos controller does nothing
+  // while the vehicle is still landed: rotors idle, no climb, then DISARM_DELAY disarms it.
+  // So no setpoints are streamed while arming/taking off/landing, only during flight (and in ERROR,
+  // where the target is the current pose and acts as a hold).
+  bool setpointsAllowed() const
+  {
+    switch (state_) {
+      case State::PLAN:
+      case State::WAIT_PLAN:
+      case State::WAIT_PREFETCH:
+      case State::ALIGN_PATH:
+      case State::NAVIGATE:
+      case State::TASK:
+      case State::ERROR:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   void publishSetpoint()
   {
-    if (!have_pose_ || !target_initialized_) return;
+    if (!have_pose_ || !target_initialized_ || !setpointsAllowed()) return;
     target_.header.stamp = now();
     target_.header.frame_id = "map";
     geometry_msgs::msg::PoseStamped local_target = target_;
@@ -566,6 +641,19 @@ private:
       return;
     }
     if (requires_guided_flight && !vehicle_state_.armed) {
+      // ArduCopter auto-disarms (DISARM_DELAY) when it is armed but never leaves the ground,
+      // e.g. when the EKF was not ready at arming time.  Retry mode/arm/takeoff a few times.
+      const bool on_ground = !have_pose_ || pose_.pose.position.z < takeoff_start_altitude_ + 0.3;
+      if ((state_ == State::TAKEOFF || state_ == State::RETAKEOFF) && on_ground &&
+        takeoff_disarm_retries_ < max_takeoff_attempts_)
+      {
+        ++takeoff_disarm_retries_;
+        RCLCPP_WARN(get_logger(),
+          "Vehicle disarmed before leaving the ground (attempt %u/%u); retrying GUIDED, arm and takeoff",
+          takeoff_disarm_retries_, max_takeoff_attempts_);
+        transition(State::SET_MODE);
+        return;
+      }
       fail("vehicle disarmed unexpectedly during the mission");
       return;
     }
@@ -582,8 +670,9 @@ private:
       case State::IDLE:
         transition(State::WAIT_FCU);
         break;
-      case State::WAIT_FCU:
-        if (vehicle_state_.connected && poseFresh()) {
+      case State::WAIT_FCU: {
+        std::string why;
+        if (fcuReady(&why)) {
           if (!position_rate_requested_ && message_interval_client_->service_is_ready()) {
             position_rate_requested_ = true;
             auto request = std::make_shared<mavros_msgs::srv::MessageInterval::Request>();
@@ -598,11 +687,15 @@ private:
               }
             });
           }
+          RCLCPP_INFO(get_logger(), "FCU ready (%s)",
+            ekf_using_gps_ ? "EKF is using GPS" : "GPS fix stable");
           transition(State::SET_MODE);
-        } else {
-          logWaiting();
+        } else if (std::chrono::duration<double>(steady_now - last_wait_log_at_).count() >= 5.0) {
+          RCLCPP_INFO(get_logger(), "Waiting for FCU readiness: %s", why.c_str());
+          last_wait_log_at_ = steady_now;
         }
         break;
+      }
       case State::SET_MODE:
         if (vehicle_state_.mode == "GUIDED") {
           transition(State::ARM);
@@ -627,7 +720,12 @@ private:
                 "Set GUIDED mode attempt %u rejected; retrying in %.1f s",
                 mode_rejection_count_, mode_retry_interval_sec_);
             } else {
-              RCLCPP_INFO(get_logger(), "GUIDED mode accepted by FCU");
+              // mode_sent only means MAVROS sent it; the FCU may still refuse (e.g. no position
+              // yet), so give /mavros/state time to report GUIDED before resending.
+              next_mode_attempt_at_ = std::chrono::steady_clock::now() +
+                std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                  std::chrono::duration<double>(mode_retry_interval_sec_));
+              RCLCPP_INFO(get_logger(), "GUIDED mode request sent to FCU");
             }
           });
         } else logWaiting();
@@ -720,20 +818,39 @@ private:
         } else logWaiting();
         break;
       case State::WAIT_LANDED:
-        if (velocityFresh() && pose_.pose.position.z <= 0.15 && speed() <= 0.15) {
-          if (vehicle_state_.armed) disarmOnGround();
-          else transition(State::WAIT_DISARMED);
+        if (!vehicle_state_.armed ||
+          (velocityFresh() && pose_.pose.position.z <= 0.15 && speed() <= 0.15))
+        {
+          RCLCPP_INFO(get_logger(), "Touchdown: z=%.2f m; waiting for LAND mode to disarm",
+            pose_.pose.position.z);
+          next_disarm_attempt_at_ = steady_now +
+            std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+              std::chrono::duration<double>(disarm_grace_sec_));
+          transition(State::WAIT_DISARMED);
         }
         break;
       case State::WAIT_DISARMED:
-        if (!vehicle_state_.armed) {
+        // ArduCopter's LAND mode disarms by itself once its own land detector agrees (about a
+        // second after touchdown).  Before that, a disarm command is refused, so it is only sent
+        // as a fallback after disarm_grace_sec, and a refusal is retried rather than fatal.
+        if (vehicle_state_.armed) {
+          if (steady_now >= next_disarm_attempt_at_) disarmOnGround();
+          else logWaiting();
+        } else {
           RCLCPP_INFO(get_logger(), "Disarm confirmed on ground");
-          if (landtakeoff_pending_) transition(State::SET_MODE);
+          if (landtakeoff_pending_) transition(State::GROUND_WAIT);
           else {
             logTaskComplete(mission_[waypoint_index_].task.type);
             transition(State::DONE);
           }
-        } else logWaiting();
+        }
+        break;
+      case State::GROUND_WAIT:
+        if (std::chrono::duration<double>(steady_now - state_started_at_).count() >= ground_wait_sec_) {
+          RCLCPP_INFO(get_logger(), "Waited %.1f s on the ground; re-entering GUIDED for takeoff",
+            ground_wait_sec_);
+          transition(State::SET_MODE);
+        }
         break;
       case State::RETAKEOFF:
         if (!takeoffService(mission_[waypoint_index_].z)) {
@@ -788,6 +905,7 @@ private:
               response ? response->result : 255, takeoff_retry_interval_sec_);
           } else {
             takeoff_command_accepted_ = true;
+            takeoff_accepted_at_ = std::chrono::steady_clock::now();
             RCLCPP_INFO(get_logger(), "MAVROS accepted NAV_TAKEOFF to %.2f m", altitude);
           }
         });
@@ -800,6 +918,21 @@ private:
     const double confirmed_altitude = std::max(takeoff_start_altitude_ + 0.5, altitude - hard_radius_);
     if (!vehicle_state_.armed || pose_.pose.position.z < confirmed_altitude) {
       const auto steady_now = std::chrono::steady_clock::now();
+      if (vehicle_state_.armed && pose_.pose.position.z < takeoff_start_altitude_ + 0.3 &&
+        std::chrono::duration<double>(steady_now - takeoff_accepted_at_).count() >
+          takeoff_climb_timeout_sec_)
+      {
+        if (++takeoff_resends_ > max_takeoff_attempts_) {
+          fail("vehicle accepted NAV_TAKEOFF but did not climb; check EKF/GPS and SITL messages");
+          return true;
+        }
+        RCLCPP_WARN(get_logger(), "No climb %.0f s after NAV_TAKEOFF; re-sending (attempt %u/%u)",
+          takeoff_climb_timeout_sec_, takeoff_resends_, max_takeoff_attempts_);
+        takeoff_command_accepted_ = false;
+        takeoff_request_sent_ = false;
+        next_takeoff_attempt_at_ = steady_now;
+        return true;
+      }
       if (std::chrono::duration<double>(steady_now - last_wait_log_at_).count() >= 5.0) {
         RCLCPP_INFO(get_logger(),
           "Takeoff progress: armed=%s local_z=%.2f m target_z=%.2f m; waiting for climb",
@@ -808,6 +941,8 @@ private:
       }
       return true;
     }
+    takeoff_disarm_retries_ = 0;
+    takeoff_resends_ = 0;
     RCLCPP_INFO(get_logger(), "Takeoff confirmed: z=%.2f m (threshold %.2f m)",
       pose_.pose.position.z, confirmed_altitude);
     return false;
@@ -962,8 +1097,13 @@ private:
         std::lock_guard<std::mutex> lock(state_mutex_);
         if (!finishServiceCall(request_id)) return;
         const auto response = future.get();
-        if (!response || !response->success) { fail("MAVROS rejected disarm request"); return; }
-        transition(State::WAIT_DISARMED);
+        next_disarm_attempt_at_ = std::chrono::steady_clock::now() +
+          std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+            std::chrono::duration<double>(arm_retry_interval_sec_));
+        if (!response || !response->success) {
+          RCLCPP_WARN(get_logger(), "Disarm refused by FCU (not landed yet?); retrying in %.1f s",
+            arm_retry_interval_sec_);
+        }
       });
     } else logWaiting();
   }
@@ -978,6 +1118,8 @@ private:
   geometry_msgs::msg::TwistStamped velocity_;
   bool have_pose_ = false, have_velocity_ = false, target_initialized_ = false;
   bool have_gps_ = false, have_home_ = false, have_estimator_status_ = false;
+  bool ekf_using_gps_ = false, gps_fix_since_valid_ = false;
+  std::chrono::steady_clock::time_point gps_fix_since_ = std::chrono::steady_clock::now();
   int8_t gps_fix_status_ = sensor_msgs::msg::NavSatStatus::STATUS_UNKNOWN;
   mavros_msgs::msg::EstimatorStatus estimator_status_;
   bool service_pending_ = false;
@@ -1005,13 +1147,18 @@ private:
   double yaw_tolerance_deg_ = 5.0, yaw_hold_time_sec_ = 0.5, yaw_timeout_sec_ = 15.0;
   double turn_alignment_threshold_deg_ = 20.0;
   double map_to_local_yaw_offset_deg_ = 90.0;
-  double setpoint_rate_hz_ = 20.0, handshake_timeout_sec_ = 60.0;
+  double setpoint_rate_hz_ = 20.0, handshake_timeout_sec_ = 180.0;
+  double fcu_ready_timeout_sec_ = 600.0, gps_stable_sec_ = 5.0, ground_wait_sec_ = 3.0;
+  double disarm_grace_sec_ = 5.0;
+  std::chrono::steady_clock::time_point next_disarm_attempt_at_ = std::chrono::steady_clock::now();
   double mode_retry_interval_sec_ = 2.0;
   double arm_retry_interval_sec_ = 2.0;
   double service_timeout_sec_ = 5.0, planner_timeout_sec_ = 10.0;
   double navigation_timeout_sec_ = 120.0;
   double takeoff_timeout_sec_ = 60.0, landing_timeout_sec_ = 90.0;
   double takeoff_retry_interval_sec_ = 2.0;
+  double takeoff_climb_timeout_sec_ = 12.0;
+  uint32_t max_takeoff_attempts_ = 3, takeoff_disarm_retries_ = 0, takeoff_resends_ = 0;
   double takeoff_start_altitude_ = 0.0;
   double target_yaw_ = 0.0;
   std::chrono::steady_clock::time_point state_started_at_ = std::chrono::steady_clock::now();
@@ -1024,6 +1171,7 @@ private:
   std::chrono::steady_clock::time_point next_mode_attempt_at_ = state_started_at_;
   std::chrono::steady_clock::time_point next_arm_attempt_at_ = state_started_at_;
   std::chrono::steady_clock::time_point next_takeoff_attempt_at_ = state_started_at_;
+  std::chrono::steady_clock::time_point takeoff_accepted_at_ = state_started_at_;
   rclcpp::Time stable_since_{0, 0, RCL_ROS_TIME};
   rclcpp::CallbackGroup::SharedPtr state_group_, timer_group_;
   rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr state_subscription_;
@@ -1032,6 +1180,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_subscription_;
   rclcpp::Subscription<mavros_msgs::msg::HomePosition>::SharedPtr home_subscription_;
   rclcpp::Subscription<mavros_msgs::msg::EstimatorStatus>::SharedPtr estimator_subscription_;
+  rclcpp::Subscription<mavros_msgs::msg::StatusText>::SharedPtr statustext_subscription_;
   rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr path_subscription_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_subscription_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr setpoint_publisher_;

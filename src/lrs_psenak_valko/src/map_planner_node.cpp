@@ -31,8 +31,8 @@
 #include <std_msgs/msg/string.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
-#include "a_star_planner.h"
-#include "voxel_occupancy_grid.h"
+#include "lrs_psenak_valko/a_star_planner.h"
+#include "lrs_psenak_valko/voxel_occupancy_grid.h"
 
 class MapPlannerNode final : public rclcpp::Node
 {

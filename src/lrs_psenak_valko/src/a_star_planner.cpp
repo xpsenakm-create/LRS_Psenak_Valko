@@ -9,7 +9,7 @@
 //  * Reports planning time, number of expansions and path length.
 //
 // =============================================================================
-#include "a_star_planner.h"
+#include "lrs_psenak_valko/a_star_planner.h"
 
 namespace astar
 {
