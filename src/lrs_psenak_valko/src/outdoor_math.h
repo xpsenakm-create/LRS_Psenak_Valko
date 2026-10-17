@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace outdoor
@@ -168,16 +169,44 @@ inline double figure8Speed(double A, double omega, double th)
 inline double figure8PeakSpeed(double A, double omega) { return A * omega * std::sqrt(2.0); }
 inline double figure8MaxOmega(double A, double v_max) { return v_max / (A * std::sqrt(2.0)); }
 
+/// Duration of a run from theta = 0 to th_end with a soft start AND a soft stop.  Each ramp
+/// covers only half the phase it would at full rate, so together they cost ramp_s seconds.
+inline double figure8Duration(double omega, double ramp_s, double th_end)
+{
+  return th_end / omega + std::max(ramp_s, 0.0);
+}
+
 /// Phase theta(s) after s seconds.  With ramp_s > 0 the angular rate rises linearly
 /// from 0 to omega during the first ramp_s seconds (theta = omega*s^2 / (2*ramp)),
 /// then stays at omega.  This removes the "lunge": at theta = 0 the curve's speed is
 /// already its maximum, so a hard start would demand ~A*omega*sqrt(2) from standstill.
-inline double figure8Phase(double omega, double ramp_s, double s)
+/// With a finite th_end the same ramp is mirrored at the end (rate falls to 0 exactly at
+/// th_end), because theta = 2*pi is the crossing point again: a hard stop there would mean
+/// braking from the peak speed in one control tick.
+inline double figure8Phase(double omega, double ramp_s, double s,
+                           double th_end = std::numeric_limits<double>::infinity())
 {
   if (s <= 0.0) return 0.0;
-  if (ramp_s <= 0.0) return omega * s;
+  if (ramp_s <= 0.0) return std::min(omega * s, th_end);
+  const double T = figure8Duration(omega, ramp_s, th_end);
+  if (s >= T) return th_end;
+  if (s > T - ramp_s) return th_end - 0.5 * omega * (T - s) * (T - s) / ramp_s;
   if (s < ramp_s) return 0.5 * omega * s * s / ramp_s;
   return omega * (s - 0.5 * ramp_s);
+}
+
+/// d(theta)/dt at time s -- the analytic derivative of figure8Phase().  Needed for the velocity
+/// feed-forward: velocity = (A cos(th), A cos(2 th)) * figure8PhaseRate().
+inline double figure8PhaseRate(double omega, double ramp_s, double s,
+                               double th_end = std::numeric_limits<double>::infinity())
+{
+  if (s <= 0.0) return 0.0;
+  if (ramp_s <= 0.0) return omega * s < th_end ? omega : 0.0;
+  const double T = figure8Duration(omega, ramp_s, th_end);
+  if (s >= T) return 0.0;
+  if (s > T - ramp_s) return omega * (T - s) / ramp_s;
+  if (s < ramp_s) return omega * s / ramp_s;
+  return omega;
 }
 
 // ----------------------------------------------------------------------------

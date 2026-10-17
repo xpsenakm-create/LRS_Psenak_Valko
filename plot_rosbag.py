@@ -68,10 +68,10 @@ def parse_csv_log(csv_path):
 
                 t = to_float(row.get('t_s'))
                 state = str(row.get('state') or '').strip()
-                cx = to_float(row.get('cmd_x'))
-                cy = to_float(row.get('cmd_y'))
-                cz = to_float(row.get('cmd_z'))
-                cyaw = to_float(row.get('cmd_yaw_deg'))
+                cx = to_float_or_nan(row.get('cmd_x'))
+                cy = to_float_or_nan(row.get('cmd_y'))
+                cz = to_float_or_nan(row.get('cmd_z'))
+                cyaw = to_float_or_nan(row.get('cmd_yaw_deg'))
 
                 x = to_float(row.get('x'))
                 y = to_float(row.get('y'))
@@ -81,7 +81,7 @@ def parse_csv_log(csv_path):
                 yerr = to_float_or_nan(row.get('yaw_err_deg'))
                 perr = to_float_or_nan(row.get('poi_bearing_err_deg'))
 
-                err = to_float(row.get('track_err_m'))
+                err = to_float_or_nan(row.get('track_err_m'))
                 rel = to_float(row.get('rel_alt'), default=z)
 
                 data['t'].append(t)
@@ -133,11 +133,13 @@ def parse_rosbag(bag_path):
     wanted_topics = {
         '/mavros/local_position/pose',
         '/mavros/setpoint_raw/local',
-        '/mission/intended_path'
+        '/mission/intended_path',
+        '/mission/state'
     }
 
     flown = {'t': [], 'x': [], 'y': [], 'z': [], 'yaw': []}
     target = {'t': [], 'cmd_x': [], 'cmd_y': [], 'cmd_z': [], 'cmd_yaw': []}
+    states = {'t': [], 'state': []}
 
     t0 = None
 
@@ -173,21 +175,51 @@ def parse_rosbag(bag_path):
             target['cmd_x'].append(msg.position.x)
             target['cmd_y'].append(msg.position.y)
             target['cmd_z'].append(msg.position.z)
-            target['cmd_yaw'].append(math.degrees(msg.yaw))
+            # uzol posiela rozbalený (spojitý) yaw; na graf ho zalomíme do (-180, 180] ako CSV log
+            target['cmd_yaw'].append((math.degrees(msg.yaw) + 180.0) % 360.0 - 180.0)
+
+        elif topic == '/mission/state':
+            states['t'].append(t_sec)
+            states['state'].append(msg.data)
 
     if not flown['t']:
         print("V bagu sa nenašli žiadne dáta pre /mavros/local_position/pose!", file=sys.stderr)
         return None
+    if not states['t']:
+        print("Upozornenie: bag neobsahuje /mission/state (starší záznam) -- fázy sa nerozlíšia, "
+              "pre rozdelené grafy použi --csv.", file=sys.stderr)
 
-    # Rozdelenie fáz na základe času alebo polohy
-    data = {
-        't': flown['t'],
-        'state': ['UNKNOWN'] * len(flown['t']),
-        'x': flown['x'], 'y': flown['y'], 'z': flown['z'], 'yaw': flown['yaw'],
-        'cmd_x': target['cmd_x'], 'cmd_y': target['cmd_y'], 'cmd_z': target['cmd_z'],
-        'cmd_t': target['t'], 'cmd_yaw': target['cmd_yaw'],
-        'yaw_err': [], 'poi_err': [], 'track_err': []
-    }
+    # Setpointy a stavy chodia v iných časoch ako póza: ku každej vzorke pózy priradíme posledný
+    # setpoint / stav pred ňou (zero-order hold).  Setpoint starší ako 0.5 s sa nepočíta (vtedy
+    # uzol nestreamuje -- vzlet, pristátie), aby grafy neukazovali falošné chyby.
+    nan = float('nan')
+    data = {k: [] for k in ('t', 'state', 'x', 'y', 'z', 'yaw', 'cmd_x', 'cmd_y', 'cmd_z', 'cmd_yaw',
+                            'yaw_err', 'poi_err', 'track_err', 'rel_alt')}
+    j = k = -1
+    for i, t in enumerate(flown['t']):
+        while j + 1 < len(target['t']) and target['t'][j + 1] <= t:
+            j += 1
+        while k + 1 < len(states['t']) and states['t'][k + 1] <= t:
+            k += 1
+        state = states['state'][k] if k >= 0 else 'UNKNOWN'
+        x, y, z, yaw = flown['x'][i], flown['y'][i], flown['z'][i], flown['yaw'][i]
+        live = j >= 0 and t - target['t'][j] <= 0.5
+        cx = target['cmd_x'][j] if live else nan
+        cy = target['cmd_y'][j] if live else nan
+        cz = target['cmd_z'][j] if live else nan
+        cyaw = target['cmd_yaw'][j] if live else nan
+        # POI = stred misie (0, 0), rovnako ako v ostatných grafoch tohto skriptu
+        poi_err = nan
+        if state == 'SQUARE' and math.hypot(x, y) > 0.5:
+            poi_err = (yaw - math.degrees(math.atan2(-y, -x)) + 180.0) % 360.0 - 180.0
+        data['t'].append(t)
+        data['state'].append(state)
+        data['x'].append(x); data['y'].append(y); data['z'].append(z); data['yaw'].append(yaw)
+        data['cmd_x'].append(cx); data['cmd_y'].append(cy); data['cmd_z'].append(cz); data['cmd_yaw'].append(cyaw)
+        data['yaw_err'].append((yaw - cyaw + 180.0) % 360.0 - 180.0 if live else nan)
+        data['poi_err'].append(poi_err)
+        data['track_err'].append(math.sqrt((x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2) if live else nan)
+        data['rel_alt'].append(z)
     return data
 
 
@@ -208,15 +240,15 @@ def detect_geometry(data, user_square=None, user_amp=None):
     if user_square is not None:
         square_side = user_square
     else:
-        sq_x = [abs(data['cmd_x'][i]) for i in range(len(data.get('cmd_x', [])))
-                if data.get('state', [''])[i] == 'SQUARE']
+        sq_x = [abs(cx) for cx, st in zip(data.get('cmd_x', []), data.get('state', []))
+                if st == 'SQUARE' and not math.isnan(cx)]
         square_side = round(2.0 * max(sq_x), 2) if sq_x else 5.0
 
     if user_amp is not None:
         amplitude = user_amp
     else:
-        f8_x = [abs(data['cmd_x'][i]) for i in range(len(data.get('cmd_x', [])))
-                if data.get('state', [''])[i] == 'FIGURE8']
+        f8_x = [abs(cx) for cx, st in zip(data.get('cmd_x', []), data.get('state', []))
+                if st == 'FIGURE8' and not math.isnan(cx)]
         amplitude = round(max(f8_x), 2) if f8_x else 3.0
 
     return square_side, amplitude

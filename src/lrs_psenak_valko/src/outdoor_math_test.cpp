@@ -98,6 +98,16 @@ int main()
   const double h = 1e-6;                                                     // rate is continuous
   NEAR((figure8Phase(0.3, 3.0, 3.0 + h) - figure8Phase(0.3, 3.0, 3.0 - h)) / (2 * h), 0.3, 1e-6);
   NEAR((figure8Phase(0.3, 3.0, h) - figure8Phase(0.3, 3.0, 0.0)) / h, 0.0, 1e-5);   // starts at rate 0
+  // soft stop: one lap ends exactly at 2*pi with rate 0, continuous where the ramp-down begins
+  const double th_end = 2 * kPi, T = figure8Duration(0.3, 3.0, th_end);
+  NEAR(T, th_end / 0.3 + 3.0, 1e-12);
+  NEAR(figure8Phase(0.3, 3.0, T, th_end), th_end, 1e-12);
+  NEAR(figure8Phase(0.3, 3.0, T + 5.0, th_end), th_end, 1e-12);
+  NEAR(figure8PhaseRate(0.3, 3.0, T - h, th_end), 0.0, 1e-6);
+  NEAR(figure8Phase(0.3, 3.0, T - 3.0 + h, th_end), figure8Phase(0.3, 3.0, T - 3.0 - h, th_end), 1e-6);
+  NEAR((figure8Phase(0.3, 3.0, T - 3.0 + h, th_end) - figure8Phase(0.3, 3.0, T - 3.0 - h, th_end)) / (2 * h),
+       0.3, 1e-5);
+  NEAR(figure8PhaseRate(0.3, 3.0, 10.0, th_end), 0.3, 1e-12);
 
   // ---- square --------------------------------------------------------------
   const auto sq = squareCorners({0, 0}, 5.0);

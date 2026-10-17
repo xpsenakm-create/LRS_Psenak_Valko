@@ -30,3 +30,11 @@ __pycache__/
 *.pyo
 *.pyd
 map_voxels_with_racks_inflated.pcd/
+
+# Výstupy každého behu misie v koreni repa (prepisujú sa pri každom lete).
+# Finálny, odovzdávaný beh je archivovaný v results/ -- tam sa NEignoruje nič.
+/outdoor_mission_log.csv
+/outdoor_mission_plot.png
+/plot_*.png
+/outdoor_flight_bag_*/
+!results/**/*.mcap

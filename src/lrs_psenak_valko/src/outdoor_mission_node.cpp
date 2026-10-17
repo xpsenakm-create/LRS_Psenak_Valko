@@ -5,12 +5,24 @@
 //   any flight state --(abort service / geofence / tracking error)--> ABORTING -> ABORTED
 //   any flight state --(RC mode change / MAVROS drop-out)-----------> STOPPED (no setpoints!)
 //
-// Everything is RELATIVE to the launch point captured before arming (first stable
-// GPS fix paired with the local pose at that instant) -- no absolute coordinates.
+// Everything is RELATIVE to the launch point captured before arming (mean of the stable
+// GPS fixes paired with the local pose at that instant) -- no absolute coordinates.
 //
 // Frames / angles (see outdoor_math.h):  local ENU, yaw 0 = East, CCW positive.
 // Altitude: we COMMAND local z = z_launch + flight_altitude and CHECK both
 // (local z - z_launch) and /mavros/global_position/rel_alt.
+//
+// POI: static ground point, given EITHER as lat/lon (poi_lat_deg + poi_lon_deg, converted
+// geodetic -> local ENU after the origin is captured) OR as an ENU offset from the launch
+// point (poi_east_m, poi_north_m).  Only the HORIZONTAL bearing is controlled (yaw); the
+// camera on this airframe is fixed and looks forward, so the required downward look angle
+// (poi_pitch_deg) is only logged, not commanded.
+//
+// Heading policy:
+//   * transit legs (TO_START, TO_CENTER, RETURN): nose along the direction of travel
+//     until close to the destination, then the final turn (POI bearing / figure-8 tangent);
+//   * SQUARE: nose on the POI (continuously recomputed, with a small look-ahead);
+//   * FIGURE8: nose on the path tangent (unwrapped).
 //
 // Single-threaded executor on purpose: all callbacks and the control timer run in
 // one thread, so there are no data races and no mutexes to explain.
@@ -43,6 +55,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <std_msgs/msg/float64.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <std_msgs/msg/u_int32.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
@@ -64,9 +77,16 @@ public:
 
     RCLCPP_INFO(get_logger(),
       "Parameters: altitude=%.2f m, square=%.2f m, figure-8 A=%.2f m omega=%.3f rad/s (lap %.1f s, "
-      "peak speed %.2f m/s), POI offset from launch=(E %.2f, N %.2f) m",
+      "peak speed %.2f m/s), yaw look-ahead=%.2f s",
       p_.flight_altitude, p_.square_side, p_.amplitude, p_.omega, 2.0 * outdoor::kPi / p_.omega,
-      outdoor::figure8PeakSpeed(p_.amplitude, p_.omega), p_.poi_east, p_.poi_north);
+      outdoor::figure8PeakSpeed(p_.amplitude, p_.omega), p_.yaw_lead_s);
+    if (poiFromGeodetic())
+      RCLCPP_INFO(get_logger(), "POI given as lat/lon: %.7f, %.7f (converted after the origin is captured)",
+        p_.poi_lat, p_.poi_lon);
+    else
+      RCLCPP_INFO(get_logger(), "POI given as offset from launch: (E %.2f, N %.2f) m", p_.poi_east, p_.poi_north);
+    RCLCPP_INFO(get_logger(), "Setpoints: position%s + yaw; POI yaw from %s position",
+      p_.velocity_feedforward ? " + velocity feed-forward" : " only", p_.poi_yaw_from_measured ? "MEASURED" : "commanded");
     transition(State::WAIT_GPS);
   }
 
@@ -106,10 +126,18 @@ private:
     double flight_altitude = 5.0, square_side = 5.0, amplitude = 3.0;
     double omega = 0.30, laps = 1.0, ramp_s = 3.0;
     double poi_east = 0.0, poi_north = 0.0;          // POI offset from the LAUNCH point [m]
+    double poi_lat = std::numeric_limits<double>::quiet_NaN();   // POI as lat/lon (overrides the offset)
+    double poi_lon = std::numeric_limits<double>::quiet_NaN();
     bool close_square = true;
     // motion
     double control_rate_hz = 30.0, max_speed = 1.5, square_speed = 0.5;
     double waypoint_tol = 0.3, max_lead = 1.0, yaw_rate_limit_deg = 45.0;
+    double max_accel = 0.5;                // carrot acceleration/braking limit (no velocity steps at corners)
+    double yaw_lead_s = 0.5;              // look-ahead that compensates the yaw controller lag
+    double transit_turn_radius = 0.7;      // closer than this to the goal: final turn instead of travel bearing
+    double figure8_close_timeout = 10.0;   // max wait for the drone to reach the end of the lap
+    bool velocity_feedforward = true;      // send velocity together with position (removes the ~1-2 s lag)
+    bool poi_yaw_from_measured = true;     // bearing to POI from the MEASURED position (not the carrot)
     // takeoff
     double takeoff_tol = 0.2, stabilize_time = 2.0, stabilize_speed = 0.15;
     // GPS gate
@@ -129,6 +157,7 @@ private:
   // ----------------------------------------------------------- parameters
   void declareParameters()
   {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
     p_.flight_altitude = declare_parameter<double>("flight_altitude_m", 5.0);
     p_.square_side = declare_parameter<double>("square_side_m", 5.0);
     p_.amplitude = declare_parameter<double>("figure8_amplitude_m", 3.0);
@@ -137,6 +166,8 @@ private:
     p_.ramp_s = declare_parameter<double>("figure8_ramp_s", 3.0);
     p_.poi_east = declare_parameter<double>("poi_east_m", 0.0);
     p_.poi_north = declare_parameter<double>("poi_north_m", 0.0);
+    p_.poi_lat = declare_parameter<double>("poi_lat_deg", nan);
+    p_.poi_lon = declare_parameter<double>("poi_lon_deg", nan);
     p_.close_square = declare_parameter<bool>("close_square", true);
 
     p_.control_rate_hz = declare_parameter<double>("control_rate_hz", 30.0);
@@ -145,6 +176,12 @@ private:
     p_.waypoint_tol = declare_parameter<double>("waypoint_tolerance_m", 0.3);
     p_.max_lead = declare_parameter<double>("max_lead_m", 1.0);
     p_.yaw_rate_limit_deg = declare_parameter<double>("yaw_rate_limit_deg_s", 45.0);
+    p_.max_accel = declare_parameter<double>("max_accel_mps2", 0.5);
+    p_.yaw_lead_s = declare_parameter<double>("yaw_lead_s", 0.5);
+    p_.transit_turn_radius = declare_parameter<double>("transit_turn_radius_m", 0.7);
+    p_.figure8_close_timeout = declare_parameter<double>("figure8_close_timeout_s", 10.0);
+    p_.velocity_feedforward = declare_parameter<bool>("velocity_feedforward", true);
+    p_.poi_yaw_from_measured = declare_parameter<bool>("poi_yaw_from_measured", true);
 
     p_.takeoff_tol = declare_parameter<double>("takeoff_tolerance_m", 0.2);
     p_.stabilize_time = declare_parameter<double>("stabilize_time_s", 2.0);
@@ -170,22 +207,30 @@ private:
     p_.status_period = declare_parameter<double>("status_period_s", 1.0);
   }
 
+  bool poiFromGeodetic() const { return std::isfinite(p_.poi_lat) && std::isfinite(p_.poi_lon); }
+
   void validateParameters() const
   {
     auto bad = [](const std::string& m) { throw std::invalid_argument("invalid parameter: " + m); };
     if (p_.flight_altitude <= 0.5) bad("flight_altitude_m must be > 0.5");
     if (p_.square_side <= 0.0 || p_.amplitude <= 0.0) bad("square_side_m and figure8_amplitude_m must be > 0");
     if (p_.omega <= 0.0 || p_.laps <= 0.0 || p_.ramp_s < 0.0) bad("figure8_omega/laps must be > 0, ramp >= 0");
+    if (p_.laps * 2.0 * outdoor::kPi / p_.omega < p_.ramp_s) bad("figure8_ramp_s longer than the lap itself");
+    if (p_.max_accel <= 0.0) bad("max_accel_mps2 must be > 0");
     if (p_.control_rate_hz < 10.0 || p_.control_rate_hz > 50.0) bad("control_rate_hz must be in [10, 50]");
     if (p_.max_speed <= 0.0 || p_.square_speed <= 0.0 || p_.square_speed > p_.max_speed)
       bad("0 < square_speed_mps <= max_speed_mps");
     if (p_.waypoint_tol <= 0.0 || p_.max_lead <= p_.waypoint_tol) bad("need 0 < waypoint_tolerance < max_lead");
     if (p_.yaw_rate_limit_deg <= 0.0) bad("yaw_rate_limit_deg_s must be > 0");
+    if (p_.yaw_lead_s < 0.0 || p_.yaw_lead_s > 2.0) bad("yaw_lead_s must be in [0, 2]");
+    if (p_.transit_turn_radius <= 0.0 || p_.figure8_close_timeout < 0.0) bad("transit_turn_radius_m / figure8_close_timeout_s");
     if (p_.takeoff_tol <= 0.0 || p_.stabilize_time <= 0.0 || p_.stabilize_speed <= 0.0) bad("takeoff/stabilize values");
     if (p_.min_satellites < 0 || p_.max_h_std <= 0.0 || p_.fix_stable_s < 0.0) bad("GPS gate values");
     if (p_.max_horizontal <= 0.0 || p_.max_altitude <= 0.0 || p_.max_tracking_error <= 0.0) bad("safety limits");
     if (p_.abort_mode != "LAND" && p_.abort_mode != "RTL" && p_.abort_mode != "LOITER" && p_.abort_mode != "BRAKE")
       bad("abort_mode must be one of LAND, RTL, LOITER, BRAKE");
+    if (std::isfinite(p_.poi_lat) != std::isfinite(p_.poi_lon)) bad("poi_lat_deg and poi_lon_deg must be given together");
+    if (poiFromGeodetic() && (std::fabs(p_.poi_lat) > 90.0 || std::fabs(p_.poi_lon) > 180.0)) bad("poi lat/lon out of range");
     const double peak = outdoor::figure8PeakSpeed(p_.amplitude, p_.omega);
     if (peak > p_.max_speed)
       bad("figure8_omega_rad_s=" + std::to_string(p_.omega) + " gives peak speed " + std::to_string(peak) +
@@ -193,9 +238,17 @@ private:
           std::to_string(outdoor::figure8MaxOmega(p_.amplitude, p_.max_speed)));
   }
 
-  /// Pre-flight geofence arithmetic: done in the constructor, i.e. BEFORE anything can arm.
+  /// Pre-flight geofence arithmetic in the constructor (POI as ENU offset).  When the POI is
+  /// given as lat/lon its position is only known after the origin is captured, so the same
+  /// check is repeated in captureOrigin().
   void checkMissionEnvelope() const
   {
+    if (p_.flight_altitude > p_.max_altitude)
+      throw std::invalid_argument("flight_altitude_m exceeds max_altitude_m");
+    if (poiFromGeodetic()) {
+      RCLCPP_INFO(get_logger(), "Geofence check postponed until the POI is converted to local coordinates");
+      return;
+    }
     const double r = outdoor::missionMaxRadius({p_.poi_east, p_.poi_north}, p_.square_side, p_.amplitude);
     RCLCPP_INFO(get_logger(),
       "Mission envelope: max horizontal distance from launch = %.2f m (limit %.2f m), "
@@ -203,8 +256,6 @@ private:
     if (r > p_.max_horizontal)
       throw std::invalid_argument("mission reaches " + std::to_string(r) + " m from launch, limit is " +
                                   std::to_string(p_.max_horizontal) + " m (move the POI or raise the limit)");
-    if (p_.flight_altitude > p_.max_altitude)
-      throw std::invalid_argument("flight_altitude_m exceeds max_altitude_m");
   }
 
   // ----------------------------------------------------------- interfaces
@@ -221,19 +272,26 @@ private:
     vel_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>("/mavros/local_position/velocity_local", qos,
       [this](geometry_msgs::msg::TwistStamped::ConstSharedPtr m) { vel_ = *m; have_vel_ = true; vel_time_ = SteadyClock::now(); });
     fix_sub_ = create_subscription<sensor_msgs::msg::NavSatFix>("/mavros/global_position/global", qos,
-      [this](sensor_msgs::msg::NavSatFix::ConstSharedPtr m) { fix_ = *m; have_fix_ = true; fix_time_ = SteadyClock::now(); });
+      [this](sensor_msgs::msg::NavSatFix::ConstSharedPtr m) {
+        fix_ = *m; have_fix_ = true; fix_time_ = SteadyClock::now(); ++fix_seq_;
+      });
     sats_sub_ = create_subscription<std_msgs::msg::UInt32>("/mavros/global_position/raw/satellites", qos,
       [this](std_msgs::msg::UInt32::ConstSharedPtr m) { satellites_ = m->data; have_sats_ = true; });
     hdg_sub_ = create_subscription<std_msgs::msg::Float64>("/mavros/global_position/compass_hdg", qos,
       [this](std_msgs::msg::Float64::ConstSharedPtr m) { compass_hdg_deg_ = m->data; have_hdg_ = true; });
     rel_alt_sub_ = create_subscription<std_msgs::msg::Float64>("/mavros/global_position/rel_alt", qos,
       [this](std_msgs::msg::Float64::ConstSharedPtr m) { rel_alt_ = m->data; have_rel_alt_ = true; });
-    home_sub_ = create_subscription<mavros_msgs::msg::HomePosition>("/mavros/home_position/home", qos,
+    // The home position is published once and latched (transient local): a late subscriber
+    // with the sensor QoS would never see it.
+    home_sub_ = create_subscription<mavros_msgs::msg::HomePosition>("/mavros/home_position/home",
+      rclcpp::QoS(1).transient_local(),
       [this](mavros_msgs::msg::HomePosition::ConstSharedPtr m) { home_ = *m; have_home_ = true; });
 
     setpoint_pub_ = create_publisher<mavros_msgs::msg::PositionTarget>("/mavros/setpoint_raw/local", 10);
     intended_path_pub_ = create_publisher<nav_msgs::msg::Path>("mission/intended_path", rclcpp::QoS(1).transient_local());
     flown_path_pub_ = create_publisher<nav_msgs::msg::Path>("mission/flown_path", 10);
+    // Current state machine state (on every transition) -- lets the rosbag be split into phases.
+    state_pub_ = create_publisher<std_msgs::msg::String>("mission/state", rclcpp::QoS(10).transient_local());
 
     mode_client_ = create_client<mavros_msgs::srv::SetMode>("/mavros/set_mode");
     arm_client_ = create_client<mavros_msgs::srv::CommandBool>("/mavros/cmd/arming");
@@ -259,7 +317,7 @@ private:
     log_.open(p_.log_csv);
     if (!log_) { RCLCPP_WARN(get_logger(), "cannot open %s, CSV log disabled", p_.log_csv.c_str()); return; }
     log_ << "t_s,state,cmd_x,cmd_y,cmd_z,cmd_yaw_deg,x,y,z,yaw_deg,yaw_err_deg,poi_bearing_err_deg,"
-            "track_err_m,rel_alt,compass_hdg_deg\n";
+            "track_err_m,rel_alt,compass_hdg_deg,cmd_vx,cmd_vy,poi_pitch_deg\n";
     log_start_ = SteadyClock::now();
   }
 
@@ -271,7 +329,11 @@ private:
     state_started_ = SteadyClock::now();
     last_wait_log_ = state_started_;
     stable_since_valid_ = false;
-    if (next == State::FIGURE8) f8_started_ = state_started_;
+    carrot_speed_ = 0.0;            // every phase starts (and the previous one ended) at rest
+    if (next == State::FIGURE8) { f8_started_ = state_started_; f8_done_ = false; }
+    std_msgs::msg::String msg;
+    msg.data = stateName(next);
+    state_pub_->publish(msg);
   }
 
   static bool isStreaming(State s)
@@ -377,11 +439,10 @@ private:
     takeoff_requested_ = true;
     auto req = std::make_shared<mavros_msgs::srv::CommandTOL::Request>();
     req->altitude = static_cast<float>(p_.flight_altitude);   // metres ABOVE the launch point
-    if (origin_valid_ && have_fix_) {
-      req->latitude = static_cast<float>(fix_.latitude);
-      req->longitude = static_cast<float>(fix_.longitude);
-    }
-    req->yaw = static_cast<float>(poseYaw() * outdoor::kRad2Deg);
+    // lat/lon are float32 (~0.4 m resolution at 48 deg) and Copter ignores them for a guided
+    // takeoff, so they are left at 0.  The MAVLink yaw field is NED/compass degrees, not our ENU
+    // yaw, so "no yaw requested" (NaN) is sent instead of a value in the wrong convention.
+    req->yaw = std::nanf("");
     takeoff_client_->async_send_request(req,
       [this, id](rclcpp::Client<mavros_msgs::srv::CommandTOL>::SharedFuture f) {
         if (!endService(id)) return;
@@ -413,6 +474,14 @@ private:
     return std::chrono::duration<double>(SteadyClock::now() - t).count() <= max_age_s;
   }
 
+  /// Downward look angle (deg below the horizon) from the drone to the POI on the ground.
+  /// Only logged: the camera is fixed and the drone is not pitched to look down.
+  double poiPitchDeg() const
+  {
+    const Vec3 p = posePos();
+    return std::atan2(p.z - launch_.z, outdoor::dist2({p.x, p.y}, poi_)) * outdoor::kRad2Deg;
+  }
+
   /// "Usable fix": status >= FIX, finite lat/lon, enough satellites, small enough covariance.
   bool fixGood(std::string* why = nullptr) const
   {
@@ -433,31 +502,70 @@ private:
     return true;
   }
 
-  // ---------------------------------------------------------- the origin
-  void captureOrigin()
+  // ----------------------------------------------- origin (fix averaging)
+  void resetFixAveraging()
   {
-    ltp_ = outdoor::LocalTangentPlane(fix_.latitude, fix_.longitude, fix_.altitude);
+    stable_since_valid_ = false;
+    fix_n_ = 0;
+    sum_lat_ = sum_lon_ = sum_alt_ = 0.0;
+  }
+
+  /// Adds every NEW fix once (the control tick runs faster than the GPS).
+  void accumulateFix()
+  {
+    if (fix_seq_ == last_acc_seq_) return;
+    last_acc_seq_ = fix_seq_;
+    sum_lat_ += fix_.latitude;
+    sum_lon_ += fix_.longitude;
+    sum_alt_ += fix_.altitude;
+    ++fix_n_;
+  }
+
+  // ---------------------------------------------------------- the origin
+  /// Returns false (state already FAULT) when the mission would leave the geofence.
+  bool captureOrigin()
+  {
+    // The vehicle stands still on the ground, so the MEAN of the stable fixes is a better origin
+    // than a single noisy sample (a single fix would put its whole error into every waypoint).
+    const double lat0 = sum_lat_ / fix_n_, lon0 = sum_lon_ / fix_n_, alt0 = sum_alt_ / fix_n_;
+    ltp_ = outdoor::LocalTangentPlane(lat0, lon0, alt0);
     launch_ = posePos();                 // local pose at the same instant as the fix
     cmd_yaw_ = poseYaw();
     origin_valid_ = true;
 
-    poi_ = {launch_.x + p_.poi_east, launch_.y + p_.poi_north};
+    if (poiFromGeodetic()) {
+      const Vec3 q = toLocal({p_.poi_lat, p_.poi_lon, alt0});     // geodetic -> local ENU (planning)
+      poi_ = {q.x, q.y};
+    } else {
+      poi_ = {launch_.x + p_.poi_east, launch_.y + p_.poi_north};
+    }
     corners_ = outdoor::squareCorners(poi_, p_.square_side);
     z_fly_ = launch_.z + p_.flight_altitude;
+
+    const double r = outdoor::missionMaxRadius({poi_.x - launch_.x, poi_.y - launch_.y}, p_.square_side, p_.amplitude);
+    RCLCPP_INFO(get_logger(), "Mission envelope: max horizontal distance from launch = %.2f m (limit %.2f m)",
+      r, p_.max_horizontal);
+    if (r > p_.max_horizontal) {
+      fault("mission reaches " + std::to_string(r) + " m from launch, limit is " +
+            std::to_string(p_.max_horizontal) + " m");
+      return false;
+    }
 
     sq_.clear();
     for (const Vec2& c : corners_) sq_.push_back(c);
     if (p_.close_square) sq_.push_back(corners_[0]);
 
-    RCLCPP_INFO(get_logger(), "ORIGIN (launch point): lat=%.7f lon=%.7f alt(AMSL)=%.2f m | local ENU=(%.2f, %.2f, %.2f) | yaw=%.1f deg",
-      fix_.latitude, fix_.longitude, fix_.altitude, launch_.x, launch_.y, launch_.z, poseYaw() * outdoor::kRad2Deg);
-    if (have_home_)
+    RCLCPP_INFO(get_logger(),
+      "ORIGIN (launch point): lat=%.7f lon=%.7f alt(AMSL)=%.2f m (mean of %d fixes) | local ENU=(%.2f, %.2f, %.2f) | yaw=%.1f deg",
+      lat0, lon0, alt0, fix_n_, launch_.x, launch_.y, launch_.z, poseYaw() * outdoor::kRad2Deg);
+    if (have_home_) {
+      const outdoor::Enu h = ltp_.toEnu({home_.geo.latitude, home_.geo.longitude, home_.geo.altitude});
       RCLCPP_INFO(get_logger(), "MAVROS home: lat=%.7f lon=%.7f alt=%.2f (differs from origin by %.2f m horizontally)",
-        home_.geo.latitude, home_.geo.longitude, home_.geo.altitude,
-        std::hypot(ltp_.toEnu({home_.geo.latitude, home_.geo.longitude, home_.geo.altitude}).e,
-                   ltp_.toEnu({home_.geo.latitude, home_.geo.longitude, home_.geo.altitude}).n));
+        home_.geo.latitude, home_.geo.longitude, home_.geo.altitude, std::hypot(h.e, h.n));
+    }
     reportGeodeticPlan();
     publishIntendedPath();
+    return true;
   }
 
   Vec3 toLocal(const outdoor::Geodetic& g) const
@@ -508,16 +616,27 @@ private:
   /// Moves the "carrot" (the position we command) towards `goal` at `speed`, but never lets it
   /// run more than max_lead ahead of the real drone.  Returns true when the carrot is at the
   /// goal AND the drone is within waypoint_tol of it.
+  ///
+  /// The carrot's speed follows a trapezoidal profile: it rises by at most max_accel*dt per tick
+  /// and is capped by sqrt(2*max_accel*d), the speed from which it can still stop at the goal.
+  /// Without this the velocity setpoint jumps 0 -> 0.5 m/s at the start of every side and
+  /// 0.5 -> 0 at its end (a 90 deg velocity step at each corner); ArduPilot answers such a step
+  /// with a sharp tilt, which is the "nose dip" visible at the corners of the square.
   bool flyCarrotTo(const Vec3& goal, double speed, double dt)
   {
     const Vec3 pos = posePos();
-    if (outdoor::dist3(pos, carrot_) < p_.max_lead) {
+    cmd_vel_ = {0.0, 0.0, 0.0};
+    if (outdoor::dist3(pos, carrot_) >= p_.max_lead) carrot_speed_ = 0.0;   // wait for the drone
+    else {
       const double d = outdoor::dist3(carrot_, goal);
       if (d > 1e-9) {
-        const double step = std::min(speed * dt, d);
-        carrot_.x += (goal.x - carrot_.x) / d * step;
-        carrot_.y += (goal.y - carrot_.y) / d * step;
-        carrot_.z += (goal.z - carrot_.z) / d * step;
+        carrot_speed_ = std::min({speed, carrot_speed_ + p_.max_accel * dt, std::sqrt(2.0 * p_.max_accel * d)});
+        const double step = std::min(carrot_speed_ * dt, d);
+        const double ux = (goal.x - carrot_.x) / d, uy = (goal.y - carrot_.y) / d, uz = (goal.z - carrot_.z) / d;
+        carrot_.x += ux * step;
+        carrot_.y += uy * step;
+        carrot_.z += uz * step;
+        cmd_vel_ = {ux * step / dt, uy * step / dt, uz * step / dt};   // the carrot's own velocity
       }
     }
     cmd_ = carrot_;
@@ -529,28 +648,54 @@ private:
     cmd_yaw_ = outdoor::slewAngle(cmd_yaw_, target, p_.yaw_rate_limit_deg * outdoor::kDeg2Rad * dt);
   }
 
-  /// Yaw continuously aimed at the POI, recomputed every tick from the COMMANDED position.
-  /// (Commanded rather than measured: smooth and deterministic; the measured error is logged.)
-  /// Right at the POI the bearing is undefined, so the last yaw is held there.
+  /// Transit leg: nose along the direction of travel (rule 4 of the assignment) until the drone
+  /// is within transit_turn_radius of `goal`; from there `final_yaw` is used (the heading the
+  /// next phase needs).  Very close to the goal the bearing is undefined, so the last yaw is held.
+  void updateYawForTransit(const Vec2& goal, double final_yaw, double dt)
+  {
+    const Vec3 p = posePos();
+    const Vec2 here{p.x, p.y};
+    const double d = outdoor::dist2(here, goal);
+    if (d > p_.transit_turn_radius) slewYawTo(outdoor::bearingYaw(here, goal), dt);
+    else slewYawTo(final_yaw, dt);
+  }
+
+  /// Yaw continuously aimed at the POI, recomputed every tick.
+  /// The bearing is taken from the MEASURED position (poi_yaw_from_measured): the carrot runs
+  /// ahead of the drone by the tracking lag, so a bearing from the carrot points the nose at a
+  /// place the drone is not at.  On top of that the position is extrapolated by yaw_lead_s *
+  /// measured velocity: the yaw controller itself lags the setpoint by roughly that time, and the
+  /// bearing changes fastest in the middle of each side (~speed / distance).  Right at the POI
+  /// the bearing is undefined, so the last yaw is held there.
   void updateYawToPoi(double dt)
   {
-    const Vec2 c{carrot_.x, carrot_.y};
-    if (outdoor::dist2(c, poi_) > 0.5) slewYawTo(outdoor::bearingYaw(c, poi_), dt);
+    const Vec3 p = posePos();
+    Vec2 from = p_.poi_yaw_from_measured ? Vec2{p.x, p.y} : Vec2{carrot_.x, carrot_.y};
+    if (p_.yaw_lead_s > 0.0 && have_vel_ && fresh(vel_time_, 0.5)) {
+      from.x += vel_.twist.linear.x * p_.yaw_lead_s;     // velocity_local is ENU
+      from.y += vel_.twist.linear.y * p_.yaw_lead_s;
+    }
+    if (outdoor::dist2(from, poi_) > 0.5) slewYawTo(outdoor::bearingYaw(from, poi_), dt);
   }
 
   void publishSetpoint()
   {
-    mavros_msgs::msg::PositionTarget m;
+    using PT = mavros_msgs::msg::PositionTarget;
+    PT m;
     m.header.stamp = now();
     m.header.frame_id = "map";
-    m.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;   // MAVROS converts ENU->NED
-    m.type_mask = static_cast<uint16_t>(
-      mavros_msgs::msg::PositionTarget::IGNORE_VX | mavros_msgs::msg::PositionTarget::IGNORE_VY |
-      mavros_msgs::msg::PositionTarget::IGNORE_VZ | mavros_msgs::msg::PositionTarget::IGNORE_AFX |
-      mavros_msgs::msg::PositionTarget::IGNORE_AFY | mavros_msgs::msg::PositionTarget::IGNORE_AFZ |
-      mavros_msgs::msg::PositionTarget::FORCE | mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE);
+    m.coordinate_frame = PT::FRAME_LOCAL_NED;                  // MAVROS converts ENU->NED
+    uint16_t mask = PT::IGNORE_AFX | PT::IGNORE_AFY | PT::IGNORE_AFZ | PT::FORCE | PT::IGNORE_YAW_RATE;
     m.position.x = cmd_.x; m.position.y = cmd_.y; m.position.z = cmd_.z;
-    m.yaw = static_cast<float>(cmd_yaw_);                                      // ENU yaw, kept continuous
+    if (p_.velocity_feedforward) {
+      // position + velocity: ArduPilot tracks the position and uses the velocity as feed-forward,
+      // so the drone no longer lags behind the setpoint by ~speed / P-gain.
+      m.velocity.x = cmd_vel_.x; m.velocity.y = cmd_vel_.y; m.velocity.z = cmd_vel_.z;
+    } else {
+      mask |= PT::IGNORE_VX | PT::IGNORE_VY | PT::IGNORE_VZ;
+    }
+    m.type_mask = mask;
+    m.yaw = static_cast<float>(cmd_yaw_);                      // ENU yaw, kept continuous
     setpoint_pub_->publish(m);
   }
 
@@ -649,7 +794,7 @@ private:
       case State::TO_START: case State::SQUARE: case State::TO_CENTER: case State::RETURN:
         limit = p_.segment_timeout; break;
       case State::FIGURE8:
-        limit = p_.laps * 2.0 * outdoor::kPi / p_.omega + p_.ramp_s + 30.0; break;
+        limit = p_.laps * 2.0 * outdoor::kPi / p_.omega + p_.ramp_s + p_.figure8_close_timeout + 30.0; break;
       case State::LAND: case State::ABORTING: limit = p_.landing_timeout; break;
       default: break;
     }
@@ -665,13 +810,21 @@ private:
   void tickWaitGps()
   {
     std::string why;
-    if (!vehicle_state_.connected) { stable_since_valid_ = false; logWaiting("MAVROS/FCU not connected"); return; }
+    if (!vehicle_state_.connected) { resetFixAveraging(); logWaiting("MAVROS/FCU not connected"); return; }
     if (!have_pose_) { logWaiting("no local pose yet"); return; }
-    if (!fixGood(&why)) { stable_since_valid_ = false; logWaiting("GPS not usable: " + why); return; }
-    if (!stable_since_valid_) { stable_since_ = SteadyClock::now(); stable_since_valid_ = true; return; }
+    if (!fixGood(&why)) { resetFixAveraging(); logWaiting("GPS not usable: " + why); return; }
+    if (!stable_since_valid_) {
+      resetFixAveraging();
+      stable_since_ = SteadyClock::now();
+      stable_since_valid_ = true;
+      return;
+    }
+    accumulateFix();                                      // average the fixes during the stable window
     if (std::chrono::duration<double>(SteadyClock::now() - stable_since_).count() < p_.fix_stable_s) return;
-    RCLCPP_INFO(get_logger(), "GPS fix usable and stable for %.1f s (%u satellites)", p_.fix_stable_s, satellites_);
-    captureOrigin();
+    if (fix_n_ == 0) return;
+    RCLCPP_INFO(get_logger(), "GPS fix usable and stable for %.1f s (%u satellites, %d fixes averaged)",
+      p_.fix_stable_s, satellites_, fix_n_);
+    if (!captureOrigin()) return;
     transition(State::SET_MODE);
   }
 
@@ -691,12 +844,20 @@ private:
     transition(State::TO_START);
   }
 
+  /// Transit from the launch point to W1: nose along the direction of travel; near W1 the drone
+  /// turns to the bearing of the POI, and the square only starts once it is locked on (< 5 deg).
+  /// Starting the square with a wrong heading (e.g. 97 deg off) would pollute the POI-tracking error.
   void tickToStart(double dt)
   {
-    updateYawToPoi(dt);
-    if (flyCarrotTo({corners_[0].x, corners_[0].y, z_fly_}, p_.square_speed, dt)) {
+    const Vec2 w1 = corners_[0];
+    const Vec3 p = posePos();
+    updateYawForTransit(w1, outdoor::bearingYaw(w1, poi_), dt);
+    const bool at_goal = flyCarrotTo({w1.x, w1.y, z_fly_}, p_.square_speed, dt);
+    const double poi_yaw = outdoor::bearingYaw({p.x, p.y}, poi_);
+    const bool locked = std::fabs(outdoor::wrapPi(poseYaw() - poi_yaw)) < 5.0 * outdoor::kDeg2Rad;
+    if (at_goal && locked) {
       square_index_ = 1;
-      RCLCPP_INFO(get_logger(), "At W1");
+      RCLCPP_INFO(get_logger(), "At W1, nose locked on the POI");
       transition(State::SQUARE);
     }
   }
@@ -713,11 +874,13 @@ private:
 
   void tickToCenter(double dt)
   {
-    // At theta = 0 the figure-8 is at the POI heading along atan2(cos 0, cos 0) = 45 deg.
-    const double yaw_target = outdoor::figure8Yaw(0.0);
-    slewYawTo(yaw_target, dt);
+    // Flying W1 -> POI the nose points along the direction of travel; only the last
+    // transit_turn_radius metres turn to the tangent heading of the figure-8 at theta = 0
+    // (atan2(cos 0, cos 0) = 45 deg), which the lap needs when it starts.
+    const double tangent = outdoor::figure8Yaw(0.0);
+    updateYawForTransit(poi_, tangent, dt);
     const bool there = flyCarrotTo({poi_.x, poi_.y, z_fly_}, p_.square_speed, dt);
-    const bool yaw_ok = std::fabs(outdoor::wrapPi(poseYaw() - yaw_target)) < 10.0 * outdoor::kDeg2Rad;
+    const bool yaw_ok = std::fabs(outdoor::wrapPi(poseYaw() - tangent)) < 10.0 * outdoor::kDeg2Rad;
     const bool calm = have_vel_ && fresh(vel_time_, 0.5) && speed() <= p_.stabilize_speed;
     if (there && yaw_ok && calm) {
       RCLCPP_INFO(get_logger(), "Centred on POI with tangent heading -- starting figure-8 timer");
@@ -728,29 +891,62 @@ private:
   void tickFigure8(double)
   {
     const double s = std::chrono::duration<double>(SteadyClock::now() - f8_started_).count();
-    const double theta = outdoor::figure8Phase(p_.omega, p_.ramp_s, s);   // theta = omega * t (with soft start)
-    if (theta >= 2.0 * outdoor::kPi * p_.laps) {
-      RCLCPP_INFO(get_logger(), "Figure-8 complete (%.2f laps in %.1f s)", p_.laps, s);
+    const double th_end = 2.0 * outdoor::kPi * p_.laps;
+    // theta = omega * t, with a soft start and a soft stop (rate ramps 0 -> omega -> 0)
+    const double theta = outdoor::figure8Phase(p_.omega, p_.ramp_s, s, th_end);
+    if (theta >= th_end) {
+      // The commanded curve is finished: hold its END point until the drone has actually
+      // reached it (any remaining lag), so the lap is not cut short.  A timeout keeps this
+      // from hanging.
+      if (!f8_done_) { f8_done_ = true; f8_done_at_ = SteadyClock::now(); }
+      const auto f_end = outdoor::figure8(p_.amplitude, th_end);
+      cmd_ = {poi_.x + f_end.x, poi_.y + f_end.y, z_fly_};
+      cmd_vel_ = {0.0, 0.0, 0.0};
       carrot_ = cmd_;
-      transition(State::RETURN);
+      const bool arrived = outdoor::dist3(posePos(), cmd_) <= p_.waypoint_tol;
+      const bool timeout =
+        std::chrono::duration<double>(SteadyClock::now() - f8_done_at_).count() > p_.figure8_close_timeout;
+      if (arrived || timeout) {
+        RCLCPP_INFO(get_logger(), "Figure-8 complete (%.2f laps in %.1f s)%s", p_.laps, s,
+          arrived ? "" : " [closing timed out]");
+        transition(State::RETURN);
+      }
       return;
     }
     const auto f = outdoor::figure8(p_.amplitude, theta);
     cmd_ = {poi_.x + f.x, poi_.y + f.y, z_fly_};
-    cmd_yaw_ = outdoor::unwrapNear(cmd_yaw_, outdoor::figure8Yaw(theta));   // tangent heading, unwrapped
+    const double rate = outdoor::figure8PhaseRate(p_.omega, p_.ramp_s, s, th_end);   // d(theta)/dt
+    cmd_vel_ = {f.dx * rate, f.dy * rate, 0.0};                              // analytic velocity
+    // Tangent heading evaluated yaw_lead_s ahead (compensates the yaw controller lag), unwrapped.
+    cmd_yaw_ = outdoor::unwrapNear(cmd_yaw_, outdoor::figure8Yaw(theta + p_.yaw_lead_s * rate));
     carrot_ = cmd_;
   }
 
   void tickReturn(double dt)
   {
+    // Transit back to the launch point: nose along the direction of travel; the last
+    // transit_turn_radius metres hold the last heading (no pointless spin before landing).
+    const Vec3 p = posePos();
+    const Vec2 here{p.x, p.y}, home{launch_.x, launch_.y};
+    if (outdoor::dist2(here, home) > p_.transit_turn_radius) slewYawTo(outdoor::bearingYaw(here, home), dt);
     if (flyCarrotTo({launch_.x, launch_.y, z_fly_}, p_.square_speed, dt)) {
       RCLCPP_INFO(get_logger(), "Back above the launch point -> landing");
       transition(State::LAND);
     }
   }
 
+  /// While we switch GUIDED -> LAND / abort mode, any OTHER mode means the safety pilot has
+  /// taken over with the RC: stop instead of switching it back every second.
+  bool pilotTookOver(const std::string& our_mode)
+  {
+    if (vehicle_state_.mode == "GUIDED" || vehicle_state_.mode == our_mode) return false;
+    stopSilently("flight mode changed to " + vehicle_state_.mode + " (RC override?) -- not fighting the pilot");
+    return true;
+  }
+
   void tickLand()
   {
+    if (pilotTookOver("LAND")) return;
     if (vehicle_state_.mode != "LAND") { trySetMode("LAND"); return; }
     if (!vehicle_state_.armed) {
       RCLCPP_INFO(get_logger(), "Landed and disarmed. Mission complete.");
@@ -760,6 +956,7 @@ private:
 
   void tickAborting()
   {
+    if (pilotTookOver(p_.abort_mode)) return;
     if (vehicle_state_.mode == p_.abort_mode) {
       RCLCPP_WARN(get_logger(), "Vehicle is in %s. Mission node is now passive.", p_.abort_mode.c_str());
       transition(State::ABORTED);
@@ -786,6 +983,7 @@ private:
       const outdoor::Enu g = ltp_.toEnu({fix_.latitude, fix_.longitude, fix_.altitude});
       o << " | ENU from launch: pose=(" << p.x - launch_.x << ", " << p.y - launch_.y << ", " << p.z - launch_.z
         << ") gps=(" << g.e << ", " << g.n << ", " << g.u << ")";
+      if (state_ == State::SQUARE || state_ == State::TO_START) o << " | poi_pitch=" << poiPitchDeg() << " deg";
     }
     if (have_rel_alt_) o << " | rel_alt=" << rel_alt_;
     o << " | yaw_ENU(pose)=" << yaw_pose_deg << " deg";
@@ -816,19 +1014,27 @@ private:
     if (!log_ || !origin_valid_ || !have_pose_) return;
     const Vec3 p = posePos();
     const double yaw = poseYaw();
-    double poi_err = std::nan("");
-    if (state_ == State::TO_START || state_ == State::SQUARE) {
+    // Commanded values only exist while we actually stream setpoints.  Outside of that (takeoff
+    // is handled by ArduPilot, landing too) they are NaN, so plots do not show fake "errors".
+    const bool streaming = isStreaming(state_) && state_ != State::TAKEOFF;
+    const double nan = std::nan("");
+    double poi_err = nan;
+    if (state_ == State::SQUARE) {
       const Vec2 a{p.x, p.y};
       if (outdoor::dist2(a, poi_) > 0.5)
         poi_err = outdoor::wrapDeg180((yaw - outdoor::bearingYaw(a, poi_)) * outdoor::kRad2Deg);
     }
     const double t = std::chrono::duration<double>(SteadyClock::now() - log_start_).count();
-    log_ << std::fixed << std::setprecision(4) << t << "," << stateName(state_) << "," << cmd_.x << "," << cmd_.y
-         << "," << cmd_.z << "," << outdoor::wrapDeg180(cmd_yaw_ * outdoor::kRad2Deg) << "," << p.x << "," << p.y
-         << "," << p.z << "," << yaw * outdoor::kRad2Deg << ","
-         << outdoor::wrapDeg180((yaw - cmd_yaw_) * outdoor::kRad2Deg) << "," << poi_err << ","
-         << outdoor::dist3(p, cmd_) << "," << (have_rel_alt_ ? rel_alt_ : std::nan("")) << ","
-         << (have_hdg_ ? compass_hdg_deg_ : std::nan("")) << "\n";
+    log_ << std::fixed << std::setprecision(4) << t << "," << stateName(state_) << ","
+         << (streaming ? cmd_.x : nan) << "," << (streaming ? cmd_.y : nan) << ","
+         << (streaming ? cmd_.z : nan) << ","
+         << (streaming ? outdoor::wrapDeg180(cmd_yaw_ * outdoor::kRad2Deg) : nan) << ","
+         << p.x << "," << p.y << "," << p.z << "," << yaw * outdoor::kRad2Deg << ","
+         << (streaming ? outdoor::wrapDeg180((yaw - cmd_yaw_) * outdoor::kRad2Deg) : nan) << "," << poi_err << ","
+         << (streaming ? outdoor::dist3(p, cmd_) : nan) << "," << (have_rel_alt_ ? rel_alt_ : nan) << ","
+         << (have_hdg_ ? compass_hdg_deg_ : nan) << ","
+         << (streaming ? cmd_vel_.x : nan) << "," << (streaming ? cmd_vel_.y : nan) << ","
+         << poiPitchDeg() << "\n";
   }
 
   // ------------------------------------------------------------- members
@@ -836,11 +1042,12 @@ private:
   State state_ = State::WAIT_GPS;
   SteadyClock::time_point state_started_ = SteadyClock::now(), last_wait_log_ = state_started_;
   SteadyClock::time_point last_tick_ = state_started_, last_status_ = state_started_, last_path_ = state_started_;
-  SteadyClock::time_point stable_since_ = state_started_, f8_started_ = state_started_;
+  SteadyClock::time_point stable_since_ = state_started_, f8_started_ = state_started_, f8_done_at_ = state_started_;
   SteadyClock::time_point service_started_ = state_started_, last_service_try_ = state_started_;
   SteadyClock::time_point pose_time_ = state_started_, vel_time_ = state_started_, fix_time_ = state_started_;
   SteadyClock::time_point log_start_ = state_started_;
   bool stable_since_valid_ = false;
+  bool f8_done_ = false;
 
   // telemetry
   mavros_msgs::msg::State vehicle_state_;
@@ -853,6 +1060,11 @@ private:
   bool have_pose_ = false, have_vel_ = false, have_fix_ = false, have_sats_ = false;
   bool have_hdg_ = false, have_rel_alt_ = false, have_home_ = false;
 
+  // origin averaging
+  uint64_t fix_seq_ = 0, last_acc_seq_ = 0;
+  int fix_n_ = 0;
+  double sum_lat_ = 0.0, sum_lon_ = 0.0, sum_alt_ = 0.0;
+
   // services
   bool service_pending_ = false, takeoff_requested_ = false, takeoff_acknowledged_ = false;
   uint64_t service_id_ = 0;
@@ -861,8 +1073,8 @@ private:
   // mission geometry (local ENU)
   bool origin_valid_ = false;
   outdoor::LocalTangentPlane ltp_;
-  Vec3 launch_, cmd_, carrot_;
-  double z_fly_ = 0.0, cmd_yaw_ = 0.0;
+  Vec3 launch_, cmd_, carrot_, cmd_vel_;   // cmd_vel_: feed-forward velocity, ENU [m/s]
+  double z_fly_ = 0.0, cmd_yaw_ = 0.0, carrot_speed_ = 0.0;
   Vec2 poi_;
   std::array<Vec2, 4> corners_;
   std::vector<Vec2> sq_;
@@ -882,6 +1094,7 @@ private:
   rclcpp::Subscription<mavros_msgs::msg::HomePosition>::SharedPtr home_sub_;
   rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr setpoint_pub_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr intended_path_pub_, flown_path_pub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state_pub_;
   rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr mode_client_;
   rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr arm_client_;
   rclcpp::Client<mavros_msgs::srv::CommandTOL>::SharedPtr takeoff_client_;
