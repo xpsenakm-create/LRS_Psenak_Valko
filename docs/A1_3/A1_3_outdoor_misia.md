@@ -50,7 +50,7 @@ polomerom Zeme v mieste štartu a dostaneme metre na východ a na sever. Funguje
 takže vieme vypísať, kde sme leteli, v lat/lon.
 
 **Prečo:** misia má priemer pod 8 m. Overili sme to proti presnému prevodu: na 50 m je chyba
-0.25 mm a na našej misii ~0.003 mm, teda tisícky krát menej ako šum GPS (~1 m). Knižnica
+0.25 mm a na našej misii ~0.003 mm, teda státisíckrát menej ako šum GPS (~1 m). Knižnica
 GeographicLib by nič nezlepšila.
 
 **Plusy / mínusy:** + jednoduché, bez ďalšej knižnice. − Na vzdialenosti v kilometroch by
@@ -87,7 +87,7 @@ a to 2 s v kuse.
 ### Pohyb po štvorci
 
 **Čo:** dron neposielame rovno do rohu, ale posúvame pred ním bod (tzv. mrkvu), za ktorým letí.
-Mrkva sa rozbieha a brzdí plynulo (najviac 0.5 m/s²) a ide najviac 0.5 m/s. Okrem polohy
+Mrkva sa rozbieha a brzdí plynulo (najviac 0.5 m/s²). Okrem polohy
 posielame aj rýchlosť mrkvy, aby dron nezaostával.
 
 **Prečo:** keď mrkva v rohu zastala naraz a hneď vyrazila do strany, dron sa v rohoch prudko
@@ -152,7 +152,7 @@ POI ho vyhodnocujeme o kúsok dopredu a držíme spojitý. Posielame uhol, nie r
 
 **Prečo uhol:** pri rýchlosti otáčania by sa malé chyby sčítavali a nos by sa postupne
 odchýlil. Uhol sa vždy opraví sám. V strede krivky prechádza dron dvakrát rôznym smerom
-(45° a −45°), čo je správne.
+(45° a −45°).
 
 **Plusy / mínusy:** + žiadne otočky ani cuknutia. − Na koncoch slučiek nos zaostáva až o ~24°,
 lebo potrebné otáčanie je blízko limitu ArduPilota.
@@ -185,14 +185,3 @@ zásahu dvakrát po sebe.
 ![Osmička](img/vysledok_osmicka.png)
 
 ![Chyba natočenia nosa](img/vysledok_chyba_yaw.png)
-
-## Čo nefunguje dokonale
-
-- **Nos na osmičke** na koncoch slučiek zaostáva až o ~24°. Príčina: potrebné otáčanie
-  54.5 °/s je blízko limitu ArduPilota. Pomohlo by menšie ω (0.25), ale kolo by trvalo dlhšie.
-- **Poloha zo simulátora chodí len 4× za sekundu,** hoci riadime 30× za sekundu. Dá sa to
-  zvýšiť nastavením MAVROS, zatiaľ sme to nerobili.
-- **Malá rezerva geofence** (3.71 m z limitu 4 m). Na reálnom drone s vetrom a horším GPS
-  treba limit zvýšiť.
-- **GPS v simulátore je skoro dokonalé.** So zašumeným GPS sme netestovali.
-- **POI je v mieste štartu,** takže návrat po osmičke je veľmi krátky.

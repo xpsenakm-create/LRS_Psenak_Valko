@@ -48,6 +48,43 @@ int main()
   const Enu q = ltp.toEnu(ltp.toGeodetic(p));
   NEAR(q.e, p.e, 1e-9); NEAR(q.n, p.n, 1e-9); NEAR(q.u, p.u, 1e-9);
 
+  // ---- error of the flat-Earth approximation -------------------------------
+  // Reference = exact conversion geodetic -> ECEF (x, y, z from the Earth's centre) -> ENU
+  // (rotation into east/north/up at the origin), i.e. what GeographicLib computes.
+  // Points on circles of radius 5, 50 and 500 m around the outdoor world's origin.
+  {
+    const double lat0 = 48.15144444, lon0 = 17.07375, h0 = 193.7;
+    const double a = 6378137.0, f = 1.0 / 298.257223563, e2 = f * (2.0 - f);
+    auto ecef = [&](double lat, double lon, double h) {
+      const double p = lat * kDeg2Rad, l = lon * kDeg2Rad;
+      const double N = a / std::sqrt(1.0 - e2 * std::sin(p) * std::sin(p));
+      return std::array<double, 3>{(N + h) * std::cos(p) * std::cos(l), (N + h) * std::cos(p) * std::sin(l),
+                                   (N * (1.0 - e2) + h) * std::sin(p)};
+    };
+    auto exactEnu = [&](const Geodetic& g) {
+      const auto o = ecef(lat0, lon0, h0), c = ecef(g.lat_deg, g.lon_deg, g.alt_m);
+      const double dx = c[0] - o[0], dy = c[1] - o[1], dz = c[2] - o[2];
+      const double p = lat0 * kDeg2Rad, l = lon0 * kDeg2Rad;
+      return Enu{-std::sin(l) * dx + std::cos(l) * dy,
+                 -std::sin(p) * std::cos(l) * dx - std::sin(p) * std::sin(l) * dy + std::cos(p) * dz,
+                 std::cos(p) * std::cos(l) * dx + std::cos(p) * std::sin(l) * dy + std::sin(p) * dz};
+    };
+    const LocalTangentPlane field(lat0, lon0, h0);
+    double err_at[3] = {0.0, 0.0, 0.0};
+    const double radius[3] = {5.0, 50.0, 500.0};
+    for (int k = 0; k < 3; ++k) {
+      for (int i = 0; i < 36; ++i) {                          // every 10 deg around the circle
+        const double az = 2.0 * kPi * i / 36.0;
+        const Geodetic g = field.toGeodetic({radius[k] * std::cos(az), radius[k] * std::sin(az), 0.0});
+        const Enu flat = field.toEnu(g), exact = exactEnu(g);
+        err_at[k] = std::max(err_at[k], std::hypot(flat.e - exact.e, flat.n - exact.n));
+      }
+      std::printf("flat-Earth horizontal error at %5.0f m: %.4f mm\n", radius[k], err_at[k] * 1000.0);
+    }
+    CHECK(err_at[0] < 1e-5, "5 m error %.3g m", err_at[0]);   // our mission: < 0.01 mm
+    CHECK(err_at[1] < 1e-3, "50 m error %.3g m", err_at[1]);  // whole field: < 1 mm
+  }
+
   // ---- figure-8 ------------------------------------------------------------
   const double A = 3.0;
   const Figure8Sample c0 = figure8(A, 0.0);
