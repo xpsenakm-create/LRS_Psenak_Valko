@@ -1,0 +1,33 @@
+digraph G {
+  rankdir=TB; bgcolor=white; pad=0.25; nodesep=0.45; ranksep=0.75;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.4,
+        fontname="DejaVu Sans", fontsize=13, margin="0.16,0.08"];
+  edge [color="#52514e", penwidth=1.3, arrowsize=0.8, fontname="DejaVu Sans", fontsize=11, fontcolor="#3f3f3f"];
+  subgraph cluster_exec {
+    label="mission_executor_node (MultiThreadedExecutor, 2 callback skupiny, 1 mutex)";
+    fontname="DejaVu Sans"; fontsize=14; style="rounded"; color="#2a78d6"; penwidth=1.4;
+    subs  [label="skupina „state“: subscription callbacky\n(len uložia poslednú správu)"];
+    resp  [label="odpovede služieb\n(asynchrónne, s id požiadavky)"];
+    tick  [label="skupina „timer“: wall timer 20 Hz – tick()\nkontroly → stavový automat\n→ setpoint, CSV log"];
+    subs -> tick [style=dotted, label="  členské premenné\n  (pod mutexom)"];
+    resp -> tick [style=dotted];
+  }
+  planner [label="map_planner_node\n(A1.1, A*)", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  mavros  [label="MAVROS\n(mavros_node)", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  sitl    [label="ArduPilot SITL\n(GUIDED)", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  gz      [label="Gazebo\nfei_lrs_gazebo.world", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  bag     [label="ros2 bag record", shape=cylinder, fillcolor="#f4f4f2", color="#888888"];
+  logs    [label="flight_log.csv, planned_paths.csv\n→ plot_a1_2.py, view_3d_a1_2.py", shape=cylinder, fillcolor="#f4f4f2", color="#888888"];
+  mavros -> subs [label="  /mavros/state, local_position/pose,\n  velocity_local, global_position/global,\n  statustext/recv"];
+  tick -> mavros [label="  /mavros/setpoint_position/local\n  (poloha + yaw)"];
+  tick -> mavros [style=dashed, label="  služby: set_mode, cmd/arming,\n  cmd/takeoff, cmd/land"];
+  mavros -> resp [style=dashed];
+  tick -> planner [xlabel="/plan_request "];
+  planner -> subs [xlabel="/planned_path,\n/planning_status "];
+  mavros -> sitl [dir=both, label="  MAVLink UDP 14550"];
+  sitl -> gz [dir=both, label="  JSON FDM (lock-step)"];
+  tick -> logs;
+  tick -> bag [label="  /mission/flown_path"];
+  { rank=same; planner; mavros; }
+  { rank=same; logs; bag; sitl; gz; }
+}

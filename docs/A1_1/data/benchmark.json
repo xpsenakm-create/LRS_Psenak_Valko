@@ -1,0 +1,939 @@
+[
+ {
+  "radius": 0.3,
+  "startup_s": 1.5,
+  "bounds": "x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]",
+  "voxels": "73069",
+  "inflated": "234353",
+  "grid": "128 x 102 x 46",
+  "points_raw": "62689",
+  "routes": [
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 58,
+    "points": 2,
+    "length_m": 8.76,
+    "raw_length_m": 9.42,
+    "time_ms": 13.3,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.50, 9.10, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.76 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 58\n   Body po zjednodušení  : 2\n   Dĺžka trasy (finálna) : 8.76 m\n   Dĺžka pôvodnej trasy  : 9.42 m\n   Čas plánovania        : 13.3 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (4.50, 9.10, 1.50) m   +8.76 m   8.76 m\n================================================================",
+    "name": "okolo regálu do uličky",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.5,
+     9.1,
+     1.5
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      4.5,
+      9.1,
+      1.5
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 52,
+    "points": 3,
+    "length_m": 9.12,
+    "raw_length_m": 10.21,
+    "time_ms": 10.3,
+    "expansions": null,
+    "report": "================================================================\n Štart : (12.00, 4.00, 1.00) m\n Cieľ  : (4.30, 6.80, 4.80) m\n Priama vzdialenosť štart-cieľ: 9.03 m  (dz = 3.80 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 52\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 9.12 m\n   Dĺžka pôvodnej trasy  : 10.21 m\n   Čas plánovania        : 10.3 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (12.00, 4.00, 1.00) m   +0.00 m   0.00 m\n    1  (4.73, 6.38, 4.28) m   +8.32 m   8.32 m\n    2  (4.30, 6.80, 4.80) m   +0.80 m   9.12 m\n================================================================",
+    "name": "cez regál (stúpanie)",
+    "start": [
+     12.0,
+     4.0,
+     1.0
+    ],
+    "goal": [
+     4.3,
+     6.8,
+     4.8
+    ],
+    "path": [
+     [
+      12.0,
+      4.0,
+      1.0
+     ],
+     [
+      4.725000187754631,
+      6.37500025331974,
+      4.275000169873238
+     ],
+     [
+      4.3,
+      6.8,
+      4.8
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 29,
+    "points": 3,
+    "length_m": 5.37,
+    "raw_length_m": 5.76,
+    "time_ms": 11.2,
+    "expansions": null,
+    "report": "================================================================\n Štart : (8.65, 2.02, 1.00) m\n Cieľ  : (4.84, 5.37, 2.00) m\n Priama vzdialenosť štart-cieľ: 5.17 m  (dz = 1.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 29\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 5.37 m\n   Dĺžka pôvodnej trasy  : 5.76 m\n   Čas plánovania        : 11.2 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (8.65, 2.02, 1.00) m   +0.00 m   0.00 m\n    1  (7.28, 3.83, 2.03) m   +2.49 m   2.49 m\n    2  (4.84, 5.37, 2.00) m   +2.88 m   5.37 m\n================================================================",
+    "name": "úsek misie wp2→wp3",
+    "start": [
+     8.65,
+     2.02,
+     1.0
+    ],
+    "goal": [
+     4.84,
+     5.37,
+     2.0
+    ],
+    "path": [
+     [
+      8.65,
+      2.02,
+      1.0
+     ],
+     [
+      7.275000289082527,
+      3.825000151991844,
+      2.0250000804662704
+     ],
+     [
+      4.84,
+      5.37,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 46,
+    "points": 3,
+    "length_m": 7.41,
+    "raw_length_m": 8.01,
+    "time_ms": 13.9,
+    "expansions": null,
+    "report": "================================================================\n Štart : (2.08, 9.74, 1.75) m\n Cieľ  : (8.84, 6.90, 2.00) m\n Priama vzdialenosť štart-cieľ: 7.34 m  (dz = 0.25 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 46\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 7.41 m\n   Dĺžka pôvodnej trasy  : 8.01 m\n   Čas plánovania        : 13.9 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (2.08, 9.74, 1.75) m   +0.00 m   0.00 m\n    1  (7.88, 7.73, 2.03) m   +6.14 m   6.14 m\n    2  (8.84, 6.90, 2.00) m   +1.27 m   7.41 m\n================================================================",
+    "name": "úsek misie wp4→wp5",
+    "start": [
+     2.08,
+     9.74,
+     1.75
+    ],
+    "goal": [
+     8.84,
+     6.9,
+     2.0
+    ],
+    "path": [
+     [
+      2.08,
+      9.74,
+      1.75
+     ],
+     [
+      7.875000312924385,
+      7.725000306963921,
+      2.0250000804662704
+     ],
+     [
+      8.84,
+      6.9,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 104,
+    "points": 3,
+    "length_m": 18.19,
+    "raw_length_m": 19.45,
+    "time_ms": 11.2,
+    "expansions": null,
+    "report": "================================================================\n Štart : (16.50, 1.00, 1.00) m\n Cieľ  : (1.00, 9.10, 3.00) m\n Priama vzdialenosť štart-cieľ: 17.60 m  (dz = 2.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 104\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 18.19 m\n   Dĺžka pôvodnej trasy  : 19.45 m\n   Čas plánovania        : 11.2 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (16.50, 1.00, 1.00) m   +0.00 m   0.00 m\n    1  (6.98, 8.33, 2.93) m   +12.17 m   12.17 m\n    2  (1.00, 9.10, 3.00) m   +6.03 m   18.19 m\n================================================================",
+    "name": "dlhá diagonála hangárom",
+    "start": [
+     16.5,
+     1.0,
+     1.0
+    ],
+    "goal": [
+     1.0,
+     9.1,
+     3.0
+    ],
+    "path": [
+     [
+      16.5,
+      1.0,
+      1.0
+     ],
+     [
+      6.975000277161598,
+      8.325000330805779,
+      2.9250001162290573
+     ],
+     [
+      1.0,
+      9.1,
+      3.0
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OCCUPIED",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.32, 6.82, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.68 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OCCUPIED\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (4.32, 6.82, 1.50) m leží PRIAMO V PREKÁŽKE (voxel z mapy alebo z vyplneného regálu).\n    - najbližší voľný bod: (4.32, 5.92, 1.50) m, vzdialenosť 0.90 m (6 voxelov)\n  Tip: posuň bod do voľného priestoru, alebo nastav snap_radius_cells >= 6 (teraz 5), alebo zníž safety_radius.\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v regáli (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.32,
+     6.82,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OUT_OF_BOUNDS",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (25.00, 7.00, 1.50) m\n Priama vzdialenosť štart-cieľ: 12.00 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OUT_OF_BOUNDS\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (25.00, 7.00, 1.50) m leží MIMO plánovacej mriežky.\n    - os x = 25.00 m, povolený rozsah je [-0.75, 18.45] m\n  Tip: skontroluj súradnicový systém (origin mapy vs. pozícia dronu) a jednotky (metre).\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ mimo mapy (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     25.0,
+     7.0,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 34,
+    "points": 3,
+    "length_m": 6.53,
+    "raw_length_m": 7.06,
+    "time_ms": 10.6,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (9.00, 6.00, 6.35) m\n Priama vzdialenosť štart-cieľ: 6.37 m  (dz = 4.85 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 34\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 6.53 m\n   Dĺžka pôvodnej trasy  : 7.06 m\n   Čas plánovania        : 10.6 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (9.08, 5.78, 6.23) m   +6.26 m   6.26 m\n    2  (9.00, 6.00, 6.35) m   +0.27 m   6.53 m\n================================================================",
+    "name": "cieľ nad strechou (diera v mračne)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     9.0,
+     6.0,
+     6.35
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      9.075000360608101,
+      5.775000229477882,
+      6.225000247359276
+     ],
+     [
+      9.0,
+      6.0,
+      6.35
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "NO_PATH",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 633.1,
+    "expansions": 358415,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (3.00, 1.50, 0.80) m\n Priama vzdialenosť štart-cieľ: 11.43 m  (dz = -0.70 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: NO_PATH\n----------------------------------------------------------------\n DÔVOD:\n  Štart aj cieľ sú voľné, ale cieľ je z neho NEDOSIAHNUTEĽNÝ (prehľadaný celý\n  súvislý voľný priestor okolo štartu a cieľ v ňom nie je).\n    - prehľadaných voxelov: 358415 (~1209.7 m3 voľného priestoru)\n    - najbližšie k cieľu sa trasa dostala na 1.20 m, bod (2.93, 1.43, -0.38) m\n  Možné príčiny:\n    1) safety_radius (0.30 m) uzavrel úzky priechod -> skús menší\n    2) cieľ je v uzavretom priestore (za regálom / v obstacle)\n    3) rack_boxes zablokovali jediný priechod -> skontroluj rozmery a yaw\n----------------------------------------------------------------\n Čas plánovania: 633.1 ms, expanzií: 358415\n Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v uzavretej kancelárii",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     3.0,
+     1.5,
+     0.8
+    ],
+    "path": null
+   }
+  ]
+ },
+ {
+  "radius": 0.45,
+  "startup_s": 1.5,
+  "bounds": "x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]",
+  "voxels": "73069",
+  "inflated": "261759",
+  "grid": "128 x 102 x 46",
+  "points_raw": "62689",
+  "routes": [
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 58,
+    "points": 2,
+    "length_m": 8.76,
+    "raw_length_m": 9.42,
+    "time_ms": 4.0,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.50, 9.10, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.76 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 58\n   Body po zjednodušení  : 2\n   Dĺžka trasy (finálna) : 8.76 m\n   Dĺžka pôvodnej trasy  : 9.42 m\n   Čas plánovania        : 4.0 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (4.50, 9.10, 1.50) m   +8.76 m   8.76 m\n================================================================",
+    "name": "okolo regálu do uličky",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.5,
+     9.1,
+     1.5
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      4.5,
+      9.1,
+      1.5
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 53,
+    "points": 3,
+    "length_m": 9.27,
+    "raw_length_m": 10.3,
+    "time_ms": 43.9,
+    "expansions": null,
+    "report": "================================================================\n Štart : (12.00, 4.00, 1.00) m\n Cieľ  : (4.30, 6.80, 4.80) m\n Priama vzdialenosť štart-cieľ: 9.03 m  (dz = 3.80 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 53\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 9.27 m\n   Dĺžka pôvodnej trasy  : 10.30 m\n   Čas plánovania        : 43.9 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (12.00, 4.00, 1.00) m   +0.00 m   0.00 m\n    1  (5.33, 5.63, 3.83) m   +7.43 m   7.43 m\n    2  (4.30, 6.80, 4.80) m   +1.84 m   9.27 m\n================================================================",
+    "name": "cez regál (stúpanie)",
+    "start": [
+     12.0,
+     4.0,
+     1.0
+    ],
+    "goal": [
+     4.3,
+     6.8,
+     4.8
+    ],
+    "path": [
+     [
+      12.0,
+      4.0,
+      1.0
+     ],
+     [
+      5.325000211596489,
+      5.625000223517418,
+      3.825000151991844
+     ],
+     [
+      4.3,
+      6.8,
+      4.8
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 31,
+    "points": 3,
+    "length_m": 5.48,
+    "raw_length_m": 5.94,
+    "time_ms": 14.2,
+    "expansions": null,
+    "report": "================================================================\n Štart : (8.65, 2.02, 1.00) m\n Cieľ  : (4.84, 5.37, 2.00) m\n Priama vzdialenosť štart-cieľ: 5.17 m  (dz = 1.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 31\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 5.48 m\n   Dĺžka pôvodnej trasy  : 5.94 m\n   Čas plánovania        : 14.2 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (8.65, 2.02, 1.00) m   +0.00 m   0.00 m\n    1  (7.58, 3.83, 2.03) m   +2.34 m   2.34 m\n    2  (4.84, 5.37, 2.00) m   +3.14 m   5.48 m\n================================================================",
+    "name": "úsek misie wp2→wp3",
+    "start": [
+     8.65,
+     2.02,
+     1.0
+    ],
+    "goal": [
+     4.84,
+     5.37,
+     2.0
+    ],
+    "path": [
+     [
+      8.65,
+      2.02,
+      1.0
+     ],
+     [
+      7.575000301003456,
+      3.825000151991844,
+      2.0250000804662704
+     ],
+     [
+      4.84,
+      5.37,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 48,
+    "points": 3,
+    "length_m": 7.49,
+    "raw_length_m": 8.12,
+    "time_ms": 22.9,
+    "expansions": null,
+    "report": "================================================================\n Štart : (2.08, 9.74, 1.75) m\n Cieľ  : (8.84, 6.90, 2.00) m\n Priama vzdialenosť štart-cieľ: 7.34 m  (dz = 0.25 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 48\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 7.49 m\n   Dĺžka pôvodnej trasy  : 8.12 m\n   Čas plánovania        : 22.9 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (2.08, 9.74, 1.75) m   +0.00 m   0.00 m\n    1  (8.18, 7.73, 2.03) m   +6.43 m   6.43 m\n    2  (8.84, 6.90, 2.00) m   +1.06 m   7.49 m\n================================================================",
+    "name": "úsek misie wp4→wp5",
+    "start": [
+     2.08,
+     9.74,
+     1.75
+    ],
+    "goal": [
+     8.84,
+     6.9,
+     2.0
+    ],
+    "path": [
+     [
+      2.08,
+      9.74,
+      1.75
+     ],
+     [
+      8.175000324845314,
+      7.725000306963921,
+      2.0250000804662704
+     ],
+     [
+      8.84,
+      6.9,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 104,
+    "points": 3,
+    "length_m": 18.18,
+    "raw_length_m": 19.45,
+    "time_ms": 13.6,
+    "expansions": null,
+    "report": "================================================================\n Štart : (16.50, 1.00, 1.00) m\n Cieľ  : (1.00, 9.10, 3.00) m\n Priama vzdialenosť štart-cieľ: 17.60 m  (dz = 2.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 104\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 18.18 m\n   Dĺžka pôvodnej trasy  : 19.45 m\n   Čas plánovania        : 13.6 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (16.50, 1.00, 1.00) m   +0.00 m   0.00 m\n    1  (7.88, 7.88, 2.93) m   +11.20 m   11.20 m\n    2  (1.00, 9.10, 3.00) m   +6.98 m   18.18 m\n================================================================",
+    "name": "dlhá diagonála hangárom",
+    "start": [
+     16.5,
+     1.0,
+     1.0
+    ],
+    "goal": [
+     1.0,
+     9.1,
+     3.0
+    ],
+    "path": [
+     [
+      16.5,
+      1.0,
+      1.0
+     ],
+     [
+      7.875000312924385,
+      7.875000312924385,
+      2.9250001162290573
+     ],
+     [
+      1.0,
+      9.1,
+      3.0
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OCCUPIED",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.32, 6.82, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.68 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OCCUPIED\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (4.32, 6.82, 1.50) m leží PRIAMO V PREKÁŽKE (voxel z mapy alebo z vyplneného regálu).\n    - najbližší voľný bod: (4.47, 5.92, 1.50) m, vzdialenosť 0.91 m (7 voxelov)\n  Tip: posuň bod do voľného priestoru, alebo nastav snap_radius_cells >= 7 (teraz 5), alebo zníž safety_radius.\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v regáli (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.32,
+     6.82,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OUT_OF_BOUNDS",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (25.00, 7.00, 1.50) m\n Priama vzdialenosť štart-cieľ: 12.00 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OUT_OF_BOUNDS\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (25.00, 7.00, 1.50) m leží MIMO plánovacej mriežky.\n    - os x = 25.00 m, povolený rozsah je [-0.75, 18.45] m\n  Tip: skontroluj súradnicový systém (origin mapy vs. pozícia dronu) a jednotky (metre).\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ mimo mapy (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     25.0,
+     7.0,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 37,
+    "points": 3,
+    "length_m": 6.55,
+    "raw_length_m": 7.18,
+    "time_ms": 19.5,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (9.00, 6.00, 6.35) m\n Priama vzdialenosť štart-cieľ: 6.37 m  (dz = 4.85 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 37\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 6.55 m\n   Dĺžka pôvodnej trasy  : 7.18 m\n   Čas plánovania        : 19.5 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (9.38, 5.93, 6.38) m   +6.17 m   6.17 m\n    2  (9.00, 6.00, 6.35) m   +0.38 m   6.55 m\n================================================================",
+    "name": "cieľ nad strechou (diera v mračne)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     9.0,
+     6.0,
+     6.35
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      9.37500037252903,
+      5.925000235438347,
+      6.37500025331974
+     ],
+     [
+      9.0,
+      6.0,
+      6.35
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "NO_PATH",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 568.8,
+    "expansions": 331458,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (3.00, 1.50, 0.80) m\n Priama vzdialenosť štart-cieľ: 11.43 m  (dz = -0.70 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: NO_PATH\n----------------------------------------------------------------\n DÔVOD:\n  Štart aj cieľ sú voľné, ale cieľ je z neho NEDOSIAHNUTEĽNÝ (prehľadaný celý\n  súvislý voľný priestor okolo štartu a cieľ v ňom nie je).\n    - prehľadaných voxelov: 331458 (~1118.7 m3 voľného priestoru)\n    - najbližšie k cieľu sa trasa dostala na 1.20 m, bod (2.93, 1.43, -0.38) m\n  Možné príčiny:\n    1) safety_radius (0.45 m) uzavrel úzky priechod -> skús menší\n    2) cieľ je v uzavretom priestore (za regálom / v obstacle)\n    3) rack_boxes zablokovali jediný priechod -> skontroluj rozmery a yaw\n----------------------------------------------------------------\n Čas plánovania: 568.8 ms, expanzií: 331458\n Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v uzavretej kancelárii",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     3.0,
+     1.5,
+     0.8
+    ],
+    "path": null
+   }
+  ]
+ },
+ {
+  "radius": 0.75,
+  "startup_s": 2.5,
+  "bounds": "x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]",
+  "voxels": "73069",
+  "inflated": "416757",
+  "grid": "132 x 106 x 50",
+  "points_raw": "62689",
+  "routes": [
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 58,
+    "points": 2,
+    "length_m": 8.76,
+    "raw_length_m": 9.42,
+    "time_ms": 7.6,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.50, 9.10, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.76 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 58\n   Body po zjednodušení  : 2\n   Dĺžka trasy (finálna) : 8.76 m\n   Dĺžka pôvodnej trasy  : 9.42 m\n   Čas plánovania        : 7.6 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (4.50, 9.10, 1.50) m   +8.76 m   8.76 m\n================================================================",
+    "name": "okolo regálu do uličky",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.5,
+     9.1,
+     1.5
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      4.5,
+      9.1,
+      1.5
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 57,
+    "points": 5,
+    "length_m": 9.55,
+    "raw_length_m": 10.68,
+    "time_ms": 40.3,
+    "expansions": null,
+    "report": "================================================================\n Štart : (12.00, 4.00, 1.00) m\n Cieľ  : (4.30, 6.80, 4.80) m\n Priama vzdialenosť štart-cieľ: 9.03 m  (dz = 3.80 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 57\n   Body po zjednodušení  : 5\n   Dĺžka trasy (finálna) : 9.55 m\n   Dĺžka pôvodnej trasy  : 10.68 m\n   Čas plánovania        : 40.3 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (12.00, 4.00, 1.00) m   +0.00 m   0.00 m\n    1  (5.33, 5.63, 3.53) m   +7.32 m   7.32 m\n    2  (5.18, 5.63, 3.98) m   +0.47 m   7.79 m\n    3  (4.73, 6.38, 4.73) m   +1.15 m   8.95 m\n    4  (4.30, 6.80, 4.80) m   +0.61 m   9.55 m\n================================================================",
+    "name": "cez regál (stúpanie)",
+    "start": [
+     12.0,
+     4.0,
+     1.0
+    ],
+    "goal": [
+     4.3,
+     6.8,
+     4.8
+    ],
+    "path": [
+     [
+      12.0,
+      4.0,
+      1.0
+     ],
+     [
+      5.325000211596489,
+      5.625000223517418,
+      3.5250001400709152
+     ],
+     [
+      5.1750002056360245,
+      5.625000223517418,
+      3.9750001579523087
+     ],
+     [
+      4.725000187754631,
+      6.37500025331974,
+      4.725000187754631
+     ],
+     [
+      4.3,
+      6.8,
+      4.8
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 33,
+    "points": 3,
+    "length_m": 5.49,
+    "raw_length_m": 6.13,
+    "time_ms": 4.1,
+    "expansions": null,
+    "report": "================================================================\n Štart : (8.65, 2.02, 1.00) m\n Cieľ  : (4.84, 5.37, 2.00) m\n Priama vzdialenosť štart-cieľ: 5.17 m  (dz = 1.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 33\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 5.49 m\n   Dĺžka pôvodnej trasy  : 6.13 m\n   Čas plánovania        : 4.1 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (8.65, 2.02, 1.00) m   +0.00 m   0.00 m\n    1  (8.03, 3.68, 1.13) m   +1.77 m   1.77 m\n    2  (4.84, 5.37, 2.00) m   +3.71 m   5.49 m\n================================================================",
+    "name": "úsek misie wp2→wp3",
+    "start": [
+     8.65,
+     2.02,
+     1.0
+    ],
+    "goal": [
+     4.84,
+     5.37,
+     2.0
+    ],
+    "path": [
+     [
+      8.65,
+      2.02,
+      1.0
+     ],
+     [
+      8.02500031888485,
+      3.6750001460313797,
+      1.1250000447034836
+     ],
+     [
+      4.84,
+      5.37,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 50,
+    "points": 3,
+    "length_m": 7.67,
+    "raw_length_m": 8.3,
+    "time_ms": 21.9,
+    "expansions": null,
+    "report": "================================================================\n Štart : (2.08, 9.74, 1.75) m\n Cieľ  : (8.84, 6.90, 2.00) m\n Priama vzdialenosť štart-cieľ: 7.34 m  (dz = 0.25 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 50\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 7.67 m\n   Dĺžka pôvodnej trasy  : 8.30 m\n   Čas plánovania        : 21.9 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (2.08, 9.74, 1.75) m   +0.00 m   0.00 m\n    1  (8.03, 8.18, 2.03) m   +6.15 m   6.15 m\n    2  (8.84, 6.90, 2.00) m   +1.51 m   7.67 m\n================================================================",
+    "name": "úsek misie wp4→wp5",
+    "start": [
+     2.08,
+     9.74,
+     1.75
+    ],
+    "goal": [
+     8.84,
+     6.9,
+     2.0
+    ],
+    "path": [
+     [
+      2.08,
+      9.74,
+      1.75
+     ],
+     [
+      8.02500031888485,
+      8.175000324845314,
+      2.0250000804662704
+     ],
+     [
+      8.84,
+      6.9,
+      2.0
+     ]
+    ]
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 104,
+    "points": 3,
+    "length_m": 18.4,
+    "raw_length_m": 19.45,
+    "time_ms": 20.0,
+    "expansions": null,
+    "report": "================================================================\n Štart : (16.50, 1.00, 1.00) m\n Cieľ  : (1.00, 9.10, 3.00) m\n Priama vzdialenosť štart-cieľ: 17.60 m  (dz = 2.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 104\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 18.40 m\n   Dĺžka pôvodnej trasy  : 19.45 m\n   Čas plánovania        : 20.0 ms\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (16.50, 1.00, 1.00) m   +0.00 m   0.00 m\n    1  (7.58, 8.48, 2.93) m   +11.80 m   11.80 m\n    2  (1.00, 9.10, 3.00) m   +6.61 m   18.40 m\n================================================================",
+    "name": "dlhá diagonála hangárom",
+    "start": [
+     16.5,
+     1.0,
+     1.0
+    ],
+    "goal": [
+     1.0,
+     9.1,
+     3.0
+    ],
+    "path": [
+     [
+      16.5,
+      1.0,
+      1.0
+     ],
+     [
+      7.575000301003456,
+      8.475000336766243,
+      2.9250001162290573
+     ],
+     [
+      1.0,
+      9.1,
+      3.0
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OCCUPIED",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (4.32, 6.82, 1.50) m\n Priama vzdialenosť štart-cieľ: 8.68 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OCCUPIED\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (4.32, 6.82, 1.50) m leží PRIAMO V PREKÁŽKE (voxel z mapy alebo z vyplneného regálu).\n    - najbližší voľný bod: (4.47, 5.62, 1.50) m, vzdialenosť 1.21 m (9 voxelov)\n  Tip: posuň bod do voľného priestoru, alebo nastav snap_radius_cells >= 9 (teraz 5), alebo zníž safety_radius.\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.75 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v regáli (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     4.32,
+     6.82,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": false,
+    "status": "GOAL_OUT_OF_BOUNDS",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 0.0,
+    "expansions": 0,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (25.00, 7.00, 1.50) m\n Priama vzdialenosť štart-cieľ: 12.00 m  (dz = 0.00 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: GOAL_OUT_OF_BOUNDS\n----------------------------------------------------------------\n DÔVOD:\n  Cieľ (25.00, 7.00, 1.50) m leží MIMO plánovacej mriežky.\n    - os x = 25.00 m, povolený rozsah je [-1.05, 18.75] m\n  Tip: skontroluj súradnicový systém (origin mapy vs. pozícia dronu) a jednotky (metre).\n----------------------------------------------------------------\n Čas plánovania: 0.0 ms, expanzií: 0\n Parametre: voxel_size=0.15 m, safety_radius=0.75 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ mimo mapy (chyba)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     25.0,
+     7.0,
+     1.5
+    ],
+    "path": null
+   },
+   {
+    "ok": true,
+    "status": "SUCCESS",
+    "raw_points": 40,
+    "points": 3,
+    "length_m": 6.93,
+    "raw_length_m": 7.61,
+    "time_ms": 26.6,
+    "expansions": null,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (9.00, 6.00, 6.35) m\n Priama vzdialenosť štart-cieľ: 6.37 m  (dz = 4.85 m)\n----------------------------------------------------------------\n VÝSLEDOK: [OK] TRASA NÁJDENÁ\n Stav plánovača: SUCCESS\n----------------------------------------------------------------\n TRASA\n   Body pôvodne (A*)     : 40\n   Body po zjednodušení  : 3\n   Dĺžka trasy (finálna) : 6.93 m\n   Dĺžka pôvodnej trasy  : 7.61 m\n   Čas plánovania        : 26.6 ms\n   ! Cieľ posunutý na (8.93, 5.93, 6.68) m\n----------------------------------------------------------------\n BODY TRASY (#, x, y, z, úsek, kumulatívne)\n    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m\n    1  (9.53, 5.93, 6.68) m   +6.33 m   6.33 m\n    2  (8.93, 5.93, 6.68) m   +0.60 m   6.93 m\n================================================================",
+    "name": "cieľ nad strechou (diera v mračne)",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     9.0,
+     6.0,
+     6.35
+    ],
+    "path": [
+     [
+      13.0,
+      7.0,
+      1.5
+     ],
+     [
+      9.525000378489494,
+      5.925000235438347,
+      6.675000265240669
+     ],
+     [
+      8.925000354647636,
+      5.925000235438347,
+      6.675000265240669
+     ]
+    ]
+   },
+   {
+    "ok": false,
+    "status": "NO_PATH",
+    "raw_points": null,
+    "points": null,
+    "length_m": null,
+    "raw_length_m": null,
+    "time_ms": 477.4,
+    "expansions": 279719,
+    "report": "================================================================\n Štart : (13.00, 7.00, 1.50) m\n Cieľ  : (3.00, 1.50, 0.80) m\n Priama vzdialenosť štart-cieľ: 11.43 m  (dz = -0.70 m)\n----------------------------------------------------------------\n VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ\n Stav plánovača: NO_PATH\n----------------------------------------------------------------\n DÔVOD:\n  Štart aj cieľ sú voľné, ale cieľ je z neho NEDOSIAHNUTEĽNÝ (prehľadaný celý\n  súvislý voľný priestor okolo štartu a cieľ v ňom nie je).\n    - prehľadaných voxelov: 279719 (~944.1 m3 voľného priestoru)\n    - najbližšie k cieľu sa trasa dostala na 1.50 m, bod (2.93, 1.43, -0.68) m\n  Možné príčiny:\n    1) safety_radius (0.75 m) uzavrel úzky priechod -> skús menší\n    2) cieľ je v uzavretom priestore (za regálom / v obstacle)\n    3) rack_boxes zablokovali jediný priechod -> skontroluj rozmery a yaw\n----------------------------------------------------------------\n Čas plánovania: 477.4 ms, expanzií: 279719\n Parametre: voxel_size=0.15 m, safety_radius=0.75 m, heuristic_weight=1.0, 26-susedstvo\n================================================================",
+    "name": "cieľ v uzavretej kancelárii",
+    "start": [
+     13.0,
+     7.0,
+     1.5
+    ],
+    "goal": [
+     3.0,
+     1.5,
+     0.8
+    ],
+    "path": null
+   }
+  ]
+ }
+]

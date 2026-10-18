@@ -1,0 +1,26 @@
+digraph G {
+  rankdir=LR; bgcolor=white; pad=0.2; nodesep=0.4; ranksep=0.45;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.5,
+        fontname="DejaVu Sans", fontsize=13, margin="0.14,0.08"];
+  edge [color="#52514e", penwidth=1.4, arrowsize=0.8, fontname="DejaVu Sans", fontsize=11, fontcolor="#52514e"];
+  req   [label="požiadavka\nštart, cieľ"];
+  chk   [label="štart / cieľ\nv mriežke a voľný?\n(inak snap ≤ 5 voxelov)"];
+  init  [label="open = {štart}\ng(štart) = 0"];
+  pop   [label="vyber voxel\ns najmenším f = g + h"];
+  goal  [label="je to cieľ?"];
+  exp   [label="26 susedov:\nvoľný, bez rezania rohov,\nlepšie g → ulož, pridaj"];
+  rec   [label="rekonštrukcia\ncez parent"];
+  simp  [label="zjednodušenie\n+ kontrola kolízií"];
+  ok    [label="SUCCESS", fillcolor="#e6f4ec", color="#2a9d5c"];
+  e1    [label="START/GOAL_OCCUPIED\nOUT_OF_BOUNDS", fillcolor="#fdeee8", color="#eb6834"];
+  e2    [label="NO_PATH\n(open prázdny)", fillcolor="#fdeee8", color="#eb6834"];
+  e3    [label="TIMEOUT\n(> 5 s)", fillcolor="#fdeee8", color="#eb6834"];
+  req -> chk -> init -> pop -> goal;
+  goal -> rec [label="áno"];
+  goal -> exp [label="nie"];
+  exp -> pop [label="ďalší"];
+  rec -> simp -> ok;
+  chk -> e1 [style=dashed, label="nie"];
+  pop -> e2 [style=dashed, label="open prázdny"];
+  pop -> e3 [style=dashed, label="limit času"];
+}

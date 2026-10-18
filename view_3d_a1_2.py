@@ -90,6 +90,11 @@ def main():
     ap.add_argument("--planner-yaml", default=P.DEFAULT_YAML)
     ap.add_argument("--occupancy", default=os.path.join(ROOT, "map_voxels_with_racks_inflated.pcd"))
     ap.add_argument("--screenshot", help="render to this PNG and exit")
+    ap.add_argument("--camera", choices=["default", "top"], default="default",
+                    help="initial view: oblique from the south-east, or almost from above")
+    ap.add_argument("--cut", type=float, default=None, help="hide walls above this height [m]")
+    ap.add_argument("--routes-only", action="store_true",
+                    help="draw every planned leg as its own tube (planner tests without a flight)")
     args = ap.parse_args()
 
     run_dir = args.run_dir
@@ -157,7 +162,7 @@ def main():
     # Walls/pillars/roof are one actor; voxels above the "cut" height are hidden so you can look in.
     wall_colors = height_colors(walls, (70, 85, 110), (175, 185, 205))
     wall_actor = voxel_actor(walls, wall_colors)
-    view = {"cut": CEILING_Z}
+    view = {"cut": args.cut if args.cut is not None else CEILING_Z}
 
     def apply_cut():
         keep = walls[:, 2] <= view["cut"]
@@ -223,7 +228,15 @@ def main():
         return a
 
     route = route_polyline(data, legs, mission)
-    if len(route) >= 2:
+    if args.routes_only:
+        for leg in legs.values():
+            if len(leg["pts"]) >= 2:
+                renderer.AddActor(tube_actor(leg["pts"], 0.045, GREEN, glow=True))
+                corridor = tube_actor(leg["pts"], safety, (0.2, 0.9, 0.35), opacity=0.10)
+                corridor.GetProperty().BackfaceCullingOn()
+                renderer.AddActor(corridor)
+        route = np.empty((0, 3))            # no travelling light across unrelated routes
+    elif len(route) >= 2:
         renderer.AddActor(tube_actor(route, 0.045, GREEN, glow=True))
         corridor = tube_actor(route, safety, (0.2, 0.9, 0.35), opacity=0.10)
         corridor.GetProperty().BackfaceCullingOn()
@@ -329,6 +342,10 @@ def main():
         green_light.SetFocalPoint(p[0], p[1], p[2] - 1.0)
 
     place_light()
+    if len(route) < 2:                       # nothing to travel along (e.g. --routes-only)
+        orb.VisibilityOff()
+        halo.VisibilityOff()
+        green_light.SetIntensity(0.0)
 
     # ------------------------------------------------------------------ overlay text
     total = cum[-1] if len(cum) else 0.0
@@ -361,13 +378,17 @@ def main():
         cam = renderer.GetActiveCamera()
         center = ((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 1.5)
         cam.SetFocalPoint(*center)
-        cam.SetPosition(center[0] + 7, center[1] - 14, 21)
+        if args.camera == "top":
+            cam.SetPosition(center[0] + 2, center[1] - 7, 26)
+        else:
+            cam.SetPosition(center[0] + 7, center[1] - 14, 21)
         cam.SetViewUp(0, 0, 1)
         renderer.ResetCameraClippingRange()
 
     reset_camera()
 
     if args.screenshot:
+        info.VisibilityOff()                 # documentation images without the help text
         window.SetOffScreenRendering(1)
         state["s"] = total * 0.3
         place_light()

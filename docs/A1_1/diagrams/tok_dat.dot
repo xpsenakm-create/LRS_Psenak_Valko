@@ -1,0 +1,17 @@
+digraph G {
+  rankdir=LR; bgcolor=white; pad=0.2; nodesep=0.35; ranksep=0.35;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.6,
+        fontname="DejaVu Sans", fontsize=15, margin="0.18,0.10"];
+  edge [color="#52514e", penwidth=1.6, arrowsize=0.9, fontname="DejaVu Sans", fontsize=12, fontcolor="#52514e"];
+  pcd   [label="map.pcd\n620 311 bodov", fillcolor="#f4f4f2", color="#888888"];
+  vox   [label="PCL VoxelGrid\n0.15 m → 62 689 bodov"];
+  grid  [label="riedka 3D mriežka\n(hash množina voxelov)"];
+  rack  [label="vyplnenie regálov\n(rack_boxes)\n73 069 voxelov"];
+  infl  [label="nafúknutie guľou\nsafety_radius 0.45 m\n261 759 voxelov"];
+  dense [label="hustá mriežka\n128 × 102 × 46"];
+  astar [label="A* 26-susedstvo\noktilová heuristika"];
+  simp  [label="zjednodušenie\n(priama viditeľnosť)"];
+  check [label="kontrola kolízií\nna nafúknutej mape"];
+  out   [label="planned_path\n+ planning_status", fillcolor="#f4f4f2", color="#888888"];
+  pcd -> vox -> grid -> rack -> infl -> dense -> astar -> simp -> check -> out;
+}

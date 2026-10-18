@@ -70,7 +70,7 @@ plot windows and the 3D view. Useful options (environment variables):
 | `A1_2_SHOW_PLOTS=0`, `A1_2_SHOW_3D=0` | save the plots but do not open windows |
 | `A1_2_RVIZ=1` | also open RViz with map, racks, planned and flown path |
 
-All options are listed at the top of [run_a1_2.sh](../run_a1_2.sh).
+All options are listed at the top of [run_a1_2.sh](../../run_a1_2.sh).
 
 Do not click inside the Gazebo window during a flight: its ⏸ button pauses the simulation, which
 freezes ArduPilot (see [Troubleshooting](#18-troubleshooting)).
@@ -107,7 +107,7 @@ flowchart LR
 ## 4. Mission file format
 
 CSV, one goal waypoint per line, `#` starts a comment, an optional header line `x,y,z,...` is
-skipped ([mission_model.cpp](../src/lrs_psenak_valko/src/mission_model.cpp)):
+skipped ([mission_model.cpp](../../src/lrs_psenak_valko/src/mission_model.cpp)):
 
 ```text
 # x,y,z,precision,task
@@ -147,7 +147,7 @@ with a = 90°
 ```
 
 These are `mapToLocalPose()` and `localToMapPose()` in
-[mission_executor_node.cpp](../src/lrs_psenak_valko/src/mission_executor_node.cpp). Everything
+[mission_executor_node.cpp](../../src/lrs_psenak_valko/src/mission_executor_node.cpp). Everything
 inside the executor (targets, distances, the carrot, logs) is in the map frame. Conversion happens
 only at the MAVROS boundary: incoming poses are converted to map, outgoing setpoints to local.
 
@@ -293,9 +293,9 @@ A* already simplifies the route (line-of-sight shortcutting), so there are only 
 
 ## 11. Path planner (A1.1, used by A1.2)
 
-[map_planner_node.cpp](../src/lrs_psenak_valko/src/map_planner_node.cpp),
-[a_star_planner.cpp](../src/lrs_psenak_valko/src/a_star_planner.cpp),
-[voxel_occupancy_grid.h](../src/lrs_psenak_valko/include/lrs_psenak_valko/voxel_occupancy_grid.h).
+[map_planner_node.cpp](../../src/lrs_psenak_valko/src/map_planner_node.cpp),
+[a_star_planner.cpp](../../src/lrs_psenak_valko/src/a_star_planner.cpp),
+[voxel_occupancy_grid.h](../../src/lrs_psenak_valko/include/lrs_psenak_valko/voxel_occupancy_grid.h).
 This code is the same on `A-star`, `A1_2` and `A1_3`; only the header location differs on `A1_2`.
 
 1. **Map → voxels.** `map.pcd` (620 k points) is down-sampled with PCL `VoxelGrid` at
@@ -361,7 +361,7 @@ the run script measures the real-time factor and multiplies the executor's timeo
 
 ## 14. Run script `run_a1_2.sh`
 
-[run_a1_2.sh](../run_a1_2.sh) performs, in order:
+[run_a1_2.sh](../../run_a1_2.sh) performs, in order:
 
 1. **Checks** arguments and options, sources ROS 2 Jazzy, runs `colcon build` (before the
    simulator starts, because compiling slows Gazebo down).
@@ -419,7 +419,7 @@ All runs: ArduCopter SITL + Gazebo on the lab PC (Gazebo at 0.2–0.3× real tim
 
 Soft waypoints were passed 0.07–0.40 m from their centre, within the 0.55 m tolerance.
 
-**Deliverable recording:** [`results/hangar_example_20261018/`](../results/hangar_example_20261018/)
+**Deliverable recording:** [`results/hangar_example_20261018/`](../../results/hangar_example_20261018/)
 contains the rosbag of the complete final `hangar_example` mission, its flight log, the planned
 routes and the plots. The other runs are in `log/a1_2_runs/` (not in git).
 
@@ -445,7 +445,7 @@ Executor (`ros2 run lrs_psenak_valko mission_executor_node --ros-args -p name:=v
 | `log_dir` | "" (off) | run folder for CSV logs (set by the script) |
 | `exit_on_done` | true | exit after DONE |
 
-Planner ([config/planner.yaml](../src/lrs_psenak_valko/config/planner.yaml)): `voxel_size` 0.15,
+Planner ([config/planner.yaml](../../src/lrs_psenak_valko/config/planner.yaml)): `voxel_size` 0.15,
 `safety_radius` 0.45, `rack_boxes` (cx, cy, cz, sx, sy, sz, yaw per rack), `allow_diagonal` true,
 `heuristic_weight` 1.0, `max_planning_time_s` 5, `snap_radius_cells` 5, `simplify_path` true.
 
@@ -487,5 +487,5 @@ Planner ([config/planner.yaml](../src/lrs_psenak_valko/config/planner.yaml)): `v
 | `plot_a1_2.py` | 2D plots and the clearance / accuracy report |
 | `view_3d_a1_2.py` | interactive 3D voxel view |
 | `src/lrs_psenak_valko/A1_2_START_HERE.md` | shorter operator notes |
-| `docs/A1_2_study_guide.html` | line-by-line study guide of the code (built by `docs/study_guide/build_study_guide.py`) |
+| `docs/A1_study_guide.html` | line-by-line study guide of the code (built by `docs/study_guide/build_study_guide.py`) |
 | `results/hangar_example_20261018/` | deliverable: rosbag, logs and plots of the final complete mission |

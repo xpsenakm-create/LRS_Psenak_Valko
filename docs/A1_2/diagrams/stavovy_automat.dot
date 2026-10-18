@@ -1,0 +1,36 @@
+digraph G {
+  rankdir=TB; bgcolor=white; pad=0.2; nodesep=0.45; ranksep=0.55;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.5,
+        fontname="DejaVu Sans", fontsize=13, margin="0.14,0.08"];
+  edge [color="#52514e", penwidth=1.4, arrowsize=0.8, fontname="DejaVu Sans", fontsize=11, fontcolor="#52514e"];
+  WAIT_FCU  [label="WAIT_FCU\npripojenie, poloha,\nGPS fix stabilný 5 s"];
+  SET_MODE  [label="SET_MODE\nGUIDED"];
+  ARM       [label="ARM\n(opakuje každé 2 s)"];
+  TAKEOFF   [label="TAKEOFF\nCommandTOL, bez setpointov\nz ≥ cieľ − 0.15 m"];
+  PLAN      [label="PLAN / WAIT_PLAN\nA* trasa k bodu"];
+  ALIGN     [label="ALIGN_PATH\nnos na smer úseku"];
+  NAV       [label="NAVIGATE\nmrkva po trase,\nhard: zastaví a ustáli"];
+  TASK      [label="TASK\nyaw / - / land /\nlandtakeoff"];
+  PREF      [label="WAIT_PREFETCH\ntrasa k ďalšiemu bodu\n(plánovaná počas letu)"];
+  LAND      [label="LAND → WAIT_LANDED\n→ WAIT_DISARMED\n(LAND sám odzbrojí)"];
+  GW        [label="GROUND_WAIT\n3 s na zemi"];
+  RETO      [label="RETAKEOFF\nna z bodu"];
+  DONE      [label="DONE\nodzbrojený", fillcolor="#e6f4ec", color="#2a9d5c"];
+  ERROR     [label="ERROR\nhold na aktuálnej polohe", fillcolor="#fdeee8", color="#eb6834"];
+  { rank=same; WAIT_FCU; SET_MODE; ARM; TAKEOFF; }
+  { rank=same; PLAN; ALIGN; NAV; TASK; }
+  { rank=same; ERROR; DONE; LAND; GW; RETO; PREF; }
+  ERROR -> DONE -> LAND -> GW -> RETO -> PREF [style=invis];
+  WAIT_FCU -> SET_MODE -> ARM -> TAKEOFF;
+  TAKEOFF -> PLAN;
+  PLAN -> ALIGN -> NAV -> TASK;
+  NAV -> ALIGN [label="roh > 20°"];
+  TASK -> PREF [label="ďalší bod"];
+  PREF -> ALIGN;
+  TASK -> LAND [label="land /\nlandtakeoff"];
+  LAND -> DONE [label="land", constraint=false];
+  LAND -> GW [label="landtakeoff"];
+  GW -> RETO [label="GUIDED + ARM"];
+  RETO -> PREF [label="ďalší bod"];
+  PLAN -> ERROR [style=dashed, xlabel="z každého letového stavu:\ntimeout, odmietnutá služba,\nstrata spojenia, zmena režimu  "];
+}

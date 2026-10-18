@@ -1,7 +1,7 @@
 # A1.2 Mission Execution Starter
 
-> Full documentation: [docs/A1_2_DOCUMENTATION.md](../../docs/A1_2_DOCUMENTATION.md).
-> Line-by-line study guide: open `docs/A1_2_study_guide.html` in a browser
+> Full documentation: [docs/A1_2/A1_2_indoor_misia.md](../../docs/A1_2/A1_2_indoor_misia.md) (SK, team format); detailed EN version: [docs/A1_2/A1_2_detailed_EN.md](../../docs/A1_2/A1_2_detailed_EN.md).
+> Line-by-line study guide: open `docs/A1_study_guide.html` in a browser
 > (rebuild with `python3 docs/study_guide/build_study_guide.py`).
 
 ## Package layout

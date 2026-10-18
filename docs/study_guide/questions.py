@@ -199,6 +199,85 @@ QA = [
  """<p>During takeoff, landing and on the ground no setpoint is sent (ArduCopter flies those phases
  itself), so "commanded" values and the distance to target do not exist then. Measured values
  continue; the periods are labelled.</p>"""),
+
+# ---------------------------------------------------------------- A1.1 specifics
+("A1.1", "How do you answer an occupancy query for an arbitrary 3D point?",
+ """<p>Publish a <code>PointStamped</code> on <code>/occupancy_query</code>; the planner answers on
+ <code>/occupancy_result</code> (<code>true</code> = blocked in the inflated map or outside the grid).
+ Inside, the point is converted to a voxel index and looked up in the hash set (or the dense array).</p>"""),
+("A1.1", "What are the map's bounding box and voxel counts?",
+ """<p>x −0.30…17.95, y −1.15…13.20, z 0…5.95 m; 620 311 points → 62 689 after the 0.15 m VoxelGrid;
+ 73 069 occupied voxels with the filled racks; 261 759 after inflating by 0.45 m; dense A* grid
+ 128 × 102 × 46.</p>"""),
+("A1.1", "Why is a voxel grid not 'stacked 2D layers'?",
+ """<p>Occupancy and the search are in 3D: A* moves to all 26 neighbours, including diagonals up and
+ down, and inflation is a 3D sphere. A route can climb diagonally over a rack, which no stack of 2D
+ maps can represent.</p>"""),
+("A1.1", "Show that the safety radius changes the path.",
+ """<p>Route (12, 4, 1) → (4.3, 6.8, 4.8) over the rack: 0.30 m → 3 points, 9.12 m; 0.75 m → 5 points,
+ 9.55 m, climbing higher and earlier (docs/A1_1 figure). Inflated voxels grow from 234 353 to
+ 416 757.</p>"""),
+("A1.1", "Give point counts before and after simplification.",
+ """<p>Mission leg (8.65, 2.02, 1) → (4.84, 5.37, 2): 31 → 3 points, 5.94 → 5.48 m. Long diagonal
+ (16.5, 1, 1) → (1, 9.1, 3): 104 → 3 points, 19.45 → 18.18 m. Every simplified route is re-checked for
+ collisions.</p>"""),
+("A1.1", "Show the 'no path' case.",
+ """<p>Goal inside the closed office (3, 1.5, 0.8): both endpoints are free, A* explores the whole
+ reachable space (331 458 voxels in ~0.57 s) and returns NO_PATH with the closest point reached. A
+ goal inside a rack gives GOAL_OCCUPIED, outside the map GOAL_OUT_OF_BOUNDS.</p>"""),
+("A1.1", "Which rack size did you use, and why does it differ from the assignment text?",
+ """<p>6.50 × 1.05 × 3.76 m per rack, measured from the collision shapes in the current world file
+ (uprights 3.76 m tall, footprint 6.5 × 1.05 m). The assignment mentions 6.5 × 3.76 × 5.59 m, which
+ does not match the current world.</p>"""),
+("A1.1", "What is the planner's known weakness?",
+ """<p>Holes in the roof scan along the ridge: a goal above the roof (9, 6, 6.35) was reachable through
+ them. Missions never place goals there; a box in <code>rack_boxes</code> or a maximum altitude would
+ close it.</p>"""),
+# ---------------------------------------------------------------- A1.3
+("A1.3", "How is the origin defined, and why not a hard-coded coordinate?",
+ """<p>After the fix has been usable (≥ 8 satellites, σ ≤ 2 m) for 3 s without interruption, the mean
+ of those fixes is the origin and the local pose at that moment is the launch point. Everything else is
+ in metres from it. The real drone's home differs every session.</p>"""),
+("A1.3", "How do you convert GPS to metres, and what is the error?",
+ """<p>A local tangent plane: east = Δlon·(N + h)·cos φ0, north = Δlat·(M + h) with WGS-84 radii at
+ the origin. Error ~d²/(2R): 0.25 mm at 50 m, ~0.003 mm on the mission. GPS is only used for the
+ origin; flight uses ArduPilot's smooth local position.</p>"""),
+("A1.3", "Compass heading vs ENU yaw?",
+ """<p>Compass: 0° = North, clockwise. ENU yaw: 0° = East, counter-clockwise. yaw_ENU = 90° − heading,
+ wrapped to (−180, 180]. Verified at start (compass 0°, yaw 90°) and in flight (mean difference
+ 0.14°).</p>"""),
+("A1.3", "Which altitude do you command and which do you check?",
+ """<p>Command local z = launch z + 5 m (ArduPilot's local frame). Check both local z − launch z and
+ <code>rel_alt</code> (above home): they differed by ≤ 1 cm. AMSL (~194 m) is only printed.</p>"""),
+("A1.3", "How does the nose stay on the POI?",
+ """<p>Every tick (30 Hz) the bearing from the measured position, extrapolated 0.5 s by the velocity,
+ to the POI; the yaw command slews towards it at ≤ 45°/s. Only yaw is controlled (fixed camera); the
+ look-down angle (54–64°) is logged. Max error 3.3°.</p>"""),
+("A1.3", "Why a velocity feed-forward?",
+ """<p>With position only, ArduPilot lags behind a moving setpoint by ~speed/gain (0.8 m measured).
+ Sending the carrot's velocity too lets it track with ~0.1 m lag.</p>"""),
+("A1.3", "How is the figure-8 generated, and how did you choose ω?",
+ """<p>A 30 Hz timer computes θ(t) and the point (A sin θ, A sin θ cos θ) around the POI, plus the
+ analytic velocity. Peak speed A·ω·√2; for 1.5 m/s ω ≤ 0.35. Chosen 0.30 (1.27 m/s, lap 21 s) because
+ 0.35 would need 64°/s of yaw at the loop ends, above ArduPilot's 60°/s default.</p>"""),
+("A1.3", "How is the 'lunge' into the figure-8 avoided?",
+ """<p>First fly to the POI, stop, and turn to the start tangent (45°). Then θ̇ ramps from 0 to ω
+ over 3 s (and back to 0 at the end), because θ = 0 is where the curve is fastest.</p>"""),
+("A1.3", "Tangent yaw: angle or rate?",
+ """<p>Angle: yaw = atan2(cos 2θ, cos θ), unwrapped and evaluated slightly ahead. With a yaw rate small
+ errors would accumulate; an angle corrects itself.</p>"""),
+("A1.3", "What is the difference between ABORTING and STOPPED?",
+ """<p>ABORTING: our own decision (abort service, geofence, tracking error, timeout): switch to the
+ abort mode (LAND). STOPPED: the pilot changed mode, the vehicle disarmed or MAVROS dropped out: send
+ nothing and change nothing, never fight the pilot.</p>"""),
+("A1.3", "Why is A1.3 single-threaded when A1.2 is multi-threaded?",
+ """<p>With one thread callbacks and the timer never run at the same time, so no mutex is needed and
+ there are no races. A1.2 followed the <code>mt_executor_demo</code> pattern the assignment asks for,
+ with two callback groups and a mutex.</p>"""),
+("A1.3", "How is the maths tested?",
+ """<p><code>outdoor_math_test.cpp</code>, built with plain g++: compass conversions, wrapping, GPS
+ round trip, figure-8 size and speed, yaw continuity, ramp continuity, square corners, slew
+ direction.</p>"""),
 # ---------------------------------------------------------------- C++
 ("C++", "What does std::bind(&MissionExecutorNode::onPose, this, std::placeholders::_1) do?",
  """<p>It creates a callable that calls the member function <code>onPose</code> on this object,

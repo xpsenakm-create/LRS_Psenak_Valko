@@ -1,21 +1,23 @@
 """Explanatory chapters of the study guide (HTML fragments)."""
 
 HOW_TO = """
-<p>This guide explains the A1.2 solution from the ground up, then walks through <b>every line of
-the code</b> in blocks. The code shown is read from the repository when the guide is built, so
+<p>This guide explains the A1.1, A1.2 and A1.3 solutions from the ground up, then walks through
+<b>every line of the code</b> in blocks (A1.3 is read from the <code>A1_3</code> branch). The code shown is read from the repository when the guide is built, so
 the line numbers match the files.</p>
 <ul>
-<li><b>Read chapters 2–7 first</b>: the system, one flight from start to end, the concepts, the
-state machine, the bugs we fixed. Most exam questions are about these.</li>
-<li>Then the <b>code chapters</b>: code on the left, explanation on the right. The executor
-chapter is the core of A1.2; read it fully. The planner chapters are A1.1 (also used here).</li>
+<li><b>Read the first chapters first</b>: the three assignments, the system, one flight, the
+concepts, the state machine, the bugs we fixed, and A1.3 at a glance. Most exam questions are about
+these.</li>
+<li>Then the <b>code chapters</b>, grouped by assignment (A1.1, A1.2, A1.3): code on the left,
+explanation on the right. The planner, the executor and the outdoor node are the cores.</li>
 <li><b>Search</b> (top bar) filters every block and flashcard, e.g. <code>carrot</code>,
 <code>GUIDED</code>, <code>DISARM_DELAY</code>, <code>octile</code>.</li>
 <li><b>Quiz mode</b> blurs all explanations: read the code, say aloud what it does, then click to
 check yourself.</li>
 <li>The <b>flashcards</b> near the end are likely examiner questions with model answers.</li>
 </ul>
-<p>Rebuild after changing code: <code>python3 docs/study_guide/build_study_guide.py</code>.</p>
+<p>Rebuild after changing code: <code>python3 docs/study_guide/build_study_guide.py</code>
+(run <code>git fetch</code> first to include the newest A1.3).</p>
 """
 
 BIG_PICTURE = """
@@ -275,14 +277,61 @@ GLOSSARY = """
 </dl>
 """
 
+
+ASSIGNMENTS = """
+<table>
+<tr><th></th><th>A1.1 — map and planning</th><th>A1.2 — indoor mission</th><th>A1.3 — outdoor mission</th></tr>
+<tr><td>Goal</td><td>From the hangar point cloud, find collision-free 3D routes</td><td>Fly a mission file through the hangar: route per waypoint, tasks, landings</td><td>GPS + compass: takeoff 5 m, square with nose on a POI, figure-8 with tangent heading, return, land</td></tr>
+<tr><td>Main code</td><td><code>map_planner_node</code>, <code>a_star_planner</code>, <code>voxel_occupancy_grid.h</code></td><td><code>mission_executor_node</code>, <code>mission_model</code></td><td><code>outdoor_mission_node</code>, <code>outdoor_math.h</code></td></tr>
+<tr><td>Runs</td><td>without simulator (<code>run_a1_1.sh</code>)</td><td>hangar world (<code>run_a1_2.sh</code>)</td><td>outdoor world (<code>run_a1_3.sh</code>, branch A1_3)</td></tr>
+<tr><td>Position</td><td>map frame of the point cloud</td><td>map frame; MAVROS local is rotated 90°</td><td>local ENU from a GPS origin (mean of stable fixes)</td></tr>
+<tr><td>Setpoints</td><td>—</td><td><code>setpoint_position/local</code>, 20 Hz, position + yaw, carrot</td><td><code>setpoint_raw/local</code>, 30 Hz, position + velocity + yaw</td></tr>
+<tr><td>Threads</td><td>2 callback groups, MultiThreaded</td><td>2 callback groups + mutex, MultiThreaded</td><td>1 thread (no mutex)</td></tr>
+<tr><td>Docs</td><td><code>docs/A1_1/</code></td><td><code>docs/A1_2/</code></td><td><code>docs/A1_3/</code> (branch A1_3)</td></tr>
+</table>
+<p>What is shared: the ROS 2 / MAVROS / ArduPilot stack, the takeoff rule (no setpoints during
+NAV_TAKEOFF), unwrapped yaw, carrot following, and the "measure, don't guess" approach (logs, plots,
+rosbags).</p>
+"""
+
+A13 = """
+<h3>Mission</h3>
+<p>Wait for a usable GPS fix → capture the origin → GUIDED, arm, take off to 5 m → fly to W1 → square
+W1→W2→W3→W4→W1 (5 m side) with the nose locked on the POI → fly to the POI → one lap of the figure-8
+(A = 3 m) with the nose along the tangent → return above launch → LAND.</p>
+<h3>Key decisions (and the numbers)</h3>
+<table>
+<tr><th>Topic</th><th>What</th><th>Why</th></tr>
+<tr><td>GPS gate</td><td>fix ≥ FIX, ≥ 8 satellites, σ ≤ 2 m, uninterrupted 3 s</td><td>never take off on a fix that has not converged</td></tr>
+<tr><td>Origin</td><td>mean of the fixes in those 3 s + the local pose at that moment</td><td>no hard-coded coordinates; averaging removes single-fix noise</td></tr>
+<tr><td>GPS ↔ metres</td><td>local tangent plane with WGS-84 radii at the origin</td><td>error 0.25 mm at 50 m, far below GPS noise; GPS is used only for the origin</td></tr>
+<tr><td>Compass</td><td><code>yaw_ENU = 90° − heading</code>, wrapped</td><td>compass: 0 = N, clockwise; ENU: 0 = E, CCW. Verified: 0.14° mean difference</td></tr>
+<tr><td>Altitude</td><td>command local z = launch z + 5 m; check rel_alt too</td><td>AMSL, rel_alt and local z are different numbers</td></tr>
+<tr><td>Square</td><td>carrot with 0.5 m/s and 0.5 m/s² limits + velocity feed-forward</td><td>no velocity step at corners (nose dip); lag 0.8 m → 0.1 m</td></tr>
+<tr><td>POI yaw</td><td>bearing from the <i>measured</i> position + 0.5 s look-ahead, every tick</td><td>the bearing changes fastest mid-side; max error 3.3°</td></tr>
+<tr><td>Figure-8</td><td>timer: θ(t), x = A sin θ, y = A sin θ cos θ; position + analytic velocity</td><td>a continuous trajectory, not waypoints</td></tr>
+<tr><td>ω</td><td>0.30 rad/s (peak speed A·ω·√2 = 1.27 m/s, lap 21 s)</td><td>limit 0.35 for 1.5 m/s; 0.35 would need 64°/s yaw, above ArduPilot's 60°/s</td></tr>
+<tr><td>Soft start/stop</td><td>θ̇ ramps 0 → ω → 0 over 3 s</td><td>the figure starts and ends at its fastest point</td></tr>
+<tr><td>Tangent yaw</td><td><code>atan2(cos 2θ, cos θ)</code>, unwrapped, sent as an angle</td><td>an angle corrects itself, a yaw rate would drift</td></tr>
+<tr><td>Safety</td><td>geofence 4 m / 5.5 m checked before flight and in flight; tracking error &gt; 2 m → abort</td><td>the mission must fit a small field (max 3.54 m from launch)</td></tr>
+<tr><td>Exits</td><td>ABORTING → abort mode (LAND); STOPPED = send nothing; FAULT on the ground</td><td>never fight the safety pilot</td></tr>
+</table>
+<h3>Results (simulation)</h3>
+<p>Square: nose vs POI mean 2.0°, max 3.3°; path error mean 0.09 m. Figure-8: path error mean 0.18 m,
+max 0.40 m; nose vs tangent mean 6.7°, max 23.7° (at the loop ends, where 54.5°/s of yaw are needed).
+Altitude 4.99–5.00 m. Farthest from launch 3.71 m (limit 4 m).</p>
+"""
+
 BEFORE_CODE = [
     ("howto", "How to use this guide", HOW_TO),
+    ("assignments", "The three assignments at a glance", ASSIGNMENTS),
     ("bigpicture", "The big picture", BIG_PICTURE),
     ("flight", "One flight, step by step (real log)", FLIGHT),
     ("concepts", "Concepts you must know", CONCEPTS),
     ("statemachine", "The state machine at a glance", STATE_MACHINE),
     ("bugs", "Problems we hit and how they were fixed", BUGS),
     ("gaps", "Why some plot lines have gaps", GAPS),
+    ("a13", "A1.3 at a glance (outdoor mission)", A13),
 ]
 AFTER_CODE = [
     ("numbers", "Numbers to remember", NUMBERS),

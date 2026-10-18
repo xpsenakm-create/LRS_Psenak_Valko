@@ -1,0 +1,29 @@
+digraph G {
+  rankdir=TB; bgcolor=white; pad=0.25; nodesep=0.5; ranksep=0.7; compound=true;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.4,
+        fontname="DejaVu Sans", fontsize=13, margin="0.16,0.08"];
+  edge [color="#52514e", penwidth=1.3, arrowsize=0.8, fontname="DejaVu Sans", fontsize=11, fontcolor="#3f3f3f"];
+  subgraph cluster_node {
+    label="map_planner_node (MultiThreadedExecutor, 2 callback skupiny)"; fontname="DejaVu Sans"; fontsize=14;
+    style="rounded"; color="#2a78d6"; penwidth=1.4;
+    load  [label="pri štarte: loadMap()\nmapa → voxely → regály → nafúknutie\n→ hustá mriežka pre A*"];
+    plan  [label="skupina „planning“\nhandleRequest(): A* → zjednodušenie\n→ kontrola kolízií → report"];
+    query [label="skupina „query“\nhandleOccupancyQuery()\n„je bod voľný?“"];
+    load -> plan [style=dotted, label="  mriežka (len čítanie)"];
+    load -> query [style=dotted];
+  }
+  yaml  [label="config/planner.yaml\nvoxel_size, safety_radius,\nrack_boxes, A* parametre", shape=note, fillcolor="#f4f4f2", color="#888888"];
+  pcd   [label="maps/FEI_LRS_PCD/map.pcd", shape=cylinder, fillcolor="#f4f4f2", color="#888888"];
+  client[label="klient\n(mission_executor_node,\nrun_a1_1.sh, ros2 topic pub)", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  rviz  [label="RViz", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  file  [label="map_voxels_with_racks_inflated.pcd", shape=cylinder, fillcolor="#f4f4f2", color="#888888"];
+  yaml -> load [label="  parametre"];
+  pcd -> load;
+  load -> file [label="  uloží"];
+  client -> plan [label="  /plan_request\n  (PoseArray: štart, cieľ)"];
+  plan -> client [label="  /planned_path, /planning_status"];
+  client -> query [label="  /occupancy_query", style=dashed];
+  query -> client [label="  /occupancy_result", style=dashed];
+  load -> rviz [label="  /map_cloud, /inflated_occupancy,\n  /rack_boxes_marker (latched)"];
+  plan -> rviz [label="  /planned_path_marker"];
+}

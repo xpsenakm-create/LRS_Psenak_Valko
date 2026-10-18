@@ -1,0 +1,190 @@
+[INFO] [1792331182.112801249] [map_planner_node]: Map bounds: x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]
+[INFO] [1792331182.161678241] [map_planner_node]: Filled rack box 0 (5419 new voxels)
+[INFO] [1792331182.166257298] [map_planner_node]: Filled rack box 1 (5893 new voxels)
+[INFO] [1792331182.346391223] [map_planner_node]: Saved inflated voxel centers (including racks) to /tmp/a1_1_occupancy_0.45.pcd
+[INFO] [1792331182.382239176] [map_planner_node]: Voxelized points: 62689; occupied voxels: 73069; inflated: 261759
+[INFO] [1792331182.382291036] [map_planner_node]: 3D planning grid: 128 x 102 x 46
+[INFO] [1792331182.384345159] [map_planner_node]: Ready: plan via 'plan_request'; query inflated occupancy via 'occupancy_query'
+[INFO] [1792331182.384373608] [map_planner_node]: Map: /home/user/Zadania/LRS_Psenak_Valko/install/lrs_psenak_valko/share/lrs_psenak_valko/maps/FEI_LRS_PCD/map.pcd; raw voxels: 73069; inflated voxels: 261759; safety radius: 0.45 m
+[INFO] [1792331183.543094104] [map_planner_node]: 
+================================================================
+ Štart : (13.00, 7.00, 1.50) m
+ Cieľ  : (4.50, 9.10, 1.50) m
+ Priama vzdialenosť štart-cieľ: 8.76 m  (dz = 0.00 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 58
+   Body po zjednodušení  : 2
+   Dĺžka trasy (finálna) : 8.76 m
+   Dĺžka pôvodnej trasy  : 9.42 m
+   Čas plánovania        : 4.0 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m
+    1  (4.50, 9.10, 1.50) m   +8.76 m   8.76 m
+================================================================
+[INFO] [1792331184.044622904] [map_planner_node]: 
+================================================================
+ Štart : (12.00, 4.00, 1.00) m
+ Cieľ  : (4.30, 6.80, 4.80) m
+ Priama vzdialenosť štart-cieľ: 9.03 m  (dz = 3.80 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 53
+   Body po zjednodušení  : 3
+   Dĺžka trasy (finálna) : 9.27 m
+   Dĺžka pôvodnej trasy  : 10.30 m
+   Čas plánovania        : 43.9 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (12.00, 4.00, 1.00) m   +0.00 m   0.00 m
+    1  (5.33, 5.63, 3.83) m   +7.43 m   7.43 m
+    2  (4.30, 6.80, 4.80) m   +1.84 m   9.27 m
+================================================================
+[INFO] [1792331184.516285642] [map_planner_node]: 
+================================================================
+ Štart : (8.65, 2.02, 1.00) m
+ Cieľ  : (4.84, 5.37, 2.00) m
+ Priama vzdialenosť štart-cieľ: 5.17 m  (dz = 1.00 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 31
+   Body po zjednodušení  : 3
+   Dĺžka trasy (finálna) : 5.48 m
+   Dĺžka pôvodnej trasy  : 5.94 m
+   Čas plánovania        : 14.2 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (8.65, 2.02, 1.00) m   +0.00 m   0.00 m
+    1  (7.58, 3.83, 2.03) m   +2.34 m   2.34 m
+    2  (4.84, 5.37, 2.00) m   +3.14 m   5.48 m
+================================================================
+[INFO] [1792331184.996362584] [map_planner_node]: 
+================================================================
+ Štart : (2.08, 9.74, 1.75) m
+ Cieľ  : (8.84, 6.90, 2.00) m
+ Priama vzdialenosť štart-cieľ: 7.34 m  (dz = 0.25 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 48
+   Body po zjednodušení  : 3
+   Dĺžka trasy (finálna) : 7.49 m
+   Dĺžka pôvodnej trasy  : 8.12 m
+   Čas plánovania        : 22.9 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (2.08, 9.74, 1.75) m   +0.00 m   0.00 m
+    1  (8.18, 7.73, 2.03) m   +6.43 m   6.43 m
+    2  (8.84, 6.90, 2.00) m   +1.06 m   7.49 m
+================================================================
+[INFO] [1792331185.467612989] [map_planner_node]: 
+================================================================
+ Štart : (16.50, 1.00, 1.00) m
+ Cieľ  : (1.00, 9.10, 3.00) m
+ Priama vzdialenosť štart-cieľ: 17.60 m  (dz = 2.00 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 104
+   Body po zjednodušení  : 3
+   Dĺžka trasy (finálna) : 18.18 m
+   Dĺžka pôvodnej trasy  : 19.45 m
+   Čas plánovania        : 13.6 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (16.50, 1.00, 1.00) m   +0.00 m   0.00 m
+    1  (7.88, 7.88, 2.93) m   +11.20 m   11.20 m
+    2  (1.00, 9.10, 3.00) m   +6.98 m   18.18 m
+================================================================
+[WARN] [1792331185.931837828] [map_planner_node]: 
+================================================================
+ Štart : (13.00, 7.00, 1.50) m
+ Cieľ  : (4.32, 6.82, 1.50) m
+ Priama vzdialenosť štart-cieľ: 8.68 m  (dz = 0.00 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ
+ Stav plánovača: GOAL_OCCUPIED
+----------------------------------------------------------------
+ DÔVOD:
+  Cieľ (4.32, 6.82, 1.50) m leží PRIAMO V PREKÁŽKE (voxel z mapy alebo z vyplneného regálu).
+    - najbližší voľný bod: (4.47, 5.92, 1.50) m, vzdialenosť 0.91 m (7 voxelov)
+  Tip: posuň bod do voľného priestoru, alebo nastav snap_radius_cells >= 7 (teraz 5), alebo zníž safety_radius.
+----------------------------------------------------------------
+ Čas plánovania: 0.0 ms, expanzií: 0
+ Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo
+================================================================
+[WARN] [1792331185.933491035] [map_planner_node]: 
+================================================================
+ Štart : (13.00, 7.00, 1.50) m
+ Cieľ  : (25.00, 7.00, 1.50) m
+ Priama vzdialenosť štart-cieľ: 12.00 m  (dz = 0.00 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ
+ Stav plánovača: GOAL_OUT_OF_BOUNDS
+----------------------------------------------------------------
+ DÔVOD:
+  Cieľ (25.00, 7.00, 1.50) m leží MIMO plánovacej mriežky.
+    - os x = 25.00 m, povolený rozsah je [-0.75, 18.45] m
+  Tip: skontroluj súradnicový systém (origin mapy vs. pozícia dronu) a jednotky (metre).
+----------------------------------------------------------------
+ Čas plánovania: 0.0 ms, expanzií: 0
+ Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo
+================================================================
+[INFO] [1792331185.955008595] [map_planner_node]: 
+================================================================
+ Štart : (13.00, 7.00, 1.50) m
+ Cieľ  : (9.00, 6.00, 6.35) m
+ Priama vzdialenosť štart-cieľ: 6.37 m  (dz = 4.85 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [OK] TRASA NÁJDENÁ
+ Stav plánovača: SUCCESS
+----------------------------------------------------------------
+ TRASA
+   Body pôvodne (A*)     : 37
+   Body po zjednodušení  : 3
+   Dĺžka trasy (finálna) : 6.55 m
+   Dĺžka pôvodnej trasy  : 7.18 m
+   Čas plánovania        : 19.5 ms
+----------------------------------------------------------------
+ BODY TRASY (#, x, y, z, úsek, kumulatívne)
+    0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m
+    1  (9.38, 5.93, 6.38) m   +6.17 m   6.17 m
+    2  (9.00, 6.00, 6.35) m   +0.38 m   6.55 m
+================================================================
+[WARN] [1792331186.981793528] [map_planner_node]: 
+================================================================
+ Štart : (13.00, 7.00, 1.50) m
+ Cieľ  : (3.00, 1.50, 0.80) m
+ Priama vzdialenosť štart-cieľ: 11.43 m  (dz = -0.70 m)
+----------------------------------------------------------------
+ VÝSLEDOK: [CHYBA] TRASA NEBOLA NÁJDENÁ / NEPLATNÁ
+ Stav plánovača: NO_PATH
+----------------------------------------------------------------
+ DÔVOD:
+  Štart aj cieľ sú voľné, ale cieľ je z neho NEDOSIAHNUTEĽNÝ (prehľadaný celý
+  súvislý voľný priestor okolo štartu a cieľ v ňom nie je).
+    - prehľadaných voxelov: 331458 (~1118.7 m3 voľného priestoru)
+    - najbližšie k cieľu sa trasa dostala na 1.20 m, bod (2.93, 1.43, -0.38) m
+  Možné príčiny:
+    1) safety_radius (0.45 m) uzavrel úzky priechod -> skús menší
+    2) cieľ je v uzavretom priestore (za regálom / v obstacle)
+    3) rack_boxes zablokovali jediný priechod -> skontroluj rozmery a yaw
+----------------------------------------------------------------
+ Čas plánovania: 568.8 ms, expanzií: 331458
+ Parametre: voxel_size=0.15 m, safety_radius=0.45 m, heuristic_weight=1.0, 26-susedstvo
+================================================================
+[INFO] [1792331186.986821313] [rclcpp]: signal_handler(SIGINT/SIGTERM)

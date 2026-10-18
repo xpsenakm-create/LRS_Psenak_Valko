@@ -1,0 +1,20 @@
+digraph G {
+  rankdir=LR; bgcolor=white; pad=0.2; nodesep=0.35; ranksep=0.35;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.6,
+        fontname="DejaVu Sans", fontsize=15, margin="0.18,0.10"];
+  edge [color="#52514e", penwidth=1.6, arrowsize=0.9, fontname="DejaVu Sans", fontsize=12, fontcolor="#52514e"];
+  csv   [label="misia .csv\nx, y, z, presnosť, úloha", fillcolor="#f4f4f2", color="#888888"];
+  parse [label="kontrola súboru\n(mission_model)"];
+  sm    [label="stavový automat\n20× za sekundu"];
+  astar [label="A* plánovač\ntrasa medzi bodmi"];
+  carrot[label="mrkva po trase\n1 m/s, max 1 m pred dronom"];
+  sp    [label="setpoint 20×/s\npoloha + yaw"];
+  ap    [label="MAVROS →\nArduPilot (GUIDED)", fillcolor="#f4f4f2", color="#888888"];
+  fb    [label="poloha, rýchlosť,\nstav z EKF", fillcolor="#f4f4f2", color="#888888"];
+  csv -> parse -> sm;
+  sm -> astar [label="plan_request"];
+  astar -> carrot [label="planned_path"];
+  carrot -> sp -> ap;
+  fb -> sm [label="spätná väzba"];
+  { rank=same; sm; fb; }
+}

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Builds docs/A1_2_study_guide.html: a self-contained, offline study guide that shows the real
-source code of the project block by block, each block with an explanation next to it.
+Builds docs/A1_study_guide.html: a self-contained, offline study guide (A1.1, A1.2, A1.3) that shows
+the real source code block by block, each block with an explanation next to it.
+
+A notes module's FILE is a path in this working tree, or "git:<ref>:<path>" to read the file from
+another branch (A1.3 lives on origin/A1_3; run `git fetch` first to get its newest version).
 
 The code is read from the repository at build time, so line numbers are always current.
 Explanations are attached to blocks by an *anchor*: a piece of text that the first line of the
@@ -16,27 +19,42 @@ import html
 import importlib.util
 import os
 import re
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
-OUT = os.path.join(ROOT, "docs", "A1_2_study_guide.html")
+OUT = os.path.join(ROOT, "docs", "A1_study_guide.html")
 
-# Chapters with code, in reading order: (notes module, language)
-CODE_CHAPTERS = [
-    ("notes_executor", "cpp"),
-    ("notes_mission_model_h", "cpp"),
-    ("notes_mission_model_cpp", "cpp"),
-    ("notes_run_script", "bash"),
-    ("notes_plot", "python"),
-    ("notes_view3d", "python"),
-    ("notes_planner_yaml", "bash"),
-    ("notes_astar_h", "cpp"),
-    ("notes_astar", "cpp"),
-    ("notes_planner_node", "cpp"),
-    ("notes_voxel_grid", "cpp"),
-    ("notes_build_files", "cmake"),
-    ("notes_package_xml", "text"),
+# Code chapters grouped by assignment, in reading order: (part title, [(notes module, language)])
+PARTS = [
+    ("A1.1 — map and A* planner", [
+        ("notes_planner_yaml", "bash"),
+        ("notes_astar_h", "cpp"),
+        ("notes_astar", "cpp"),
+        ("notes_planner_node", "cpp"),
+        ("notes_voxel_grid", "cpp"),
+        ("notes_run_a1_1", "bash"),
+    ]),
+    ("A1.2 — indoor mission", [
+        ("notes_executor", "cpp"),
+        ("notes_mission_model_h", "cpp"),
+        ("notes_mission_model_cpp", "cpp"),
+        ("notes_run_script", "bash"),
+        ("notes_plot", "python"),
+        ("notes_view3d", "python"),
+    ]),
+    ("A1.3 — outdoor GPS mission (branch A1_3)", [
+        ("notes_a13_node", "cpp"),
+        ("notes_a13_math", "cpp"),
+        ("notes_a13_test", "cpp"),
+        ("notes_a13_run", "bash"),
+        ("notes_a13_plot", "python"),
+    ]),
+    ("Build files", [
+        ("notes_build_files", "cmake"),
+        ("notes_package_xml", "text"),
+    ]),
 ]
 
 
@@ -170,10 +188,20 @@ def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+def read_source(spec):
+    if spec.startswith("git:"):
+        ref, path = spec[4:].split(":", 1)
+        out = subprocess.run(["git", "-C", ROOT, "show", f"{ref}:{path}"], capture_output=True, text=True)
+        if out.returncode:
+            sys.exit(f"cannot read {path} from {ref}: {out.stderr.strip()}")
+        return out.stdout, f"{path} (branch {ref.split('/')[-1]})"
+    with open(os.path.join(ROOT, spec), encoding="utf-8") as f:
+        return f.read(), spec
+
+
 def render_code_chapter(module, lang, chapter_no):
-    path = os.path.join(ROOT, module.FILE)
-    with open(path, encoding="utf-8") as f:
-        lines = f.read().split("\n")
+    text, shown_path = read_source(module.FILE)
+    lines = text.split("\n")
     if lines and lines[-1] == "":
         lines = lines[:-1]
     blocks = split_blocks(lines, module.NOTES, module.FILE)
@@ -181,7 +209,7 @@ def render_code_chapter(module, lang, chapter_no):
     state = {}
     parts = [f'<section class="chapter" id="{cid}">',
              f'<h2><span class="num">{chapter_no}</span>{html.escape(module.TITLE)}</h2>',
-             f'<p class="filepath">{html.escape(module.FILE)} &middot; {len(lines)} lines &middot; '
+             f'<p class="filepath">{html.escape(shown_path)} &middot; {len(lines)} lines &middot; '
              f'{len(blocks)} explained blocks</p>',
              f'<div class="intro">{module.INTRO}</div>']
     toc = []
@@ -217,11 +245,14 @@ def main():
         number += 1
         chapters_html.append(render_text_chapter(cid, number, title, body))
         toc.append((cid, title, []))
-    for name, lang in CODE_CHAPTERS:
-        number += 1
-        h, t = render_code_chapter(load_module(name), lang, number)
-        chapters_html.append(h)
-        toc.append(t)
+    for part_title, chapters in PARTS:
+        toc.append(("part", part_title, None))
+        chapters_html.append(f'<div class="part-title">{html.escape(part_title)}</div>')
+        for name, lang in chapters:
+            number += 1
+            h, t = render_code_chapter(load_module(name), lang, number)
+            chapters_html.append(h)
+            toc.append(t)
     number += 1
     chapters_html.append(render_text_chapter("questions", number, "Examiner questions (flashcards)",
                                              questions.render()))
@@ -233,7 +264,9 @@ def main():
 
     nav = []
     for cid, title, sub in toc:
-        if sub:
+        if cid == "part":
+            nav.append(f'<li class="part">{html.escape(title)}</li>')
+        elif sub:
             items = "".join(f'<li><a href="#{bid}">{html.escape(t)}</a></li>' for bid, t in sub)
             nav.append(f'<li><details><summary><a href="#{cid}">{html.escape(title)}</a></summary>'
                        f'<ol class="sub">{items}</ol></details></li>')
@@ -246,7 +279,8 @@ def main():
                     .replace("{{CONTENT}}", "\n".join(chapters_html)))
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(page)
-    n_blocks = sum(len(t[2]) for t in toc)
+    n_blocks = sum(len(t[2]) for t in toc if t[2])
+    toc = [t for t in toc if t[0] != "part"]
     print(f"Wrote {OUT} ({len(page) // 1024} KB, {len(toc)} chapters, {n_blocks} code blocks)")
 
 
