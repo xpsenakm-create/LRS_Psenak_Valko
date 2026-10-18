@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A1.2 Study Guide</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #5d6677; --line: #e1e5ec;
+  --accent: #1f7a4d; --accent-soft: #e3f3ea; --code-bg: #f3f5f8; --ln: #9aa3b2;
+  --k: #7a3fb8; --s: #a35a00; --c: #6b7f6b; --n: #0b6aa8; --pp: #b0306a;
+  --warn-bg: #fff6e0; --warn-line: #e3b341; --key-bg: #eaf2ff; --key-line: #6f9be0;
+  --mark: #fff3a8;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11151c; --panel: #171c25; --ink: #e3e7ee; --muted: #9aa4b5; --line: #2a3140;
+    --accent: #4cc38a; --accent-soft: #183326; --code-bg: #0f131a; --ln: #586174;
+    --k: #c79bff; --s: #f0b46a; --c: #7f9a7f; --n: #6cc4ff; --pp: #ff7fb3;
+    --warn-bg: #2b2414; --warn-line: #a8862f; --key-bg: #142238; --key-line: #3b67a8;
+    --mark: #5a5220;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 70px; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+header.top { position: sticky; top: 0; z-index: 10; display: flex; gap: 12px; align-items: center;
+  flex-wrap: wrap; padding: 10px 18px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header.top h1 { font-size: 17px; margin: 0 12px 0 0; letter-spacing: .2px; }
+header.top h1 span { color: var(--accent); }
+#search { flex: 1 1 220px; max-width: 420px; padding: 7px 11px; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+.btn { padding: 6px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+  color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+#count { color: var(--muted); font-size: 13px; }
+.layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); }
+nav.side { position: sticky; top: 53px; height: calc(100vh - 53px); overflow: auto; padding: 14px 10px 40px 16px;
+  border-right: 1px solid var(--line); font-size: 13.5px; }
+nav.side ol { list-style: none; margin: 0; padding: 0; }
+nav.side li { margin: 2px 0; }
+nav.side a { color: var(--ink); text-decoration: none; display: block; padding: 2px 6px; border-radius: 5px; }
+nav.side a:hover { background: var(--accent-soft); }
+nav.side ol.sub { margin: 2px 0 6px 10px; border-left: 2px solid var(--line); }
+nav.side ol.sub a { color: var(--muted); font-size: 12.5px; padding: 1px 8px; }
+nav.side summary { cursor: pointer; list-style: none; }
+nav.side summary::-webkit-details-marker { display: none; }
+nav.side summary a::before { content: "▸ "; color: var(--muted); }
+nav.side details[open] summary a::before { content: "▾ "; }
+main { padding: 18px 28px 80px; min-width: 0; }
+.chapter { margin: 0 0 48px; }
+.chapter > h2 { font-size: 24px; margin: 26px 0 6px; display: flex; align-items: baseline; gap: 10px; }
+.chapter > h2 .num { display: inline-block; min-width: 34px; height: 34px; line-height: 34px; text-align: center;
+  border-radius: 9px; background: var(--accent); color: #fff; font-size: 16px; }
+.filepath { color: var(--muted); font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0 0 10px; }
+.intro, .prose { max-width: 980px; }
+.prose h3 { margin: 26px 0 8px; font-size: 18px; }
+.prose h4 { margin: 18px 0 6px; font-size: 15.5px; }
+.prose p, .intro p { margin: 8px 0; }
+.prose table { border-collapse: collapse; margin: 10px 0; font-size: 14px; display: block; overflow-x: auto; }
+.prose th, .prose td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+.prose th { background: var(--code-bg); }
+code, kbd { font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+.box { border-left: 4px solid var(--key-line); background: var(--key-bg); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+.box.warn { border-color: var(--warn-line); background: var(--warn-bg); }
+.box b:first-child { display: block; margin-bottom: 2px; }
+pre.diagram { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  overflow-x: auto; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.block { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0; margin: 10px 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.block .code { background: var(--code-bg); border-right: 1px solid var(--line); overflow-x: auto; }
+.block pre { margin: 0; padding: 10px 0; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.block pre code { display: block; white-space: pre; padding-right: 14px; }
+.ln { display: inline-block; width: 46px; padding-right: 10px; text-align: right; color: var(--ln); user-select: none; }
+.k { color: var(--k); font-weight: 600; } .s { color: var(--s); } .c { color: var(--c); font-style: italic; }
+.n { color: var(--n); } .pp { color: var(--pp); }
+.note { padding: 10px 16px 12px; }
+.note-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.note h3 { font-size: 15px; margin: 0; }
+.note .lines { font: 11.5px ui-monospace, Menlo, monospace; color: var(--accent); background: var(--accent-soft);
+  border-radius: 5px; padding: 0 6px; }
+.note-body { font-size: 14px; }
+.note-body p { margin: 6px 0; }
+.note-body ul, .prose ul, .prose ol { margin: 6px 0; padding-left: 20px; }
+.note-body li { margin: 2px 0; }
+body.quiz .note-body { filter: blur(6px); cursor: pointer; user-select: none; transition: filter .15s; }
+body.quiz .note-body.revealed { filter: none; user-select: auto; }
+body.quiz .note::after { content: "click to reveal"; display: block; font-size: 11px; color: var(--muted); }
+body.quiz .note.revealed-wrap::after { content: ""; }
+.hidden { display: none !important; }
+mark { background: var(--mark); color: inherit; border-radius: 2px; }
+details.qa { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; padding: 0 14px; }
+details.qa summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+details.qa summary .tag { font-weight: 500; font-size: 11.5px; color: var(--accent); background: var(--accent-soft);
+  border-radius: 5px; padding: 1px 6px; margin-right: 8px; }
+details.qa .answer { padding: 0 0 12px; font-size: 14.5px; }
+dl.gloss dt { font-weight: 700; margin-top: 10px; }
+dl.gloss dd { margin: 2px 0 0 18px; }
+@media (max-width: 1100px) { .block { grid-template-columns: minmax(0, 1fr); } .block .code { border-right: 0; border-bottom: 1px solid var(--line); } }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } nav.side { display: none; }
+  main { padding: 12px 16px 60px; } }
+@media print { header.top, nav.side { display: none; } .layout { display: block; } .block { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>A1.2 <span>Study Guide</span></h1>
+  <input id="search" type="search" placeholder="Search code and explanations (e.g. carrot, GUIDED, octile)" aria-label="Search">
+  <span id="count"></span>
+  <button class="btn" id="quiz" aria-pressed="false" title="Hide explanations; click one to reveal it">Quiz mode</button>
+  <button class="btn" id="openqa" title="Open or close all flashcard answers">Open all answers</button>
+</header>
+<div class="layout">
+<nav class="side"><ol>
+{{NAV}}
+</ol></nav>
+<main>
+{{CONTENT}}
+</main>
+</div>
+<script>
+(function () {
+  const search = document.getElementById('search');
+  const count = document.getElementById('count');
+  const blocks = Array.from(document.querySelectorAll('.block, details.qa'));
+  let timer = null;
+  function clearMarks(el) {
+    el.querySelectorAll('mark').forEach(m => m.replaceWith(document.createTextNode(m.textContent)));
+    el.normalize();
+  }
+  function markText(el, q) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const hits = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      const idx = node.nodeValue.toLowerCase().indexOf(q);
+      if (idx >= 0 && node.parentNode.nodeName !== 'SCRIPT') hits.push([node, idx]);
+    }
+    hits.forEach(([node, idx]) => {
+      const after = node.splitText(idx);
+      after.splitText(q.length);
+      const m = document.createElement('mark');
+      m.textContent = after.nodeValue;
+      after.replaceWith(m);
+    });
+  }
+  function run() {
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    blocks.forEach(b => {
+      clearMarks(b);
+      const hit = !q || b.textContent.toLowerCase().includes(q);
+      b.classList.toggle('hidden', !hit);
+      if (hit) shown++;
+      if (hit && q.length >= 2) { markText(b, q); if (b.tagName === 'DETAILS') b.open = true; }
+    });
+    document.querySelectorAll('.chapter').forEach(ch => {
+      const items = ch.querySelectorAll('.block, details.qa');
+      if (!items.length) { ch.classList.toggle('hidden', !!q && !ch.textContent.toLowerCase().includes(q)); return; }
+      const any = Array.from(items).some(i => !i.classList.contains('hidden'));
+      ch.classList.toggle('hidden', !!q && !any);
+    });
+    count.textContent = q ? shown + ' matching blocks' : '';
+  }
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+
+  const quiz = document.getElementById('quiz');
+  quiz.addEventListener('click', () => {
+    const on = quiz.getAttribute('aria-pressed') !== 'true';
+    quiz.setAttribute('aria-pressed', on);
+    document.body.classList.toggle('quiz', on);
+    document.querySelectorAll('.revealed, .revealed-wrap').forEach(n => n.classList.remove('revealed', 'revealed-wrap'));
+  });
+  document.addEventListener('click', e => {
+    if (!document.body.classList.contains('quiz')) return;
+    const body = e.target.closest('.note-body');
+    if (body) { body.classList.add('revealed'); body.parentNode.classList.add('revealed-wrap'); }
+  });
+
+  const openqa = document.getElementById('openqa');
+  openqa.addEventListener('click', () => {
+    const qas = document.querySelectorAll('details.qa');
+    const open = Array.from(qas).some(d => !d.open);
+    qas.forEach(d => d.open = open);
+    openqa.textContent = open ? 'Close all answers' : 'Open all answers';
+  });
+})();
+</script>
+</body>
+</html>

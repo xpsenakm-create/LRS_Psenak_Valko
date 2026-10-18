@@ -4,7 +4,10 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iomanip>
 #include <future>
 #include <memory>
 #include <mutex>
@@ -23,6 +26,7 @@
 #include <mavros_msgs/srv/command_tol.hpp>
 #include <mavros_msgs/srv/message_interval.hpp>
 #include <mavros_msgs/srv/set_mode.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -52,6 +56,10 @@ public:
     gps_stable_sec_ = declare_parameter<double>("gps_stable_sec", 5.0);
     ground_wait_sec_ = declare_parameter<double>("ground_wait_sec", 3.0);
     disarm_grace_sec_ = declare_parameter<double>("disarm_grace_sec", 5.0);
+    cruise_speed_ = declare_parameter<double>("cruise_speed", 1.0);
+    max_lead_ = declare_parameter<double>("max_lead", 1.0);
+    log_dir_ = declare_parameter<std::string>("log_dir", "");
+    exit_on_done_ = declare_parameter<bool>("exit_on_done", true);
     mode_retry_interval_sec_ = declare_parameter<double>("mode_retry_interval_sec", 2.0);
     arm_retry_interval_sec_ = declare_parameter<double>("arm_retry_interval_sec", 2.0);
     service_timeout_sec_ = declare_parameter<double>("service_timeout_sec", 5.0);
@@ -71,6 +79,7 @@ public:
       settle_speed_ <= 0.0 || settle_time_ <= 0.0 || setpoint_rate_hz_ < 10.0 ||
       setpoint_rate_hz_ > 20.0 || handshake_timeout_sec_ <= 0.0 ||
       fcu_ready_timeout_sec_ <= 0.0 || gps_stable_sec_ < 0.0 || ground_wait_sec_ < 0.0 ||
+      cruise_speed_ <= 0.0 || max_lead_ <= pass_radius_ ||
       pose_stale_timeout_sec_ <= 1.0 || velocity_stale_timeout_sec_ <= 0.5 ||
       local_position_rate_hz_ <= 0.0 ||
       mode_retry_interval_sec_ <= 0.0 || arm_retry_interval_sec_ <= 0.0 ||
@@ -124,6 +133,7 @@ public:
     setpoint_publisher_ = create_publisher<geometry_msgs::msg::PoseStamped>(
       "/mavros/setpoint_position/local", 10);
     plan_publisher_ = create_publisher<geometry_msgs::msg::PoseArray>("plan_request", 10);
+    flown_path_publisher_ = create_publisher<nav_msgs::msg::Path>("mission/flown_path", 10);
     mode_client_ = create_client<mavros_msgs::srv::SetMode>("/mavros/set_mode");
     arm_client_ = create_client<mavros_msgs::srv::CommandBool>("/mavros/cmd/arming");
     takeoff_client_ = create_client<mavros_msgs::srv::CommandTOL>("/mavros/cmd/takeoff");
@@ -135,6 +145,7 @@ public:
       std::chrono::duration<double>(1.0 / setpoint_rate_hz_));
     timer_ = create_wall_timer(timer_period, std::bind(&MissionExecutorNode::tick, this), timer_group_);
 
+    openLogs();
     RCLCPP_INFO(get_logger(), "Loaded %zu waypoints from %s", mission_.size(), mission_file.c_str());
     for (size_t i = 0; i < mission_.size(); ++i) {
       const auto& point = mission_[i];
@@ -197,6 +208,7 @@ private:
       next_arm_attempt_at_ = std::chrono::steady_clock::now();
       arm_rejection_count_ = 0;
     }
+    if (next == State::NAVIGATE) carrot_ = target_.pose.position;
     if (next == State::TASK || next == State::NAVIGATE || next == State::ALIGN_PATH) {
       resetHardArrivalSamples();
     }
@@ -590,6 +602,7 @@ private:
 
   void beginPathNavigation()
   {
+    logPlannedPath();
     if (path_.size() > 1) {
       path_index_ = 1;
       setTarget(localToMapPose(pose_.pose), segmentYaw(path_index_));
@@ -602,10 +615,91 @@ private:
     requestPrefetchPlan();
   }
 
+  // ------------------------------------------------------------------ flight logging
+  // <log_dir>/flight_log.csv: one row per control tick (20 Hz), map frame, read by plot_a1_2.py.
+  // <log_dir>/planned_paths.csv: every planner route that was flown, one row per path point.
+  void openLogs()
+  {
+    if (log_dir_.empty()) return;
+    std::error_code error;
+    std::filesystem::create_directories(log_dir_, error);
+    flight_log_.open(log_dir_ + "/flight_log.csv");
+    path_log_.open(log_dir_ + "/planned_paths.csv");
+    if (!flight_log_ || !path_log_) {
+      RCLCPP_WARN(get_logger(), "Cannot write logs to %s; flight logging disabled", log_dir_.c_str());
+      flight_log_.close();
+      path_log_.close();
+      return;
+    }
+    flight_log_ << "t_s,state,waypoint,armed,mode,cmd_valid,cmd_x,cmd_y,cmd_z,cmd_yaw_deg,"
+                   "x,y,z,yaw_deg,speed\n";
+    path_log_ << "leg,waypoint,point,x,y,z\n";
+    log_started_at_ = std::chrono::steady_clock::now();
+    RCLCPP_INFO(get_logger(), "Logging flight data to %s", log_dir_.c_str());
+  }
+
+  void logSample()
+  {
+    const auto steady_now = std::chrono::steady_clock::now();
+    if (have_pose_ && std::chrono::duration<double>(steady_now - last_flown_publish_at_).count() >= 0.2 &&
+      vehicle_state_.armed)
+    {
+      last_flown_publish_at_ = steady_now;
+      geometry_msgs::msg::PoseStamped sample;
+      sample.header.frame_id = "map";
+      sample.header.stamp = now();
+      sample.pose = localToMapPose(pose_.pose);
+      flown_path_.header = sample.header;
+      if (flown_path_.poses.size() < 20000) flown_path_.poses.push_back(sample);
+      flown_path_publisher_->publish(flown_path_);
+    }
+    if (!flight_log_ || !have_pose_) return;
+    const geometry_msgs::msg::Pose map_pose = localToMapPose(pose_.pose);
+    const bool cmd_valid = target_initialized_ && setpointsAllowed();
+    const auto deg = [](double rad) { return std::remainder(rad, 2.0 * M_PI) * 180.0 / M_PI; };
+    flight_log_ << std::fixed << std::setprecision(3)
+      << std::chrono::duration<double>(steady_now - log_started_at_).count() << ','
+      << stateName(state_) << ',' << waypoint_index_ + 1 << ','
+      << (vehicle_state_.armed ? 1 : 0) << ',' << vehicle_state_.mode << ','
+      << (cmd_valid ? 1 : 0) << ','
+      << target_.pose.position.x << ',' << target_.pose.position.y << ',' << target_.pose.position.z << ','
+      << deg(target_yaw_) << ','
+      << map_pose.position.x << ',' << map_pose.position.y << ',' << map_pose.position.z << ','
+      << deg(currentMapYaw()) << ',' << (have_velocity_ ? speed() : 0.0) << '\n';
+    if (std::chrono::duration<double>(steady_now - last_log_flush_at_).count() >= 1.0) {
+      flight_log_.flush();
+      last_log_flush_at_ = steady_now;
+    }
+  }
+
+  void logPlannedPath()
+  {
+    ++leg_counter_;
+    if (!path_log_) return;
+    path_log_ << std::fixed << std::setprecision(3);
+    for (size_t i = 0; i < path_.size(); ++i) {
+      const auto& p = path_[i].position;
+      path_log_ << leg_counter_ << ',' << waypoint_index_ + 1 << ',' << i << ','
+        << p.x << ',' << p.y << ',' << p.z << '\n';
+    }
+    path_log_.flush();
+  }
+
   void tick()
   {
     std::lock_guard<std::mutex> lock(state_mutex_);
     publishSetpoint();
+    logSample();
+    if (state_ == State::DONE && exit_on_done_ && !shutdown_requested_ &&
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - state_started_at_).count() > 1.0)
+    {
+      shutdown_requested_ = true;
+      if (flight_log_) flight_log_.flush();
+      if (path_log_) path_log_.flush();
+      RCLCPP_INFO(get_logger(), "Mission DONE; executor exits (exit_on_done=true)");
+      rclcpp::shutdown();
+      return;
+    }
     if (state_ == State::DONE || state_ == State::ERROR) return;
     const auto steady_now = std::chrono::steady_clock::now();
     if (service_pending_ &&
@@ -629,7 +723,7 @@ private:
     if (vehicle_state_.armed && have_pose_ &&
       std::chrono::duration<double>(steady_now - pose_received_at_).count() > pose_stale_timeout_sec_)
     {
-      fail("local position telemetry is stale");
+      fail("local position telemetry is stale (MAVROS lost the FCU: is Gazebo paused, or SITL closed?)");
       return;
     }
     const bool requires_guided_flight = state_ == State::TAKEOFF || state_ == State::RETAKEOFF ||
@@ -953,12 +1047,15 @@ private:
     const auto& goal = mission_[waypoint_index_];
     if (path_index_ < path_.size()) {
       const auto& pose = path_[path_index_];
-      setTarget(pose, segmentYaw(path_index_));
+      const bool carrot_at_vertex = advanceCarrot(pose.position);
+      geometry_msgs::msg::Pose carrot_pose = pose;
+      carrot_pose.position = carrot_;
+      setTarget(carrot_pose, segmentYaw(path_index_));
       const geometry_msgs::msg::Pose map_pose = localToMapPose(pose_.pose);
       const double dx = map_pose.position.x - pose.position.x;
       const double dy = map_pose.position.y - pose.position.y;
       const double dz = map_pose.position.z - pose.position.z;
-      if (std::sqrt(dx * dx + dy * dy + dz * dz) <= pass_radius_) {
+      if (carrot_at_vertex && std::sqrt(dx * dx + dy * dy + dz * dz) <= pass_radius_) {
         const size_t reached_index = path_index_;
         ++path_index_;
         if (path_index_ < path_.size()) {
@@ -998,6 +1095,27 @@ private:
         waypoint_index_ + 1, distanceTo(goal), speed(), settle_time_);
       transition(State::TASK);
     }
+  }
+
+  // Carrot following: the setpoint slides along the planned segment at cruise_speed and never runs
+  // more than max_lead ahead of the drone.  Jumping the setpoint straight to the segment end lets
+  // ArduCopter mix its horizontal and vertical speed limits, so it leaves the straight line (e.g.
+  // descends early) and can clip an obstacle the A* route went over.  Returns true at the vertex.
+  bool advanceCarrot(const geometry_msgs::msg::Point& vertex)
+  {
+    const auto drone = localToMapPose(pose_.pose).position;
+    const auto dist = [](const geometry_msgs::msg::Point& a, const geometry_msgs::msg::Point& b) {
+      return std::sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
+    };
+    const double remaining = dist(carrot_, vertex);
+    if (remaining < 1e-3) { carrot_ = vertex; return true; }
+    if (dist(drone, carrot_) < max_lead_) {
+      const double step = std::min(cruise_speed_ / setpoint_rate_hz_, remaining);
+      carrot_.x += (vertex.x - carrot_.x) / remaining * step;
+      carrot_.y += (vertex.y - carrot_.y) / remaining * step;
+      carrot_.z += (vertex.z - carrot_.z) / remaining * step;
+    }
+    return dist(carrot_, vertex) < 1e-3;
   }
 
   void alignPathTick()
@@ -1150,6 +1268,16 @@ private:
   double setpoint_rate_hz_ = 20.0, handshake_timeout_sec_ = 180.0;
   double fcu_ready_timeout_sec_ = 600.0, gps_stable_sec_ = 5.0, ground_wait_sec_ = 3.0;
   double disarm_grace_sec_ = 5.0;
+  double cruise_speed_ = 1.0, max_lead_ = 1.0;
+  geometry_msgs::msg::Point carrot_;
+  std::string log_dir_;
+  bool exit_on_done_ = true, shutdown_requested_ = false;
+  std::ofstream flight_log_, path_log_;
+  size_t leg_counter_ = 0;
+  nav_msgs::msg::Path flown_path_;
+  std::chrono::steady_clock::time_point log_started_at_ = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point last_log_flush_at_ = log_started_at_;
+  std::chrono::steady_clock::time_point last_flown_publish_at_ = log_started_at_;
   std::chrono::steady_clock::time_point next_disarm_attempt_at_ = std::chrono::steady_clock::now();
   double mode_retry_interval_sec_ = 2.0;
   double arm_retry_interval_sec_ = 2.0;
@@ -1185,6 +1313,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr status_subscription_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr setpoint_publisher_;
   rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr plan_publisher_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr flown_path_publisher_;
   rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr mode_client_;
   rclcpp::Client<mavros_msgs::srv::MessageInterval>::SharedPtr message_interval_client_;
   rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr arm_client_;

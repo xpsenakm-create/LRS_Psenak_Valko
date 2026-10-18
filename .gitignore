@@ -30,3 +30,6 @@ __pycache__/
 *.pyo
 *.pyd
 map_voxels_with_racks_inflated.pcd/
+
+# A1.2 deliverable: the final recorded mission (rosbag + logs + plots) is kept in git
+!results/**/*.mcap

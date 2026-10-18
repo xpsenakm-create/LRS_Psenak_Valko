@@ -1,5 +1,9 @@
 # A1.2 Mission Execution Starter
 
+> Full documentation: [docs/A1_2_DOCUMENTATION.md](../../docs/A1_2_DOCUMENTATION.md).
+> Line-by-line study guide: open `docs/A1_2_study_guide.html` in a browser
+> (rebuild with `python3 docs/study_guide/build_study_guide.py`).
+
 ## Package layout
 
 ```text
@@ -232,6 +236,57 @@ and arming, the executor requests MAVLink `LOCAL_POSITION_NED` (message 32) at
 `velocity_stale_timeout_sec=3`; once armed, longer pose loss still fails the mission.
 Hard settling counts distinct low-speed velocity messages, so repeating one cached
 sample at the control-loop rate cannot falsely satisfy the one-second settle interval.
+
+## Flight logs, rosbag and plots
+
+Every `./run_a1_2.sh` run gets its own folder `log/a1_2_runs/<date>_<time>_<mission>/`:
+
+| File | Content |
+|---|---|
+| `mission.csv` | copy of the mission file that was flown |
+| `flight_log.csv` | 20 Hz: state, waypoint, armed/mode, commanded and measured pose and yaw (map frame), speed |
+| `planned_paths.csv` | every A* route that was flown (one row per route point) |
+| `bag/` | rosbag (`A1_2_RECORD=1`, default): MAVROS state/pose/velocity/setpoints/FCU text, plan requests and results, markers |
+| `topview.png` | floor plan: map, racks with safety radius, planned routes, flown track, heading arrows, waypoints and tasks |
+| `overview.png` | altitude, heading, distance to target and speed, clearance to obstacles, arrival error per waypoint, deviation from the planned route |
+| `view_3d_a1_2.py` | (window, not a file) 3D voxel view with the planned route |
+
+The plots are made automatically when the mission ends (also after Ctrl+C or an error;
+`A1_2_PLOT=0` disables it), and two interactive windows (top view, overview) open so you can
+zoom in; they stay open after the script exits (`A1_2_SHOW_PLOTS=0` saves the PNGs only).
+A third window, `view_3d_a1_2.py`, shows the run in 3D: the hangar as voxels, the planned A*
+route as a glowing green tube inside a translucent safety-radius corridor, a green light that
+travels along the route, the flown track (blue) and the waypoints. Mouse: rotate/zoom/pan.
+Keys: `space` pause the light, `+`/`-` hide walls above a height, `c` roof, `i` the planner's
+inflated occupancy, `f` flown track, `r` reset view, `q` quit. `A1_2_SHOW_3D=0` disables it;
+open it later with `python3 view_3d_a1_2.py [RUN_FOLDER]`.
+Gaps in the time plots are expected: during takeoff and landing ArduCopter flies on its own
+and no setpoints are sent, and periods on the ground are labelled. To redo them: `python3 plot_a1_2.py [RUN_FOLDER]` (newest run by
+default). The terminal summary lists the arrival error of each waypoint against its
+tolerance, the minimum clearance to any wall, pillar or rack (floor excluded) compared with
+the drone radius (0.33 m to the prop tips), and the largest deviation from the planned route.
+`A1_2_RVIZ=1 ./run_a1_2.sh` also opens RViz with the map, racks, planned route and the flown
+track (`/mission/flown_path`). The executor exits by itself after `DONE` (`exit_on_done`).
+
+Navigation follows the A* route with a "carrot": the setpoint slides along each segment at
+`cruise_speed` (1 m/s, scaled for a slow simulation) and stays at most `max_lead=1.0` m ahead
+of the drone. Sending only the segment end lets ArduCopter mix its horizontal and vertical
+speed limits and leave the straight line, for example descending before it has cleared a rack.
+
+`safety_radius` in `config/planner.yaml` is 0.45 m: 0.33 m drone radius plus about 0.12 m for
+tracking error. With 0.30 m the test flight came within 0.37 m of a rack (4 cm margin).
+
+## Test missions
+
+Besides `hangar_example.csv`, two missions cover other parts of the hangar:
+
+* `missions/test_east_aisle.csv`: the open east half, the aisle between the racks, `yaw-90`,
+  `yaw0`, `landtakeoff` south of the racks, and a final `land` away from the start.
+* `missions/test_over_racks.csv`: a climb to 4.8 m over the lower rack, a hard waypoint 0.5 m
+  from the north wall, `landtakeoff` in the east, and `yaw-45`.
+
+Both completed end to end in SITL (all waypoints within tolerance, minimum clearance 0.61 m
+and 0.38 m).
 
 ## Important first-flight checks
 

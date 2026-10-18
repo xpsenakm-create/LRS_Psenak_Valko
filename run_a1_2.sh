@@ -16,6 +16,12 @@
 #   A1_2_SKIP_BUILD        1 = skip colcon build                                           [0]
 #   A1_2_TIME_SCALE        multiply the executor's wall-clock timeouts (default: 1/RTF when RTF < MIN_RTF)
 #   A1_2_LOG_DIR           where simulator logs go                                         [<ws>/log/a1_2_sim]
+#   A1_2_RUNS_DIR          one folder per mission run: logs, rosbag, plots                 [<ws>/log/a1_2_runs]
+#   A1_2_RECORD            1 = record a rosbag of the flight into the run folder           [1]
+#   A1_2_PLOT              1 = run plot_a1_2.py on the run folder when the mission ends    [1]
+#   A1_2_SHOW_PLOTS        1 = also open the plot windows (needs a display)                [1]
+#   A1_2_SHOW_3D           1 = also open the 3D voxel view of the route (view_3d_a1_2.py)  [1]
+#   A1_2_RVIZ              1 = open RViz with the map, racks, planned and flown path       [0]
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,8 +39,17 @@ READY_TIMEOUT="${A1_2_READY_TIMEOUT:-180}"
 POLL_INTERVAL="${A1_2_POLL_INTERVAL:-5}"
 SKIP_BUILD="${A1_2_SKIP_BUILD:-0}"
 LOG_DIR="${A1_2_LOG_DIR:-$ROOT_DIR/log/a1_2_sim}"
+RUNS_DIR="${A1_2_RUNS_DIR:-$ROOT_DIR/log/a1_2_runs}"
+RECORD="${A1_2_RECORD:-1}"
+PLOT="${A1_2_PLOT:-1}"
+SHOW_PLOTS="${A1_2_SHOW_PLOTS:-1}"
+SHOW_3D="${A1_2_SHOW_3D:-1}"
+RVIZ="${A1_2_RVIZ:-0}"
 PLANNER_PID=""
 EXECUTOR_PID=""
+BAG_PID=""
+RVIZ_PID=""
+RUN_DIR=""
 
 # BEGIN_FUNCS
 log()  { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
@@ -93,7 +108,7 @@ for name in RTF_TIMEOUT SITL_BOOT_TIMEOUT READY_TIMEOUT POLL_INTERVAL; do
   fi
 done
 if ! is_number "$MIN_RTF"; then printf 'A1_2_MIN_RTF must be a number, e.g. 0.8\n' >&2; exit 2; fi
-for name in START_SIM STOP_SIM SKIP_BUILD; do
+for name in START_SIM STOP_SIM SKIP_BUILD RECORD PLOT SHOW_PLOTS SHOW_3D RVIZ; do
   if [[ "${!name}" != 0 && "${!name}" != 1 ]]; then
     printf 'A1_2_%s must be 0 or 1.\n' "$name" >&2
     exit 2
@@ -132,14 +147,40 @@ set +u
 source "$ROOT_DIR/install/setup.bash"
 set -u
 
+stop_group() { # pid [signal]: stop a process started with setsid (and its children); escalates
+  local pid="$1" sig="${2:-TERM}" s i
+  [[ -n "$pid" ]] || return 0
+  for s in "$sig" TERM KILL; do
+    kill -0 "$pid" 2>/dev/null || break
+    kill "-$s" -- "-$pid" 2>/dev/null || kill "-$s" "$pid" 2>/dev/null || true
+    for ((i = 0; i < 20; i++)); do kill -0 "$pid" 2>/dev/null || break; sleep 0.5; done
+  done
+  wait "$pid" 2>/dev/null || true
+}
+
 cleanup() {
   trap - EXIT INT TERM
-  for pid in "$EXECUTOR_PID" "$PLANNER_PID"; do
-    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
-      kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
-      wait "$pid" 2>/dev/null || true
+  stop_group "$EXECUTOR_PID"
+  stop_group "$BAG_PID" INT          # SIGINT lets ros2 bag close the file properly
+  stop_group "$PLANNER_PID"
+  stop_group "$RVIZ_PID"
+  if [[ -n "$RUN_DIR" && "$PLOT" == 1 && -s "$RUN_DIR/flight_log.csv" ]]; then
+    log "Plotting $RUN_DIR"
+    python3 "$ROOT_DIR/plot_a1_2.py" "$RUN_DIR" --no-show 2>&1 | grep -v -e 'Axes3D' -e 'warnings.warn' ||
+      warn "plot_a1_2.py failed; run it by hand: python3 plot_a1_2.py $RUN_DIR"
+    if [[ "$SHOW_PLOTS" == 1 && -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+      # Detached, so the windows stay open after this script (and the simulator) are gone.
+      log "Opening plot windows (close them when done)"
+      setsid python3 "$ROOT_DIR/plot_a1_2.py" "$RUN_DIR" > "$RUN_DIR/plot_windows.log" 2>&1 < /dev/null &
+      disown || true
     fi
-  done
+    if [[ "$SHOW_3D" == 1 && -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]]; then
+      log "Opening 3D route view (keys: space light, +/- wall height, i occupancy, q quit)"
+      setsid python3 "$ROOT_DIR/view_3d_a1_2.py" "$RUN_DIR" > "$RUN_DIR/view_3d.log" 2>&1 < /dev/null &
+      disown || true
+    fi
+  fi
+  if [[ -n "$RUN_DIR" ]]; then log "Run folder: $RUN_DIR"; fi
   if [[ "$STOP_SIM" == 1 ]]; then
     log "Stopping MAVROS, SITL and Gazebo (A1_2_STOP_SIM=1)"
     pkill -f 'mavros_node' 2>/dev/null || true
@@ -200,7 +241,7 @@ LAUNCHER
 }
 
 wait_gazebo_realtime() {
-  local topic="$1" deadline=$((SECONDS + RTF_TIMEOUT)) good=0 rtf paused warned=0
+  local topic="$1" deadline=$((SECONDS + RTF_TIMEOUT)) good=0 slow=0 rtf paused warned=0
   log "Waiting for Gazebo to run at >= $MIN_RTF x real time (timeout ${RTF_TIMEOUT}s)"
   while ((SECONDS < deadline)); do
     paused="$(gz_stat "$topic" paused)"
@@ -209,12 +250,21 @@ wait_gazebo_realtime() {
       if ((!warned)); then warn "Gazebo is PAUSED - press Play in the Gazebo window"; warned=1; fi
       good=0
     elif [[ -n "$rtf" ]] && float_ge "$rtf" "$MIN_RTF"; then
+      slow=0
       good=$((good + 1))
       log "Gazebo real-time factor $rtf (ok $good/3)"
       if ((good >= 3)); then return 0; fi
     else
       good=0
       log "Gazebo real-time factor ${rtf:-unknown}; waiting"
+      # A PC that stays far below the target will not get there by waiting longer.
+      if [[ -n "$rtf" ]] && ! float_ge "$rtf" "$(awk -v m="$MIN_RTF" 'BEGIN { print m / 2 }')"; then
+        slow=$((slow + 1))
+        if ((slow >= 5)); then
+          warn "Gazebo stays at ~${rtf} x real time (this PC is slower than that); not waiting longer."
+          return 0
+        fi
+      fi
     fi
     sleep 2
   done
@@ -383,12 +433,36 @@ if float_ge "$TIME_SCALE" 1.5; then
     -p "settle_time:=$(scaled 1.0 "$TIME_SCALE")"
     -p "disarm_grace_sec:=$(scaled 5.0 "$TIME_SCALE")"
     -p "ground_wait_sec:=$(scaled 3.0 "$TIME_SCALE")"
+    -p "cruise_speed:=$(awk -v s="$TIME_SCALE" 'BEGIN { printf "%.3f", 1.0 / s }')"
   )
+fi
+
+# ---------------------------------------------------------------- run folder, rosbag, RViz
+RUN_DIR="$RUNS_DIR/$(date +%Y%m%d_%H%M%S)_$(basename "$MISSION_FILE" .csv)"
+mkdir -p "$RUN_DIR"
+cp "$MISSION_FILE" "$RUN_DIR/mission.csv"
+EXEC_ARGS+=(-p "log_dir:=$RUN_DIR")
+
+if [[ "$RECORD" == 1 ]]; then
+  setsid ros2 bag record -o "$RUN_DIR/bag" \
+    /mavros/state /mavros/local_position/pose /mavros/local_position/velocity_local \
+    /mavros/setpoint_position/local /mavros/statustext/recv \
+    /plan_request /planned_path /planning_status /planned_path_marker /rack_boxes_marker \
+    > "$RUN_DIR/bag_record.log" 2>&1 &
+  BAG_PID=$!
+  log "Recording rosbag to $RUN_DIR/bag"
+fi
+if [[ "$RVIZ" == 1 ]]; then
+  setsid rviz2 -d "$ROOT_DIR/src/lrs_psenak_valko/config/planner.rviz" > "$RUN_DIR/rviz.log" 2>&1 &
+  RVIZ_PID=$!
 fi
 
 printf 'Starting mission: %s\n' "$MISSION_FILE"
 setsid ros2 run lrs_psenak_valko mission_executor_node --ros-args "${EXEC_ARGS[@]}" &
 EXECUTOR_PID=$!
 
-printf 'Mission active. Leave Gazebo and SITL visible; press Ctrl+C here to stop the executor and planner.\n'
-wait "$EXECUTOR_PID"
+printf 'Mission active. Leave Gazebo and SITL visible; press Ctrl+C here to stop (plots are still made).\n'
+EXEC_RC=0
+wait "$EXECUTOR_PID" || EXEC_RC=$?
+EXECUTOR_PID=""
+if ((EXEC_RC == 0)); then log "Mission executor finished"; else warn "Mission executor exited with status $EXEC_RC"; fi

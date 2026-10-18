@@ -1,0 +1,8 @@
+# x,y,z,precision,task
+13.60,1.50,1.00,soft,takeoff
+8.65,2.02,1.00,soft,-
+4.84,5.37,2.00,hard,yaw180
+2.08,9.74,1.75,hard,-
+8.84,6.90,2.00,hard,landtakeoff
+2.81,8.15,1.50,soft,yaw90
+13.60,1.50,2.00,hard,land

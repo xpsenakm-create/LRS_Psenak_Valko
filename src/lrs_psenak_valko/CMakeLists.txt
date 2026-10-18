@@ -18,6 +18,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(mavros_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io filters)
 
 # --- A1.1: map + A* planner -------------------------------------------------
@@ -41,7 +42,7 @@ target_include_directories(mission_model PUBLIC include)
 add_executable(mission_executor_node src/mission_executor_node.cpp)
 target_link_libraries(mission_executor_node mission_model)
 ament_target_dependencies(mission_executor_node
-  rclcpp geometry_msgs sensor_msgs mavros_msgs std_msgs)
+  rclcpp geometry_msgs sensor_msgs mavros_msgs std_msgs nav_msgs)
 
 install(TARGETS map_planner_node mission_executor_node
   DESTINATION lib/${PROJECT_NAME})
