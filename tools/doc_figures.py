@@ -5,7 +5,7 @@ doc_figures.py -- result figures for docs/A1_1 and docs/A1_2 (from recorded data
 A1.1 needs docs/A1_1/data/benchmark.json and benchmark_raw.json (tools/a1_1_benchmark.py) and the
 inflated occupancy saved by that run (/tmp/a1_1_occupancy_<r>.pcd, optional), where r is
 safety_radius from config/planner.yaml.
-A1.2 uses the recorded mission in results/.
+A1.2 uses the recording in results/A1_2/ flown with that safety_radius.
 
     python3 tools/doc_figures.py
 """
@@ -175,8 +175,8 @@ def route_list(data, radius):
 
 
 # ------------------------------------------------------------------ A1.2
-def a1_2():
-    runs = sorted(glob.glob(os.path.join(ROOT, "results", "hangar_example_*")))
+def a1_2(safety):
+    runs = sorted(glob.glob(os.path.join(ROOT, "results", "A1_2", f"safety_{safety:.2f}_*")))
     if not runs:
         print("no recorded run in results/")
         return
@@ -194,7 +194,7 @@ def main():
     os.makedirs(os.path.join(A11, "img"), exist_ok=True)
     os.makedirs(os.path.join(A12, "img"), exist_ok=True)
     a1_1(cloud, boxes, safety)
-    a1_2()
+    a1_2(safety)
     print("figures written to docs/A1_1/img and docs/A1_2/img")
 
 

@@ -6,7 +6,7 @@ letu, vykoná úlohu bodu a na konci pristane a odzbrojí sa. Všetko riadi uzol
 `mission_executor_node` so stavovým automatom.
 
 **Spustenie:** `./run_a1_2.sh [misia.csv]` (bez argumentu `missions/hangar_example.csv`), viac
-v [HOW_TO_RUN.md](../../HOW_TO_RUN.md). **Záznam misie:** `results/hangar_example_20261018/`.
+v [HOW_TO_RUN.md](../../HOW_TO_RUN.md). **Záznamy misie:** `results/A1_2/`.
 
 ## Diagramy
 
@@ -121,8 +121,8 @@ kód bral odmietnutie ako chybu a misia skončila na bode landtakeoff.
 
 ## Výsledky (simulácia)
 
-Všetky misie prebehli bez zásahu od štartu po odzbrojenie. Lety boli nahrané so
-`safety_radius` 0.45 m; odovzdaná konfigurácia používa 0.30 m (rovnako ako A1.1).
+Všetky misie prebehli bez zásahu od štartu po odzbrojenie, so `safety_radius` 0.45 m.
+Záznam je v `results/A1_2/safety_0.45_20261018/`.
 
 | Misia | Body | Výsledok | Chyba hard bodov | Chyba soft bodov | Najmenší odstup |
 |---|---:|---|---:|---:|---:|
@@ -132,6 +132,12 @@ Všetky misie prebehli bez zásahu od štartu po odzbrojenie. Lety boli nahrané
 
 `hangar_example` trval 404 s pri rýchlosti simulácie ~0.3; A* viedol úsek k bodu 4 ponad regál
 (z ≈ 4.1 m).
+
+**Porovnanie so `safety_radius` 0.30 m** (`results/A1_2/safety_0.30_20261019/`): tá istá misia
+skončila DONE a všetky body boli v tolerancii (hard 5.1–8.2 cm, soft 0.31–0.42 m), ale pri
+zostupe z regálu k bodu 5 dron klesal rýchlejšie, než sa posúval do strany, a priblížil sa na
+**0.20 m** k hrane regálu, menej ako polomer drona 0.33 m (vrtule by regál zasiahli). Preto
+používame 0.45 m.
 
 ![Pôdorys: plánovaná a preletená trasa](img/vysledok_trasa.png)
 

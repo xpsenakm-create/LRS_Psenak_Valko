@@ -81,22 +81,21 @@ sme teda skutočné rozmery zo sveta. Preto je let **ponad** regál (z ≥ ~4.1 
 v kóde). − Ak sa regál vo svete posunie, treba upraviť YAML; uzol bez regálov nenaštartuje
 (`require_rack_boxes: true`).
 
-### Nafúknutie prekážok (safety_radius 0.30 m)
+### Nafúknutie prekážok (safety_radius 0.45 m)
 
-**Čo:** každý obsadený voxel nafúkneme na guľu s polomerom `safety_radius` (ROS parameter
-v `config/planner.yaml`, teraz 0.30 m) v 3D, teda aj nahor a nadol. Potom sa dron dá brať ako
-bod: každý voľný voxel je bezpečný pre jeho stred.
+**Čo:** každý obsadený voxel nafúkneme na guľu s polomerom `safety_radius` (ROS parameter,
+teraz 0.45 m) v 3D, teda aj nahor a nadol. Potom sa dron dá brať ako bod: každý voľný voxel je
+bezpečný pre jeho stred.
 
-**Prečo 0.30 m:** obsadený voxel reprezentuje jeho stred, skutočný povrch je bližšie k dronu
-najviac o pol voxelu, a trasa navyše vedie stredmi voľných voxelov. Reálny odstup preto vychádza
-väčší ako samotný polomer: pri lete v A1.2 bol najmenší odstup od regálu 0.37 m, čo je viac ako
-polomer drona po špičky vrtúľ 0.33 m (telo 0.35 × 0.35 m, vrtule na ±0.15 m). Menší polomer
-nechá otvorené úzke priechody a body misie blízko stien. Väčší polomer viditeľne mení trasu
-(obrázok nižšie); na obhajobe sa dá zmeniť cez `./run_a1_1.sh --safety-radius 0.45`.
+**Prečo 0.45 m:** polomer drona po špičky vrtúľ 0.33 m (telo 0.35 × 0.35 m, vrtule na ±0.15 m)
++ ~0.12 m na chybu sledovania polohy. Hodnotu sme overili letom tej istej misie v A1.2
+(`results/A1_2/`): s 0.30 m (menej ako samotný dron) klesol dron pri zostupe z regálu na
+**0.20 m** od jeho hrany, teda vrtule by regál zasiahli; s 0.45 m bol najmenší odstup **0.37 m**.
+Väčší polomer viditeľne mení trasu (obrázok nižšie).
 
-**Plusy / mínusy:** + jednoduché a bezpečné aj nad a pod prekážkou, + nezatvára priechody.
-− Rezerva nad polomerom drona je len niekoľko cm. − Príliš veľký polomer zavrie úzke
-priechody a body misie blízko steny (rieši ich „snap“, pozri ďalej).
+**Plusy / mínusy:** + jednoduché a bezpečné aj nad a pod prekážkou. − Príliš veľký polomer
+zavrie úzke priechody. − Body misie bližšie ako ~0.45 m od steny sú zablokované (rieši ich
+„snap“, pozri ďalej).
 
 ### A* a heuristika
 
@@ -114,7 +113,7 @@ Prekážky môžu cestu len predĺžiť, preto h nikdy nenadhodnotí (**prípust
 na mriežke. Euklidovská vzdialenosť by bola tiež prípustná, ale menšia, takže A* by
 expandoval viac voxelov. Manhattanská by pri diagonálach nadhodnocovala.
 
-**Plusy / mínusy:** + optimálna trasa za milisekundy (4–25 ms). − Optimálna len na mriežke, nie
+**Plusy / mínusy:** + optimálna trasa za milisekundy (4–46 ms). − Optimálna len na mriežke, nie
 v spojitom priestore (to dorovná zjednodušenie).
 
 ### Žiadne „prešmyknutie“ cez roh
@@ -135,8 +134,8 @@ blízko sa A* dostal k cieľu).
 **Prečo:** každý voxel sa uzavrie najviac raz, takže zoznam open sa raz vyprázdni. Časový
 limit chráni pred veľkými mapami. Executor v A1.2 podľa tejto správy misiu bezpečne zastaví.
 
-**Plusy / mínusy:** + nikdy nezamrzne. − `NO_PATH` v uzavretej kancelárii trvá ~0.7 s, lebo
-musí prehľadať celý hangár (358 415 voxelov).
+**Plusy / mínusy:** + nikdy nezamrzne. − `NO_PATH` v uzavretej kancelárii trvá ~0.6 s, lebo
+musí prehľadať celý hangár (331 458 voxelov).
 
 ### Posun štartu a cieľa (snap)
 
@@ -172,28 +171,28 @@ zachytí.
 
 Všetky čísla zmeral `tools/a1_1_benchmark.py`, uložené sú v `docs/A1_1/data/benchmark.json`
 (a surové trasy v `benchmark_raw.json`). Mapa: 73 069 obsadených voxelov (s regálmi),
-234 353 po nafúknutí o 0.30 m.
+261 759 po nafúknutí o 0.45 m.
 
 | Trasa (štart → cieľ, m) | Body A* → po zjednodušení | Dĺžka A* → výsledná | Čas plánovania |
 |---|---:|---:|---:|
-| okolo regálu do uličky (13, 7, 1.5) → (4.5, 9.1, 1.5) | 58 → 2 | 9.42 → 8.76 m | 15.9 ms |
-| cez regál (12, 4, 1) → (4.3, 6.8, 4.8) | 52 → 3 | 10.21 → 9.12 m | 24.2 ms |
-| úsek misie (8.65, 2.02, 1) → (4.84, 5.37, 2) | 29 → 3 | 5.76 → 5.37 m | 8.3 ms |
-| úsek misie (2.08, 9.74, 1.75) → (8.84, 6.9, 2) | 46 → 3 | 8.01 → 7.41 m | 4.5 ms |
-| dlhá diagonála (16.5, 1, 1) → (1, 9.1, 3) | 104 → 3 | 19.45 → 18.19 m | 13.1 ms |
+| okolo regálu do uličky (13, 7, 1.5) → (4.5, 9.1, 1.5) | 58 → 2 | 9.42 → 8.76 m | 4.4 ms |
+| cez regál (12, 4, 1) → (4.3, 6.8, 4.8) | 53 → 3 | 10.30 → 9.27 m | 46.4 ms |
+| úsek misie (8.65, 2.02, 1) → (4.84, 5.37, 2) | 31 → 3 | 5.94 → 5.48 m | 14.7 ms |
+| úsek misie (2.08, 9.74, 1.75) → (8.84, 6.9, 2) | 48 → 3 | 8.12 → 7.49 m | 26.2 ms |
+| dlhá diagonála (16.5, 1, 1) → (1, 9.1, 3) | 104 → 3 | 19.45 → 18.18 m | 8.3 ms |
 | cieľ v strede regálu | `GOAL_OCCUPIED` | — | 0.0 ms |
 | cieľ mimo mapy (25, 7, 1.5) | `GOAL_OUT_OF_BOUNDS` | — | 0.0 ms |
-| cieľ v uzavretej kancelárii (3, 1.5, 0.8) | `NO_PATH`, 358 415 voxelov | — | 665 ms |
+| cieľ v uzavretej kancelárii (3, 1.5, 0.8) | `NO_PATH`, 331 458 voxelov | — | 618 ms |
 
 Všetky úspešné trasy prešli nezávislou kontrolou kolízií. Plánovač hľadal trasy aj v A1.2 pre
-tri rôzne misie (22 úsekov) a všetky boli preletené bez kolízie.
+tri rôzne misie (22 úsekov) a pri 0.45 m boli všetky preletené s odstupom väčším ako polomer drona.
 
 **Vplyv safety_radius** na trasu ponad regál:
 
 | safety_radius | Body | Dĺžka | Čas |
 |---:|---:|---:|---:|
-| 0.30 m (použité) | 52 → 3 | 9.12 m | 24.2 ms |
-| 0.45 m | 53 → 3 | 9.27 m | 46.4 ms |
+| 0.30 m | 52 → 3 | 9.12 m | 24.2 ms |
+| 0.45 m (použité) | 53 → 3 | 9.27 m | 46.4 ms |
 | 0.75 m | 57 → 5 | 9.55 m | 63.7 ms |
 
 ![Väčší polomer → trasa stúpa vyššie nad regál](img/polomer_trasa.png)
@@ -218,10 +217,10 @@ oranžové = regály, steny nad 2.6 m skryté):
   strecha kolízny model, takže takú trasu nesmieme poslať. Body misie sú vždy v hangári, no pre istotu
   by sa diery dali zakryť ďalším kvádrom v `rack_boxes` alebo stropom (max. výška).
 - **Zaokrúhlenie voxelov:** skutočná prekážka môže byť až ~0.075 m bližšie, než ukazuje stred
-  voxelu. Pri 0.30 m je rezerva nad polomerom drona (0.33 m) len pár cm; kto chce viac,
-  zvýši `safety_radius` (napr. 0.45 m), za cenu zatvorenia úzkych priechodov.
+  voxelu. Trasa ponad regál preto mala skutočný odstup 0.37 m namiesto 0.45 m (stále viac ako
+  polomer drona 0.33 m). Pre zaručených 0.45 m treba `safety_radius` ≈ 0.53 m.
 - **Žiadne vyhladenie (spline):** trasa má ostré rohy, pred ktorými sa dron v A1.2 na chvíľu
   zastaví a otočí.
-- **NO_PATH je pomalý** (~0.7 s), lebo A* musí prehľadať celý dosiahnuteľný priestor.
+- **NO_PATH je pomalý** (~0.6 s), lebo A* musí prehľadať celý dosiahnuteľný priestor.
 - **Optimálna len na mriežke 0.15 m:** zjednodušená trasa je kratšia, ale nie najkratšia
   možná v spojitom priestore.

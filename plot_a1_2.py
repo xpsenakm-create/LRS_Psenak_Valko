@@ -98,6 +98,14 @@ def load_mission(path):
     return wps
 
 
+def run_planner_yaml(run_dir, given=None):
+    """planner.yaml the run was flown with (saved in the run folder), else the package one."""
+    if given:
+        return given
+    saved = os.path.join(run_dir, "planner.yaml")
+    return saved if os.path.exists(saved) else DEFAULT_YAML
+
+
 def load_planner_yaml(path):
     """Tiny parser for the two values we need (no PyYAML dependency)."""
     text = open(path).read()
@@ -281,9 +289,10 @@ def main():
     ap = argparse.ArgumentParser(description="Plot an A1.2 mission run.")
     ap.add_argument("run_dir", nargs="?", help="run folder (default: newest in log/a1_2_runs)")
     ap.add_argument("--map", default=DEFAULT_MAP)
-    ap.add_argument("--planner-yaml", default=DEFAULT_YAML)
+    ap.add_argument("--planner-yaml", help="default: RUN/planner.yaml, else config/planner.yaml")
     ap.add_argument("--drone-radius", type=float, default=0.33, help="centre to prop tip [m]")
     ap.add_argument("--no-show", action="store_true")
+    ap.add_argument("--no-save", action="store_true", help="only show, do not overwrite the PNGs")
     args = ap.parse_args()
 
     run_dir = args.run_dir
@@ -293,6 +302,7 @@ def main():
             sys.exit(f"no runs found in {DEFAULT_RUNS}")
         run_dir = os.path.dirname(runs[-1])
     print(f"Run: {run_dir}")
+    args.planner_yaml = run_planner_yaml(run_dir, args.planner_yaml)
 
     import matplotlib
     if args.no_show:
@@ -339,7 +349,8 @@ def main():
     fig, ax = plt.subplots(figsize=(13, 9.5), num=f"A1.2 top view - {name}")
     plot_topview(ax, data, legs, mission, boxes, safety, band_xy)
     fig.tight_layout()
-    fig.savefig(os.path.join(run_dir, "topview.png"), dpi=150)
+    if not args.no_save:
+        fig.savefig(os.path.join(run_dir, "topview.png"), dpi=150)
 
     # ---- time series
     fig, axs = plt.subplots(3, 2, figsize=(15, 11), num=f"A1.2 overview - {name}")
@@ -435,7 +446,8 @@ def main():
              "(a setpoint would cancel the takeoff). Route deviation is only defined while navigating.",
              ha="center", va="bottom", fontsize=8, color="0.3")
     fig.tight_layout(rect=(0, 0.02, 1, 1))
-    fig.savefig(os.path.join(run_dir, "overview.png"), dpi=130)
+    if not args.no_save:
+        fig.savefig(os.path.join(run_dir, "overview.png"), dpi=130)
     print(f"Saved {run_dir}/topview.png and overview.png")
     if not args.no_show:
         plt.show()

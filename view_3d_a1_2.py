@@ -87,7 +87,7 @@ def main():
     ap = argparse.ArgumentParser(description="3D voxel view of an A1.2 run.")
     ap.add_argument("run_dir", nargs="?")
     ap.add_argument("--map", default=P.DEFAULT_MAP)
-    ap.add_argument("--planner-yaml", default=P.DEFAULT_YAML)
+    ap.add_argument("--planner-yaml", help="default: RUN/planner.yaml, else config/planner.yaml")
     ap.add_argument("--occupancy", default=os.path.join(ROOT, "map_voxels_with_racks_inflated.pcd"))
     ap.add_argument("--screenshot", help="render to this PNG and exit")
     ap.add_argument("--camera", choices=["default", "top"], default="default",
@@ -113,7 +113,7 @@ def main():
     legs = P.load_paths(os.path.join(run_dir, "planned_paths.csv"))
     mission_path = os.path.join(run_dir, "mission.csv")
     mission = P.load_mission(mission_path) if os.path.exists(mission_path) else []
-    safety, boxes = P.load_planner_yaml(args.planner_yaml)
+    safety, boxes = P.load_planner_yaml(P.run_planner_yaml(run_dir, args.planner_yaml))
 
     cloud = P.load_pcd_ascii(args.map)
     walls = voxelize(cloud[cloud[:, 2] > 0.1])
