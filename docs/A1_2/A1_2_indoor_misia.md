@@ -6,7 +6,7 @@ letu, vykoná úlohu bodu a na konci pristane a odzbrojí sa. Všetko riadi uzol
 `mission_executor_node` so stavovým automatom.
 
 **Spustenie:** `./run_a1_2.sh [misia.csv]` (bez argumentu `missions/hangar_example.csv`), viac
-v [HOW_TO_RUN.md](../../HOW_TO_RUN.md). **Záznamy misie:** `results/A1_2/`.
+v [README.md](../../README.md). **Záznamy misie:** `results/A1_2/`.
 
 ## Diagramy
 

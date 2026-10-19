@@ -1,4 +1,4 @@
-# How to run
+# LRS — Psenak, Valko: A1.1 + A1.2
 
 Requirements: ROS 2 Jazzy, MAVROS, PCL (`sudo apt install libpcl-dev`), and the course repo
 [LRS-URK](https://github.com/KocurMaros/LRS-URK) cloned in `~/LRS-URK` (Gazebo, SITL and MAVROS
@@ -17,7 +17,7 @@ scripts). Every script builds the package itself (`colcon build`).
 cd ~/Zadania/LRS_Psenak_Valko && git switch A1_3 && ./run_a1_3.sh --record
 ```
 
-A1.1 with another route or radius: `run_a1_1.sh --start 12 4 2 --goal 16 8 2 --safety-radius 0.30`.
+A1.1 with another route or radius: `run_a1_1.sh --start 12 4 2 --goal 16 8 2 --safety-radius 0.75`.
 After an A1.2 mission the plots and the 3D view open by themselves.
 
 ## Graphs and 3D view of a recorded flight

@@ -6,7 +6,7 @@ the waypoint's task and at the end lands and disarms. Everything is driven by th
 `mission_executor_node` and its state machine.
 
 **Run:** `./run_a1_2.sh [mission.csv]` (default `missions/hangar_example.csv`), more in
-[HOW_TO_RUN.md](../../HOW_TO_RUN.md). **Recordings:** `results/A1_2/`.
+[README.md](../../README.md). **Recordings:** `results/A1_2/`.
 
 ## Diagrams
 
