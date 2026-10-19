@@ -2,7 +2,7 @@ map_planner_node:
   ros__parameters:
     map_path: maps/FEI_LRS_PCD/map.pcd
     voxel_size: 0.15
-    safety_radius: 0.30
+    safety_radius: 0.45
     occupancy_pcd_path: map_voxels_with_racks_inflated.pcd
     require_rack_boxes: true
     rack_boxes: [
