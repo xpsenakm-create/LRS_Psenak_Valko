@@ -162,19 +162,20 @@ QA = [
  g, parent and closed per voxel (~9 bytes).</p>"""),
 # ---------------------------------------------------------------- safety
 ("Safety", "How did you choose the safety radius?",
- """<p>Drone radius 0.33 m (body 0.35 m square, propellers at ±0.15 m) + ~0.12 m tracking error =
- 0.45 m. It was confirmed by measurement: with the old 0.30 m the closest approach to a rack was
- 0.37 m (4 cm from the props); with 0.45 m it was 0.61 m.</p>"""),
+ """<p>0.30 m. Drone radius is 0.33 m (body 0.35 m square, propellers at ±0.15 m), but routes run
+ through voxel centres, so the measured closest approach to a rack was 0.37 m (4 cm from the props).
+ 0.45 m gave 0.61 m but closes narrow passages and waypoints near walls. It is a parameter, so it can
+ be raised at the defence.</p>"""),
 ("Safety", "How do you prove there were no collisions?",
  """<p><code>plot_a1_2.py</code> computes, for every logged pose, the distance to the nearest map
  point (walls, pillars, trusses, floor excluded) or rack surface with a k-d tree, and reports the
  minimum against the drone radius. All logged missions stayed above 0.33 m (minimum 0.37 m, over
  the rack). The final recording is in <code>results/</code>.</p>"""),
-("Safety", "Your safety radius is 0.45 m, so why was the clearance only 0.37 m?",
+("Safety", "Why does the measured clearance differ from the safety radius?",
  """<p>Voxel quantization. Inflation grows spheres around voxel centres, but the real obstacle
- surface can be up to half a voxel (0.075 m) closer than the centre of its voxel. A route at the
- edge of the inflated space can therefore be ≈ 0.45 − 0.075 ≈ 0.37 m from the real surface. The
- drone followed the route exactly there. For a guaranteed 0.45 m, use 0.45 + half a voxel ≈ 0.53 m.</p>"""),
+ surface can be up to half a voxel (0.075 m) closer than the centre of its voxel. Conversely, the route runs
+ through free voxel centres, so it can also be farther. For a guaranteed clearance r, use
+ r + half a voxel.</p>"""),
 ("Safety", "What is the weakest point of your solution?",
  """<p>Clearance over the racks: 0.37–0.38 m, only 4–5 cm more than the drone radius, from voxel
  quantization and, in <code>test_over_racks</code>, from the drone sinking ~0.15 m below its route on a
@@ -207,7 +208,7 @@ QA = [
  Inside, the point is converted to a voxel index and looked up in the hash set (or the dense array).</p>"""),
 ("A1.1", "What are the map's bounding box and voxel counts?",
  """<p>x −0.30…17.95, y −1.15…13.20, z 0…5.95 m; 620 311 points → 62 689 after the 0.15 m VoxelGrid;
- 73 069 occupied voxels with the filled racks; 261 759 after inflating by 0.45 m; dense A* grid
+ 73 069 occupied voxels with the filled racks; 234 353 after inflating by 0.30 m; dense A* grid
  128 × 102 × 46.</p>"""),
 ("A1.1", "Why is a voxel grid not 'stacked 2D layers'?",
  """<p>Occupancy and the search are in 3D: A* moves to all 26 neighbours, including diagonals up and

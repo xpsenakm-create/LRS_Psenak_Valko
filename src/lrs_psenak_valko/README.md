@@ -18,11 +18,8 @@ one rack box, so it cannot silently plan through unconfigured shelves.
 The `safety_radius` ROS parameter controls the 3D obstacle inflation radius.
 Its default value is supplied in `config/planner.yaml`; the launcher preserves
 that value unless a radius option is explicitly provided.
-The drone collision body's horizontal
-half-width is about 0.174 m; the remaining 0.276 m is a conservative allowance
-for controller position error (0.15 m) plus an additional 0.126 m clearance
-margin. These allowances are explicit engineering assumptions and should be
-replaced with measured controller tracking error when available. Inflation is
+The default is 0.30 m; the reasoning and measured clearances are in
+`docs/A1_1/A1_1_mapa_a_planovanie.md`. Inflation is
 a 3D sphere and is applied after filling rack boxes. Change the ROS parameter
 and restart the node to compare paths at another radius.
 
@@ -134,8 +131,8 @@ the saved PCD file, so the filled rack volumes can be inspected directly.
 
 | Start -> goal (m) | Radius (m) | Raw -> simplified | Path length (m) | Planning time (ms) |
 | --- | ---: | ---: | ---: | ---: |
-| (12, 4, 2) -> (16, 4, 2) | 0.45 | 28 -> 2 | 4.000 | measured at runtime |
-| (12, 4, 2) -> (12, 8, 2) | 0.45 | 28 -> 2 | 4.000 | measured at runtime |
+| (12, 4, 2) -> (16, 4, 2) | 0.30 | 28 -> 2 | 4.000 | measured at runtime |
+| (12, 4, 2) -> (12, 8, 2) | 0.30 | 28 -> 2 | 4.000 | measured at runtime |
 
 Planning time varies with machine load and is printed by the node on each
 request. Change `safety_radius` and repeat a route request to compare the

@@ -294,7 +294,7 @@ back. It also converts frames: MAVLink uses <b>NED</b>, ROS uses <b>ENU</b>.</p>
 <ul>
 <li><b>Point cloud</b>: the hangar scanned as 620 k 3D points (<code>map.pcd</code>).</li>
 <li><b>Voxel</b>: a 0.15 m cube. Occupied if a map point falls into it.</li>
-<li><b>Inflation</b>: grow every obstacle voxel by a sphere of the safety radius (0.45 m). Then the drone can be treated as a point: any free voxel is safe for its centre.</li>
+<li><b>Inflation</b>: grow every obstacle voxel by a sphere of the safety radius (0.30 m). Then the drone can be treated as a point: any free voxel is safe for its centre.</li>
 <li><b>A*</b>: best-first graph search with f = g + h; with an admissible, consistent h the result is the shortest path on the grid.</li>
 <li><b>26-connectivity</b>: each voxel has 26 neighbours (faces, edges, corners); steps cost 1, √2, √3 voxels.</li>
 <li><b>Octile heuristic</b>: the exact path length in empty space on that grid.</li>
@@ -357,9 +357,9 @@ reasons. Startup went from ~5 min to ~1.5 min.</p>
 the FCU refused, and the refusal was treated as fatal. <b>Fix:</b> wait for LAND mode to disarm by
 itself; send our own disarm only after a grace period and retry it.</p>
 <h4>4. Too close to a rack</h4>
-<p><b>Cause:</b> <code>safety_radius</code> was 0.30 m, smaller than the drone (0.33 m to the prop
-tips); the clearance plot showed 0.37 m to a rack (4 cm margin). <b>Fix:</b> 0.45 m; the same route
-then kept 0.61 m.</p>
+<p><b>Observation:</b> with <code>safety_radius</code> 0.30 m the clearance plot showed 0.37 m to a
+rack, 4 cm above the drone radius (0.33 m). 0.45 m gave 0.61 m on the same route, but blocks more
+waypoints near obstacles. <b>Choice:</b> 0.30 m (same as A1.1); raise it for more margin.</p>
 <h4>5. Drone left the straight line</h4>
 <p><b>Cause:</b> the setpoint jumped to the segment end; ArduCopter mixed different horizontal and
 vertical speed limits (0.56 m off the route, descending early). <b>Fix:</b> carrot following.</p>
@@ -424,9 +424,9 @@ rebuild.</p></div>
 <span class="ln">3</span>    map_path: maps/FEI_LRS_PCD/map.pcd</code></pre></div><div class="note"><div class="note-head"><span class="lines">L1–3</span><h3>Node name and map</h3></div><div class="note-body"><p>The top-level key must equal the node name; <code>ros__parameters</code> holds the values.
  <code>map_path</code> is relative to the installed package.</p></div></div></article>
 <article class="block" id="ch10-b2"><div class="code"><pre><code><span class="ln">4</span>    voxel_size: <span class="n">0.15</span>
-<span class="ln">5</span>    safety_radius: <span class="n">0.45</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L4–5</span><h3>Voxel size and safety radius</h3></div><div class="note-body"><p><b>voxel_size 0.15 m</b>: resolution of the map and of A*. <b>safety_radius 0.45 m</b> = 0.33 m
- drone radius (centre to propeller tip) + ~0.12 m tracking margin; raised from 0.30 after a test
- flight passed 0.37 m from a rack.</p></div></div></article>
+<span class="ln">5</span>    safety_radius: <span class="n">0.30</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L4–5</span><h3>Voxel size and safety radius</h3></div><div class="note-body"><p><b>voxel_size 0.15 m</b>: resolution of the map and of A*. <b>safety_radius 0.30 m</b>: keeps narrow
+ passages and waypoints near walls usable; measured flight clearance stayed above the 0.33 m drone
+ radius (min 0.37 m) because routes run through voxel centres.</p></div></div></article>
 <article class="block" id="ch10-b3"><div class="code"><pre><code><span class="ln">6</span>    occupancy_pcd_path: map_voxels_with_racks_inflated.pcd
 <span class="ln">7</span>    require_rack_boxes: <span class="k">true</span>
 <span class="ln">8</span>    rack_boxes: [
@@ -1047,7 +1047,7 @@ answers every <code>plan_request</code> with <code>planned_path</code> +
 <span class="ln">51</span>      declare_parameter&lt;<span class="k">std</span>::string&gt;(<span class="s">&quot;occupancy_pcd_path&quot;</span>, <span class="s">&quot;map_voxels_with_racks_inflated.pcd&quot;</span>);</code></pre></div><div class="note"><div class="note-head"><span class="lines">L43–51</span><h3>Map path</h3></div><div class="note-body"><p>A relative <code>map_path</code> is resolved inside the installed package
  (<code>install/.../share/lrs_psenak_valko</code>), so it works from any directory.</p></div></div></article>
 <article class="block" id="ch13-b4"><div class="code"><pre><code><span class="ln">52</span>    <span class="k">const</span> <span class="k">double</span> leaf_size = declare_parameter&lt;<span class="k">double</span>&gt;(<span class="s">&quot;voxel_size&quot;</span>, <span class="n">0.15</span>);
-<span class="ln">53</span>    <span class="k">const</span> <span class="k">double</span> safety_radius = declare_parameter&lt;<span class="k">double</span>&gt;(<span class="s">&quot;safety_radius&quot;</span>, <span class="n">0.45</span>);
+<span class="ln">53</span>    <span class="k">const</span> <span class="k">double</span> safety_radius = declare_parameter&lt;<span class="k">double</span>&gt;(<span class="s">&quot;safety_radius&quot;</span>, <span class="n">0.30</span>);
 <span class="ln">54</span>    <span class="k">const</span> <span class="k">std</span>::vector&lt;<span class="k">double</span>&gt; rack_boxes =
 <span class="ln">55</span>      declare_parameter&lt;<span class="k">std</span>::vector&lt;<span class="k">double</span>&gt;&gt;(<span class="s">&quot;rack_boxes&quot;</span>, <span class="k">std</span>::vector&lt;<span class="k">double</span>&gt;{});
 <span class="ln">56</span>    <span class="c">// Only this specific map (FEI hangar) must never start without its racks filled.</span>
@@ -1597,217 +1597,214 @@ answers every <code>plan_request</code> with <code>planned_path</code> +
 </section>
 <section class="chapter" id="ch14">
 <h2><span class="num">14</span>Sparse voxel grid (voxel_occupancy_grid.h, A1.1)</h2>
-<p class="filepath">src/lrs_psenak_valko/include/lrs_psenak_valko/voxel_occupancy_grid.h &middot; 194 lines &middot; 12 explained blocks</p>
+<p class="filepath">src/lrs_psenak_valko/include/lrs_psenak_valko/voxel_occupancy_grid.h &middot; 191 lines &middot; 12 explained blocks</p>
 <div class="intro"><p>Stores only the <b>occupied</b> voxels, in a hash set. "Free" = not in the set. This
 needs little memory for a big, mostly empty hangar. It fills the racks and inflates the obstacles
 by the safety radius.</p></div>
-<article class="block" id="ch14-b1"><div class="code"><pre><code><span class="ln">1</span><span class="c">// Copyright (c) 2026 STU FEI URK</span>
-<span class="ln">2</span><span class="c">// SPDX-License-Identifier: MIT</span>
-<span class="ln">3</span><span class="c">//</span>
-<span class="ln">4</span><span class="c">// voxel_occupancy_grid.h</span>
-<span class="ln">5</span><span class="c">//</span>
-<span class="ln">6</span><span class="c">// Sparse 3D occupancy grid (hash set of occupied voxels) with</span>
-<span class="ln">7</span><span class="c">//   * build()      : point cloud -&gt; occupied voxels</span>
-<span class="ln">8</span><span class="c">//   * addBox()     : fill a SOLID box (used for the shelving racks, whose</span>
-<span class="ln">9</span><span class="c">//                    point-cloud surfaces leave free-looking gaps between levels)</span>
-<span class="ln">10</span><span class="c">//   * inflate()    : grow every occupied voxel into a sphere of a given radius</span>
-<span class="ln">11</span><span class="c">//   * queries      : world coordinates OR integer voxel indices</span>
-<span class="ln">12</span><span class="c">//   * bounds       : index range of the inflated map (needed by the dense A* grid)</span>
-<span class="ln">13</span><span class="c">//</span>
-<span class="ln">14</span><span class="c">// Only OCCUPIED voxels are stored.  &quot;Free&quot; simply means &quot;not in the set&quot;.</span>
-<span class="ln">15</span><span class="c">// Typical call order:  build() -&gt; addBox()* -&gt; inflate().</span>
-<span class="ln">16</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L1–16</span><h3>Header comment</h3></div><div class="note-body"><p>Lists the operations and their order: <code>build()</code> → <code>addBox()</code>* →
+<article class="block" id="ch14-b1"><div class="code"><pre><code><span class="ln">1</span><span class="c">// voxel_occupancy_grid.h</span>
+<span class="ln">2</span><span class="c">//</span>
+<span class="ln">3</span><span class="c">// Sparse 3D occupancy grid (hash set of occupied voxels) with</span>
+<span class="ln">4</span><span class="c">//   * build()      : point cloud -&gt; occupied voxels</span>
+<span class="ln">5</span><span class="c">//   * addBox()     : fill a SOLID box (used for the shelving racks, whose</span>
+<span class="ln">6</span><span class="c">//                    point-cloud surfaces leave free-looking gaps between levels)</span>
+<span class="ln">7</span><span class="c">//   * inflate()    : grow every occupied voxel into a sphere of a given radius</span>
+<span class="ln">8</span><span class="c">//   * queries      : world coordinates OR integer voxel indices</span>
+<span class="ln">9</span><span class="c">//   * bounds       : index range of the inflated map (needed by the dense A* grid)</span>
+<span class="ln">10</span><span class="c">//</span>
+<span class="ln">11</span><span class="c">// Only OCCUPIED voxels are stored.  &quot;Free&quot; simply means &quot;not in the set&quot;.</span>
+<span class="ln">12</span><span class="c">// Typical call order:  build() -&gt; addBox()* -&gt; inflate().</span>
+<span class="ln">13</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L1–13</span><h3>Header comment</h3></div><div class="note-body"><p>Lists the operations and their order: <code>build()</code> → <code>addBox()</code>* →
  <code>inflate()</code>.</p></div></div></article>
-<article class="block" id="ch14-b2"><div class="code"><pre><code><span class="ln">17</span><span class="pp">#pragma once</span>
-<span class="ln">18</span>
-<span class="ln">19</span><span class="pp">#include &lt;algorithm&gt;</span>
-<span class="ln">20</span><span class="pp">#include &lt;array&gt;</span>
-<span class="ln">21</span><span class="pp">#include &lt;cmath&gt;</span>
-<span class="ln">22</span><span class="pp">#include &lt;cstdint&gt;</span>
-<span class="ln">23</span><span class="pp">#include &lt;unordered_set&gt;</span>
-<span class="ln">24</span><span class="pp">#include &lt;vector&gt;</span>
-<span class="ln">25</span>
-<span class="ln">26</span><span class="pp">#include &lt;pcl/point_cloud.h&gt;</span>
-<span class="ln">27</span><span class="pp">#include &lt;pcl/point_types.h&gt;</span>
-<span class="ln">28</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L17–28</span><h3>Includes</h3></div><div class="note-body"><p>Standard containers and PCL point types.</p></div></div></article>
-<article class="block" id="ch14-b3"><div class="code"><pre><code><span class="ln">29</span><span class="k">class</span> VoxelOccupancyGrid
-<span class="ln">30</span>{
-<span class="ln">31</span><span class="k">public</span>:
-<span class="ln">32</span>  <span class="c">/// Inclusive integer index range of a set of voxels.</span>
-<span class="ln">33</span>  <span class="k">struct</span> IndexBounds
-<span class="ln">34</span>  {
-<span class="ln">35</span>    <span class="k">int64_t</span> min_x = <span class="n">0</span>, min_y = <span class="n">0</span>, min_z = <span class="n">0</span>;
-<span class="ln">36</span>    <span class="k">int64_t</span> max_x = -<span class="n">1</span>, max_y = -<span class="n">1</span>, max_z = -<span class="n">1</span>;
-<span class="ln">37</span>    <span class="k">bool</span> valid = <span class="k">false</span>;
-<span class="ln">38</span>  };
-<span class="ln">39</span>
-<span class="ln">40</span>  <span class="k">explicit</span> VoxelOccupancyGrid(<span class="k">float</span> leaf_size) : leaf_size_(leaf_size) {}
-<span class="ln">41</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L29–41</span><h3>IndexBounds and constructor</h3></div><div class="note-body"><p><code>IndexBounds</code>: inclusive min/max voxel index range. The constructor stores the
+<article class="block" id="ch14-b2"><div class="code"><pre><code><span class="ln">14</span><span class="pp">#pragma once</span>
+<span class="ln">15</span>
+<span class="ln">16</span><span class="pp">#include &lt;algorithm&gt;</span>
+<span class="ln">17</span><span class="pp">#include &lt;array&gt;</span>
+<span class="ln">18</span><span class="pp">#include &lt;cmath&gt;</span>
+<span class="ln">19</span><span class="pp">#include &lt;cstdint&gt;</span>
+<span class="ln">20</span><span class="pp">#include &lt;unordered_set&gt;</span>
+<span class="ln">21</span><span class="pp">#include &lt;vector&gt;</span>
+<span class="ln">22</span>
+<span class="ln">23</span><span class="pp">#include &lt;pcl/point_cloud.h&gt;</span>
+<span class="ln">24</span><span class="pp">#include &lt;pcl/point_types.h&gt;</span>
+<span class="ln">25</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L14–25</span><h3>Includes</h3></div><div class="note-body"><p>Standard containers and PCL point types.</p></div></div></article>
+<article class="block" id="ch14-b3"><div class="code"><pre><code><span class="ln">26</span><span class="k">class</span> VoxelOccupancyGrid
+<span class="ln">27</span>{
+<span class="ln">28</span><span class="k">public</span>:
+<span class="ln">29</span>  <span class="c">/// Inclusive integer index range of a set of voxels.</span>
+<span class="ln">30</span>  <span class="k">struct</span> IndexBounds
+<span class="ln">31</span>  {
+<span class="ln">32</span>    <span class="k">int64_t</span> min_x = <span class="n">0</span>, min_y = <span class="n">0</span>, min_z = <span class="n">0</span>;
+<span class="ln">33</span>    <span class="k">int64_t</span> max_x = -<span class="n">1</span>, max_y = -<span class="n">1</span>, max_z = -<span class="n">1</span>;
+<span class="ln">34</span>    <span class="k">bool</span> valid = <span class="k">false</span>;
+<span class="ln">35</span>  };
+<span class="ln">36</span>
+<span class="ln">37</span>  <span class="k">explicit</span> VoxelOccupancyGrid(<span class="k">float</span> leaf_size) : leaf_size_(leaf_size) {}
+<span class="ln">38</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L26–38</span><h3>IndexBounds and constructor</h3></div><div class="note-body"><p><code>IndexBounds</code>: inclusive min/max voxel index range. The constructor stores the
  voxel size.</p></div></div></article>
-<article class="block" id="ch14-b4"><div class="code"><pre><code><span class="ln">42</span>  <span class="k">void</span> build(<span class="k">const</span> pcl::PointCloud&lt;pcl::PointXYZ&gt;&amp; cloud)
-<span class="ln">43</span>  {
-<span class="ln">44</span>    occupied_.clear();
-<span class="ln">45</span>    occupied_.reserve(cloud.size());
-<span class="ln">46</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">auto</span>&amp; point : cloud.points) {
-<span class="ln">47</span>      occupied_.insert(encodeVoxel(toIndex(point.x), toIndex(point.y), toIndex(point.z)));
-<span class="ln">48</span>    }
-<span class="ln">49</span>    inflated_ = occupied_;  <span class="c">// until inflate() is called</span>
-<span class="ln">50</span>  }
-<span class="ln">51</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L42–51</span><h3>build(): points → voxels</h3></div><div class="note-body"><p>Every point's voxel index is encoded into one 64-bit key and inserted into the set
+<article class="block" id="ch14-b4"><div class="code"><pre><code><span class="ln">39</span>  <span class="k">void</span> build(<span class="k">const</span> pcl::PointCloud&lt;pcl::PointXYZ&gt;&amp; cloud)
+<span class="ln">40</span>  {
+<span class="ln">41</span>    occupied_.clear();
+<span class="ln">42</span>    occupied_.reserve(cloud.size());
+<span class="ln">43</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">auto</span>&amp; point : cloud.points) {
+<span class="ln">44</span>      occupied_.insert(encodeVoxel(toIndex(point.x), toIndex(point.y), toIndex(point.z)));
+<span class="ln">45</span>    }
+<span class="ln">46</span>    inflated_ = occupied_;  <span class="c">// until inflate() is called</span>
+<span class="ln">47</span>  }
+<span class="ln">48</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L39–48</span><h3>build(): points → voxels</h3></div><div class="note-body"><p>Every point's voxel index is encoded into one 64-bit key and inserted into the set
  (duplicates vanish automatically). The inflated layer starts as a copy.</p></div></div></article>
-<article class="block" id="ch14-b5"><div class="code"><pre><code><span class="ln">52</span>  <span class="c">/// Fill a solid box (centre, full sizes, yaw about +Z in radians) with occupied</span>
-<span class="ln">53</span>  <span class="c">/// voxels.  Use it for objects whose collision shape is a known solid box.</span>
-<span class="ln">54</span>  <span class="c">/// Call BEFORE inflate() (inflate() restarts from the raw layer, which now</span>
-<span class="ln">55</span>  <span class="c">/// contains the box).</span>
-<span class="ln">56</span>  <span class="k">size_t</span> addBox(<span class="k">float</span> cx, <span class="k">float</span> cy, <span class="k">float</span> cz, <span class="k">float</span> size_x, <span class="k">float</span> size_y, <span class="k">float</span> size_z, <span class="k">float</span> yaw)
-<span class="ln">57</span>  {
-<span class="ln">58</span>    <span class="k">const</span> <span class="k">float</span> c = <span class="k">std</span>::cos(yaw), s = <span class="k">std</span>::sin(yaw);
-<span class="ln">59</span>    <span class="k">const</span> <span class="k">float</span> hx = <span class="n">0.5f</span> * size_x, hy = <span class="n">0.5f</span> * size_y, hz = <span class="n">0.5f</span> * size_z;
-<span class="ln">60</span>    <span class="c">// Axis-aligned bounding box of the rotated box.</span>
-<span class="ln">61</span>    <span class="k">const</span> <span class="k">float</span> ex = <span class="k">std</span>::fabs(c) * hx + <span class="k">std</span>::fabs(s) * hy;
-<span class="ln">62</span>    <span class="k">const</span> <span class="k">float</span> ey = <span class="k">std</span>::fabs(s) * hx + <span class="k">std</span>::fabs(c) * hy;
-<span class="ln">63</span>
-<span class="ln">64</span>    <span class="k">size_t</span> added = <span class="n">0</span>;
-<span class="ln">65</span>    <span class="k">for</span> (<span class="k">int64_t</span> ix = toIndex(cx - ex); ix &lt;= toIndex(cx + ex); ++ix) {
-<span class="ln">66</span>      <span class="k">for</span> (<span class="k">int64_t</span> iy = toIndex(cy - ey); iy &lt;= toIndex(cy + ey); ++iy) {
-<span class="ln">67</span>        <span class="k">for</span> (<span class="k">int64_t</span> iz = toIndex(cz - hz); iz &lt;= toIndex(cz + hz); ++iz) {
-<span class="ln">68</span>          <span class="c">// Voxel centre relative to the box centre, rotated into the box frame.</span>
-<span class="ln">69</span>          <span class="k">const</span> <span class="k">float</span> dx = (ix + <span class="n">0.5f</span>) * leaf_size_ - cx;
-<span class="ln">70</span>          <span class="k">const</span> <span class="k">float</span> dy = (iy + <span class="n">0.5f</span>) * leaf_size_ - cy;
-<span class="ln">71</span>          <span class="k">const</span> <span class="k">float</span> dz = (iz + <span class="n">0.5f</span>) * leaf_size_ - cz;
-<span class="ln">72</span>          <span class="k">const</span> <span class="k">float</span> lx = c * dx + s * dy;
-<span class="ln">73</span>          <span class="k">const</span> <span class="k">float</span> ly = -s * dx + c * dy;
-<span class="ln">74</span>          <span class="k">if</span> (<span class="k">std</span>::fabs(lx) &lt;= hx &amp;&amp; <span class="k">std</span>::fabs(ly) &lt;= hy &amp;&amp; <span class="k">std</span>::fabs(dz) &lt;= hz) {
-<span class="ln">75</span>            <span class="k">if</span> (occupied_.insert(encodeVoxel(ix, iy, iz)).second) ++added;
-<span class="ln">76</span>          }
-<span class="ln">77</span>        }
-<span class="ln">78</span>      }
-<span class="ln">79</span>    }
-<span class="ln">80</span>    inflated_ = occupied_;
-<span class="ln">81</span>    <span class="k">return</span> added;
-<span class="ln">82</span>  }
-<span class="ln">83</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L52–83</span><h3>addBox(): fill a rack</h3></div><div class="note-body"><p>For a box rotated by yaw: loop over the voxels of its axis-aligned bounding box, rotate each
+<article class="block" id="ch14-b5"><div class="code"><pre><code><span class="ln">49</span>  <span class="c">/// Fill a solid box (centre, full sizes, yaw about +Z in radians) with occupied</span>
+<span class="ln">50</span>  <span class="c">/// voxels.  Use it for objects whose collision shape is a known solid box.</span>
+<span class="ln">51</span>  <span class="c">/// Call BEFORE inflate() (inflate() restarts from the raw layer, which now</span>
+<span class="ln">52</span>  <span class="c">/// contains the box).</span>
+<span class="ln">53</span>  <span class="k">size_t</span> addBox(<span class="k">float</span> cx, <span class="k">float</span> cy, <span class="k">float</span> cz, <span class="k">float</span> size_x, <span class="k">float</span> size_y, <span class="k">float</span> size_z, <span class="k">float</span> yaw)
+<span class="ln">54</span>  {
+<span class="ln">55</span>    <span class="k">const</span> <span class="k">float</span> c = <span class="k">std</span>::cos(yaw), s = <span class="k">std</span>::sin(yaw);
+<span class="ln">56</span>    <span class="k">const</span> <span class="k">float</span> hx = <span class="n">0.5f</span> * size_x, hy = <span class="n">0.5f</span> * size_y, hz = <span class="n">0.5f</span> * size_z;
+<span class="ln">57</span>    <span class="c">// Axis-aligned bounding box of the rotated box.</span>
+<span class="ln">58</span>    <span class="k">const</span> <span class="k">float</span> ex = <span class="k">std</span>::fabs(c) * hx + <span class="k">std</span>::fabs(s) * hy;
+<span class="ln">59</span>    <span class="k">const</span> <span class="k">float</span> ey = <span class="k">std</span>::fabs(s) * hx + <span class="k">std</span>::fabs(c) * hy;
+<span class="ln">60</span>
+<span class="ln">61</span>    <span class="k">size_t</span> added = <span class="n">0</span>;
+<span class="ln">62</span>    <span class="k">for</span> (<span class="k">int64_t</span> ix = toIndex(cx - ex); ix &lt;= toIndex(cx + ex); ++ix) {
+<span class="ln">63</span>      <span class="k">for</span> (<span class="k">int64_t</span> iy = toIndex(cy - ey); iy &lt;= toIndex(cy + ey); ++iy) {
+<span class="ln">64</span>        <span class="k">for</span> (<span class="k">int64_t</span> iz = toIndex(cz - hz); iz &lt;= toIndex(cz + hz); ++iz) {
+<span class="ln">65</span>          <span class="c">// Voxel centre relative to the box centre, rotated into the box frame.</span>
+<span class="ln">66</span>          <span class="k">const</span> <span class="k">float</span> dx = (ix + <span class="n">0.5f</span>) * leaf_size_ - cx;
+<span class="ln">67</span>          <span class="k">const</span> <span class="k">float</span> dy = (iy + <span class="n">0.5f</span>) * leaf_size_ - cy;
+<span class="ln">68</span>          <span class="k">const</span> <span class="k">float</span> dz = (iz + <span class="n">0.5f</span>) * leaf_size_ - cz;
+<span class="ln">69</span>          <span class="k">const</span> <span class="k">float</span> lx = c * dx + s * dy;
+<span class="ln">70</span>          <span class="k">const</span> <span class="k">float</span> ly = -s * dx + c * dy;
+<span class="ln">71</span>          <span class="k">if</span> (<span class="k">std</span>::fabs(lx) &lt;= hx &amp;&amp; <span class="k">std</span>::fabs(ly) &lt;= hy &amp;&amp; <span class="k">std</span>::fabs(dz) &lt;= hz) {
+<span class="ln">72</span>            <span class="k">if</span> (occupied_.insert(encodeVoxel(ix, iy, iz)).second) ++added;
+<span class="ln">73</span>          }
+<span class="ln">74</span>        }
+<span class="ln">75</span>      }
+<span class="ln">76</span>    }
+<span class="ln">77</span>    inflated_ = occupied_;
+<span class="ln">78</span>    <span class="k">return</span> added;
+<span class="ln">79</span>  }
+<span class="ln">80</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L49–80</span><h3>addBox(): fill a rack</h3></div><div class="note-body"><p>For a box rotated by yaw: loop over the voxels of its axis-aligned bounding box, rotate each
  voxel centre into the box frame and keep it if it is inside the half-sizes. Returns how many new
  voxels were added. Racks are solid in the map because the point cloud only has their
  surfaces.</p></div></div></article>
-<article class="block" id="ch14-b6"><div class="code"><pre><code><span class="ln">84</span>  <span class="c">/// Grow every occupied voxel into a sphere of radius_m (3D -- also up/down).</span>
-<span class="ln">85</span>  <span class="c">/// Safe to call repeatedly with different radii (always restarts from occupied_).</span>
-<span class="ln">86</span>  <span class="k">void</span> inflate(<span class="k">float</span> radius_m)
-<span class="ln">87</span>  {
-<span class="ln">88</span>    inflated_ = occupied_;
-<span class="ln">89</span>    <span class="k">if</span> (radius_m &lt;= <span class="n">0.0f</span>) <span class="k">return</span>;
-<span class="ln">90</span>
-<span class="ln">91</span>    <span class="c">// Work in voxel units and precompute the sphere&#x27;s offsets ONCE</span>
-<span class="ln">92</span>    <span class="c">// (the old version recomputed sqrt() for every voxel).  The small epsilon</span>
-<span class="ln">93</span>    <span class="c">// avoids float rounding dropping the voxel exactly at the radius.</span>
-<span class="ln">94</span>    <span class="k">const</span> <span class="k">double</span> r_vox = <span class="k">static_cast</span>&lt;<span class="k">double</span>&gt;(radius_m) / <span class="k">static_cast</span>&lt;<span class="k">double</span>&gt;(leaf_size_);
-<span class="ln">95</span>    <span class="k">const</span> <span class="k">double</span> r2 = r_vox * r_vox + <span class="n">1e-6</span>;
-<span class="ln">96</span>    <span class="k">const</span> <span class="k">int</span> R = <span class="k">static_cast</span>&lt;<span class="k">int</span>&gt;(<span class="k">std</span>::floor(<span class="k">std</span>::sqrt(r2)));
-<span class="ln">97</span>
-<span class="ln">98</span>    <span class="k">std</span>::vector&lt;<span class="k">std</span>::array&lt;<span class="k">int</span>, <span class="n">3</span>&gt;&gt; offsets;
-<span class="ln">99</span>    <span class="k">for</span> (<span class="k">int</span> dx = -R; dx &lt;= R; ++dx)
-<span class="ln">100</span>      <span class="k">for</span> (<span class="k">int</span> dy = -R; dy &lt;= R; ++dy)
-<span class="ln">101</span>        <span class="k">for</span> (<span class="k">int</span> dz = -R; dz &lt;= R; ++dz)
-<span class="ln">102</span>          <span class="k">if</span> (dx * dx + dy * dy + dz * dz &lt;= r2) offsets.push_back({dx, dy, dz});
-<span class="ln">103</span>
-<span class="ln">104</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : occupied_) {
-<span class="ln">105</span>      <span class="k">int64_t</span> ix, iy, iz;
-<span class="ln">106</span>      decodeVoxel(key, ix, iy, iz);
-<span class="ln">107</span>      <span class="k">for</span> (<span class="k">const</span> <span class="k">auto</span>&amp; o : offsets) {
-<span class="ln">108</span>        inflated_.insert(encodeVoxel(ix + o[<span class="n">0</span>], iy + o[<span class="n">1</span>], iz + o[<span class="n">2</span>]));
-<span class="ln">109</span>      }
-<span class="ln">110</span>    }
-<span class="ln">111</span>  }
-<span class="ln">112</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L84–112</span><h3>inflate(): the safety margin</h3></div><div class="note-body"><p>Converts the radius to voxels (0.45 / 0.15 = 3), precomputes once all offsets
+<article class="block" id="ch14-b6"><div class="code"><pre><code><span class="ln">81</span>  <span class="c">/// Grow every occupied voxel into a sphere of radius_m (3D -- also up/down).</span>
+<span class="ln">82</span>  <span class="c">/// Safe to call repeatedly with different radii (always restarts from occupied_).</span>
+<span class="ln">83</span>  <span class="k">void</span> inflate(<span class="k">float</span> radius_m)
+<span class="ln">84</span>  {
+<span class="ln">85</span>    inflated_ = occupied_;
+<span class="ln">86</span>    <span class="k">if</span> (radius_m &lt;= <span class="n">0.0f</span>) <span class="k">return</span>;
+<span class="ln">87</span>
+<span class="ln">88</span>    <span class="c">// Work in voxel units and precompute the sphere&#x27;s offsets ONCE</span>
+<span class="ln">89</span>    <span class="c">// (the old version recomputed sqrt() for every voxel).  The small epsilon</span>
+<span class="ln">90</span>    <span class="c">// avoids float rounding dropping the voxel exactly at the radius.</span>
+<span class="ln">91</span>    <span class="k">const</span> <span class="k">double</span> r_vox = <span class="k">static_cast</span>&lt;<span class="k">double</span>&gt;(radius_m) / <span class="k">static_cast</span>&lt;<span class="k">double</span>&gt;(leaf_size_);
+<span class="ln">92</span>    <span class="k">const</span> <span class="k">double</span> r2 = r_vox * r_vox + <span class="n">1e-6</span>;
+<span class="ln">93</span>    <span class="k">const</span> <span class="k">int</span> R = <span class="k">static_cast</span>&lt;<span class="k">int</span>&gt;(<span class="k">std</span>::floor(<span class="k">std</span>::sqrt(r2)));
+<span class="ln">94</span>
+<span class="ln">95</span>    <span class="k">std</span>::vector&lt;<span class="k">std</span>::array&lt;<span class="k">int</span>, <span class="n">3</span>&gt;&gt; offsets;
+<span class="ln">96</span>    <span class="k">for</span> (<span class="k">int</span> dx = -R; dx &lt;= R; ++dx)
+<span class="ln">97</span>      <span class="k">for</span> (<span class="k">int</span> dy = -R; dy &lt;= R; ++dy)
+<span class="ln">98</span>        <span class="k">for</span> (<span class="k">int</span> dz = -R; dz &lt;= R; ++dz)
+<span class="ln">99</span>          <span class="k">if</span> (dx * dx + dy * dy + dz * dz &lt;= r2) offsets.push_back({dx, dy, dz});
+<span class="ln">100</span>
+<span class="ln">101</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : occupied_) {
+<span class="ln">102</span>      <span class="k">int64_t</span> ix, iy, iz;
+<span class="ln">103</span>      decodeVoxel(key, ix, iy, iz);
+<span class="ln">104</span>      <span class="k">for</span> (<span class="k">const</span> <span class="k">auto</span>&amp; o : offsets) {
+<span class="ln">105</span>        inflated_.insert(encodeVoxel(ix + o[<span class="n">0</span>], iy + o[<span class="n">1</span>], iz + o[<span class="n">2</span>]));
+<span class="ln">106</span>      }
+<span class="ln">107</span>    }
+<span class="ln">108</span>  }
+<span class="ln">109</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L81–109</span><h3>inflate(): the safety margin</h3></div><div class="note-body"><p>Converts the radius to voxels (0.30 / 0.15 = 2), precomputes once all offsets
  (dx, dy, dz) inside that sphere, then adds every occupied voxel + every offset to the inflated set.
  It is spherical and 3D, so it also covers above and below obstacles. After this the drone can be
  treated as a point.</p></div></div></article>
-<article class="block" id="ch14-b7"><div class="code"><pre><code><span class="ln">113</span>  <span class="c">// ---- queries in world coordinates ----------------------------------------</span>
-<span class="ln">114</span>  <span class="k">bool</span> isOccupied(<span class="k">float</span> x, <span class="k">float</span> y, <span class="k">float</span> z) <span class="k">const</span>
-<span class="ln">115</span>  {
-<span class="ln">116</span>    <span class="k">return</span> occupied_.count(encodeVoxel(toIndex(x), toIndex(y), toIndex(z))) &gt; <span class="n">0</span>;
-<span class="ln">117</span>  }
-<span class="ln">118</span>  <span class="k">bool</span> isOccupiedInflated(<span class="k">float</span> x, <span class="k">float</span> y, <span class="k">float</span> z) <span class="k">const</span>
-<span class="ln">119</span>  {
-<span class="ln">120</span>    <span class="k">return</span> inflated_.count(encodeVoxel(toIndex(x), toIndex(y), toIndex(z))) &gt; <span class="n">0</span>;
-<span class="ln">121</span>  }
-<span class="ln">122</span>
-<span class="ln">123</span>  <span class="c">// ---- queries in voxel indices (used to fill the dense grid for A*) --------</span>
-<span class="ln">124</span>  <span class="k">bool</span> isOccupiedInflatedIndex(<span class="k">int64_t</span> ix, <span class="k">int64_t</span> iy, <span class="k">int64_t</span> iz) <span class="k">const</span>
-<span class="ln">125</span>  {
-<span class="ln">126</span>    <span class="k">return</span> inflated_.count(encodeVoxel(ix, iy, iz)) &gt; <span class="n">0</span>;
-<span class="ln">127</span>  }
-<span class="ln">128</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L113–128</span><h3>Queries</h3></div><div class="note-body"><p>"Is this world point occupied?" in the raw or the inflated layer, and the index version used
+<article class="block" id="ch14-b7"><div class="code"><pre><code><span class="ln">110</span>  <span class="c">// ---- queries in world coordinates ----------------------------------------</span>
+<span class="ln">111</span>  <span class="k">bool</span> isOccupied(<span class="k">float</span> x, <span class="k">float</span> y, <span class="k">float</span> z) <span class="k">const</span>
+<span class="ln">112</span>  {
+<span class="ln">113</span>    <span class="k">return</span> occupied_.count(encodeVoxel(toIndex(x), toIndex(y), toIndex(z))) &gt; <span class="n">0</span>;
+<span class="ln">114</span>  }
+<span class="ln">115</span>  <span class="k">bool</span> isOccupiedInflated(<span class="k">float</span> x, <span class="k">float</span> y, <span class="k">float</span> z) <span class="k">const</span>
+<span class="ln">116</span>  {
+<span class="ln">117</span>    <span class="k">return</span> inflated_.count(encodeVoxel(toIndex(x), toIndex(y), toIndex(z))) &gt; <span class="n">0</span>;
+<span class="ln">118</span>  }
+<span class="ln">119</span>
+<span class="ln">120</span>  <span class="c">// ---- queries in voxel indices (used to fill the dense grid for A*) --------</span>
+<span class="ln">121</span>  <span class="k">bool</span> isOccupiedInflatedIndex(<span class="k">int64_t</span> ix, <span class="k">int64_t</span> iy, <span class="k">int64_t</span> iz) <span class="k">const</span>
+<span class="ln">122</span>  {
+<span class="ln">123</span>    <span class="k">return</span> inflated_.count(encodeVoxel(ix, iy, iz)) &gt; <span class="n">0</span>;
+<span class="ln">124</span>  }
+<span class="ln">125</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L110–125</span><h3>Queries</h3></div><div class="note-body"><p>"Is this world point occupied?" in the raw or the inflated layer, and the index version used
  to fill A*'s dense grid.</p></div></div></article>
-<article class="block" id="ch14-b8"><div class="code"><pre><code><span class="ln">129</span>  pcl::PointCloud&lt;pcl::PointXYZ&gt; inflatedPointCloud() <span class="k">const</span>
-<span class="ln">130</span>  {
-<span class="ln">131</span>    pcl::PointCloud&lt;pcl::PointXYZ&gt; cloud;
-<span class="ln">132</span>    cloud.points.reserve(inflated_.size());
-<span class="ln">133</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : inflated_) {
-<span class="ln">134</span>      <span class="k">int64_t</span> ix, iy, iz;
-<span class="ln">135</span>      decodeVoxel(key, ix, iy, iz);
-<span class="ln">136</span>      cloud.points.emplace_back((<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(ix) + <span class="n">0.5f</span>) * leaf_size_,
-<span class="ln">137</span>                                (<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(iy) + <span class="n">0.5f</span>) * leaf_size_,
-<span class="ln">138</span>                                (<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(iz) + <span class="n">0.5f</span>) * leaf_size_);
-<span class="ln">139</span>    }
-<span class="ln">140</span>    cloud.width = <span class="k">static_cast</span>&lt;<span class="k">uint32_t</span>&gt;(cloud.points.size());
-<span class="ln">141</span>    cloud.height = <span class="n">1</span>;
-<span class="ln">142</span>    cloud.is_dense = <span class="k">true</span>;
-<span class="ln">143</span>    <span class="k">return</span> cloud;
-<span class="ln">144</span>  }
-<span class="ln">145</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L129–145</span><h3>inflatedPointCloud()</h3></div><div class="note-body"><p>Turns the inflated voxels back into points (voxel centres), for RViz and the saved PCD.</p></div></div></article>
-<article class="block" id="ch14-b9"><div class="code"><pre><code><span class="ln">146</span>  <span class="c">/// Index range covered by the inflated map (O(N), call once).</span>
-<span class="ln">147</span>  IndexBounds inflatedBounds() <span class="k">const</span>
-<span class="ln">148</span>  {
-<span class="ln">149</span>    IndexBounds b;
-<span class="ln">150</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : inflated_) {
-<span class="ln">151</span>      <span class="k">int64_t</span> ix, iy, iz;
-<span class="ln">152</span>      decodeVoxel(key, ix, iy, iz);
-<span class="ln">153</span>      <span class="k">if</span> (!b.valid) {
-<span class="ln">154</span>        b = {ix, iy, iz, ix, iy, iz, <span class="k">true</span>};
-<span class="ln">155</span>      } <span class="k">else</span> {
-<span class="ln">156</span>        b.min_x = <span class="k">std</span>::min(b.min_x, ix); b.max_x = <span class="k">std</span>::max(b.max_x, ix);
-<span class="ln">157</span>        b.min_y = <span class="k">std</span>::min(b.min_y, iy); b.max_y = <span class="k">std</span>::max(b.max_y, iy);
-<span class="ln">158</span>        b.min_z = <span class="k">std</span>::min(b.min_z, iz); b.max_z = <span class="k">std</span>::max(b.max_z, iz);
-<span class="ln">159</span>      }
-<span class="ln">160</span>    }
-<span class="ln">161</span>    <span class="k">return</span> b;
-<span class="ln">162</span>  }
-<span class="ln">163</span>
-<span class="ln">164</span>  <span class="k">float</span>  leafSize() <span class="k">const</span> { <span class="k">return</span> leaf_size_; }
-<span class="ln">165</span>  <span class="k">size_t</span> voxelCount() <span class="k">const</span> { <span class="k">return</span> occupied_.size(); }
-<span class="ln">166</span>  <span class="k">size_t</span> inflatedVoxelCount() <span class="k">const</span> { <span class="k">return</span> inflated_.size(); }
-<span class="ln">167</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L146–167</span><h3>inflatedBounds() and counters</h3></div><div class="note-body"><p>Min/max index over all inflated voxels (needed to size the dense grid), and simple counters
+<article class="block" id="ch14-b8"><div class="code"><pre><code><span class="ln">126</span>  pcl::PointCloud&lt;pcl::PointXYZ&gt; inflatedPointCloud() <span class="k">const</span>
+<span class="ln">127</span>  {
+<span class="ln">128</span>    pcl::PointCloud&lt;pcl::PointXYZ&gt; cloud;
+<span class="ln">129</span>    cloud.points.reserve(inflated_.size());
+<span class="ln">130</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : inflated_) {
+<span class="ln">131</span>      <span class="k">int64_t</span> ix, iy, iz;
+<span class="ln">132</span>      decodeVoxel(key, ix, iy, iz);
+<span class="ln">133</span>      cloud.points.emplace_back((<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(ix) + <span class="n">0.5f</span>) * leaf_size_,
+<span class="ln">134</span>                                (<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(iy) + <span class="n">0.5f</span>) * leaf_size_,
+<span class="ln">135</span>                                (<span class="k">static_cast</span>&lt;<span class="k">float</span>&gt;(iz) + <span class="n">0.5f</span>) * leaf_size_);
+<span class="ln">136</span>    }
+<span class="ln">137</span>    cloud.width = <span class="k">static_cast</span>&lt;<span class="k">uint32_t</span>&gt;(cloud.points.size());
+<span class="ln">138</span>    cloud.height = <span class="n">1</span>;
+<span class="ln">139</span>    cloud.is_dense = <span class="k">true</span>;
+<span class="ln">140</span>    <span class="k">return</span> cloud;
+<span class="ln">141</span>  }
+<span class="ln">142</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L126–142</span><h3>inflatedPointCloud()</h3></div><div class="note-body"><p>Turns the inflated voxels back into points (voxel centres), for RViz and the saved PCD.</p></div></div></article>
+<article class="block" id="ch14-b9"><div class="code"><pre><code><span class="ln">143</span>  <span class="c">/// Index range covered by the inflated map (O(N), call once).</span>
+<span class="ln">144</span>  IndexBounds inflatedBounds() <span class="k">const</span>
+<span class="ln">145</span>  {
+<span class="ln">146</span>    IndexBounds b;
+<span class="ln">147</span>    <span class="k">for</span> (<span class="k">const</span> <span class="k">int64_t</span> key : inflated_) {
+<span class="ln">148</span>      <span class="k">int64_t</span> ix, iy, iz;
+<span class="ln">149</span>      decodeVoxel(key, ix, iy, iz);
+<span class="ln">150</span>      <span class="k">if</span> (!b.valid) {
+<span class="ln">151</span>        b = {ix, iy, iz, ix, iy, iz, <span class="k">true</span>};
+<span class="ln">152</span>      } <span class="k">else</span> {
+<span class="ln">153</span>        b.min_x = <span class="k">std</span>::min(b.min_x, ix); b.max_x = <span class="k">std</span>::max(b.max_x, ix);
+<span class="ln">154</span>        b.min_y = <span class="k">std</span>::min(b.min_y, iy); b.max_y = <span class="k">std</span>::max(b.max_y, iy);
+<span class="ln">155</span>        b.min_z = <span class="k">std</span>::min(b.min_z, iz); b.max_z = <span class="k">std</span>::max(b.max_z, iz);
+<span class="ln">156</span>      }
+<span class="ln">157</span>    }
+<span class="ln">158</span>    <span class="k">return</span> b;
+<span class="ln">159</span>  }
+<span class="ln">160</span>
+<span class="ln">161</span>  <span class="k">float</span>  leafSize() <span class="k">const</span> { <span class="k">return</span> leaf_size_; }
+<span class="ln">162</span>  <span class="k">size_t</span> voxelCount() <span class="k">const</span> { <span class="k">return</span> occupied_.size(); }
+<span class="ln">163</span>  <span class="k">size_t</span> inflatedVoxelCount() <span class="k">const</span> { <span class="k">return</span> inflated_.size(); }
+<span class="ln">164</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L143–164</span><h3>inflatedBounds() and counters</h3></div><div class="note-body"><p>Min/max index over all inflated voxels (needed to size the dense grid), and simple counters
  for log messages.</p></div></div></article>
-<article class="block" id="ch14-b10"><div class="code"><pre><code><span class="ln">168</span><span class="k">private</span>:
-<span class="ln">169</span>  <span class="k">int64_t</span> toIndex(<span class="k">float</span> coord) <span class="k">const</span>
-<span class="ln">170</span>  {
-<span class="ln">171</span>    <span class="k">return</span> <span class="k">static_cast</span>&lt;<span class="k">int64_t</span>&gt;(<span class="k">std</span>::floor(coord / leaf_size_));
-<span class="ln">172</span>  }
-<span class="ln">173</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L168–173</span><h3>toIndex()</h3></div><div class="note-body"><p>World coordinate → voxel index: <code>floor(coord / size)</code>.</p></div></div></article>
-<article class="block" id="ch14-b11"><div class="code"><pre><code><span class="ln">174</span>  <span class="c">// Pack three voxel indices into one hashable key (OFFSET keeps them positive).</span>
-<span class="ln">175</span>  <span class="k">static</span> <span class="k">constexpr</span> <span class="k">int64_t</span> OFFSET = <span class="n">1</span> &lt;&lt; <span class="n">20</span>;
-<span class="ln">176</span>  <span class="k">static</span> <span class="k">constexpr</span> <span class="k">int64_t</span> MASK21 = (<span class="n">1</span> &lt;&lt; <span class="n">21</span>) - <span class="n">1</span>;
-<span class="ln">177</span>
-<span class="ln">178</span>  <span class="k">static</span> <span class="k">int64_t</span> encodeVoxel(<span class="k">int64_t</span> ix, <span class="k">int64_t</span> iy, <span class="k">int64_t</span> iz)
-<span class="ln">179</span>  {
-<span class="ln">180</span>    ix += OFFSET; iy += OFFSET; iz += OFFSET;
-<span class="ln">181</span>    <span class="k">return</span> (ix &lt;&lt; <span class="n">42</span>) | (iy &lt;&lt; <span class="n">21</span>) | iz;
-<span class="ln">182</span>  }
-<span class="ln">183</span>
-<span class="ln">184</span>  <span class="k">static</span> <span class="k">void</span> decodeVoxel(<span class="k">int64_t</span> key, <span class="k">int64_t</span>&amp; ix, <span class="k">int64_t</span>&amp; iy, <span class="k">int64_t</span>&amp; iz)
-<span class="ln">185</span>  {
-<span class="ln">186</span>    iz = (key &amp; MASK21) - OFFSET;
-<span class="ln">187</span>    iy = ((key &gt;&gt; <span class="n">21</span>) &amp; MASK21) - OFFSET;
-<span class="ln">188</span>    ix = (key &gt;&gt; <span class="n">42</span>) - OFFSET;
-<span class="ln">189</span>  }
-<span class="ln">190</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L174–190</span><h3>Encoding three indices in one integer</h3></div><div class="note-body"><p>Each index gets +2<sup>20</sup> (so negatives become positive) and 21 bits; x is shifted by
+<article class="block" id="ch14-b10"><div class="code"><pre><code><span class="ln">165</span><span class="k">private</span>:
+<span class="ln">166</span>  <span class="k">int64_t</span> toIndex(<span class="k">float</span> coord) <span class="k">const</span>
+<span class="ln">167</span>  {
+<span class="ln">168</span>    <span class="k">return</span> <span class="k">static_cast</span>&lt;<span class="k">int64_t</span>&gt;(<span class="k">std</span>::floor(coord / leaf_size_));
+<span class="ln">169</span>  }
+<span class="ln">170</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L165–170</span><h3>toIndex()</h3></div><div class="note-body"><p>World coordinate → voxel index: <code>floor(coord / size)</code>.</p></div></div></article>
+<article class="block" id="ch14-b11"><div class="code"><pre><code><span class="ln">171</span>  <span class="c">// Pack three voxel indices into one hashable key (OFFSET keeps them positive).</span>
+<span class="ln">172</span>  <span class="k">static</span> <span class="k">constexpr</span> <span class="k">int64_t</span> OFFSET = <span class="n">1</span> &lt;&lt; <span class="n">20</span>;
+<span class="ln">173</span>  <span class="k">static</span> <span class="k">constexpr</span> <span class="k">int64_t</span> MASK21 = (<span class="n">1</span> &lt;&lt; <span class="n">21</span>) - <span class="n">1</span>;
+<span class="ln">174</span>
+<span class="ln">175</span>  <span class="k">static</span> <span class="k">int64_t</span> encodeVoxel(<span class="k">int64_t</span> ix, <span class="k">int64_t</span> iy, <span class="k">int64_t</span> iz)
+<span class="ln">176</span>  {
+<span class="ln">177</span>    ix += OFFSET; iy += OFFSET; iz += OFFSET;
+<span class="ln">178</span>    <span class="k">return</span> (ix &lt;&lt; <span class="n">42</span>) | (iy &lt;&lt; <span class="n">21</span>) | iz;
+<span class="ln">179</span>  }
+<span class="ln">180</span>
+<span class="ln">181</span>  <span class="k">static</span> <span class="k">void</span> decodeVoxel(<span class="k">int64_t</span> key, <span class="k">int64_t</span>&amp; ix, <span class="k">int64_t</span>&amp; iy, <span class="k">int64_t</span>&amp; iz)
+<span class="ln">182</span>  {
+<span class="ln">183</span>    iz = (key &amp; MASK21) - OFFSET;
+<span class="ln">184</span>    iy = ((key &gt;&gt; <span class="n">21</span>) &amp; MASK21) - OFFSET;
+<span class="ln">185</span>    ix = (key &gt;&gt; <span class="n">42</span>) - OFFSET;
+<span class="ln">186</span>  }
+<span class="ln">187</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L171–187</span><h3>Encoding three indices in one integer</h3></div><div class="note-body"><p>Each index gets +2<sup>20</sup> (so negatives become positive) and 21 bits; x is shifted by
  42, y by 21: <code>key = x·2⁴² | y·2²¹ | z</code>. Decoding masks and shifts back. One integer key
  is fast to hash.</p></div></div></article>
-<article class="block" id="ch14-b12"><div class="code"><pre><code><span class="ln">191</span>  <span class="k">float</span> leaf_size_;
-<span class="ln">192</span>  <span class="k">std</span>::unordered_set&lt;<span class="k">int64_t</span>&gt; occupied_;   <span class="c">// raw obstacle voxels (+ filled boxes)</span>
-<span class="ln">193</span>  <span class="k">std</span>::unordered_set&lt;<span class="k">int64_t</span>&gt; inflated_;   <span class="c">// occupied_ grown by the safety radius</span>
-<span class="ln">194</span>};</code></pre></div><div class="note"><div class="note-head"><span class="lines">L191–194</span><h3>Members</h3></div><div class="note-body"><p>Voxel size, the raw set and the inflated set.</p></div></div></article>
+<article class="block" id="ch14-b12"><div class="code"><pre><code><span class="ln">188</span>  <span class="k">float</span> leaf_size_;
+<span class="ln">189</span>  <span class="k">std</span>::unordered_set&lt;<span class="k">int64_t</span>&gt; occupied_;   <span class="c">// raw obstacle voxels (+ filled boxes)</span>
+<span class="ln">190</span>  <span class="k">std</span>::unordered_set&lt;<span class="k">int64_t</span>&gt; inflated_;   <span class="c">// occupied_ grown by the safety radius</span>
+<span class="ln">191</span>};</code></pre></div><div class="note"><div class="note-head"><span class="lines">L188–191</span><h3>Members</h3></div><div class="note-body"><p>Voxel size, the raw set and the inflated set.</p></div></div></article>
 </section>
 <section class="chapter" id="ch15">
 <h2><span class="num">15</span>Planner runner (run_a1_1.sh, A1.1)</h2>
@@ -4861,7 +4858,7 @@ waypoints reached" are <b>measured</b>, not just watched in Gazebo.</p></div>
 <span class="ln">425</span>        <span class="k">print</span>(f<span class="s">&quot;  max deviation from planned route {np.nanmax(dev):.2f} m &quot;</span>
 <span class="ln">426</span>              f<span class="s">&quot;(safety radius leaves {safety - args.drone_radius:.2f} m beyond the drone radius)&quot;</span>)
 <span class="ln">427</span></code></pre></div><div class="note"><div class="note-head"><span class="lines">L412–427</span><h3>Route deviation panel</h3></div><div class="note-body"><p>Distance to the planned route while navigating, with the margin the safety radius leaves
- beyond the drone radius (0.45 − 0.33 = 0.12 m). The maximum is printed.</p></div></div></article>
+ beyond the drone radius (safety_radius − 0.33 m). The maximum is printed.</p></div></div></article>
 <article class="block" id="ch20-b31"><div class="code"><pre><code><span class="ln">428</span>    <span class="k">for</span> a <span class="k">in</span> axs[:<span class="n">2</span>].ravel():
 <span class="ln">429</span>        a.set_xlabel(<span class="s">&quot;t [s]&quot;</span>)
 <span class="ln">430</span>        a.grid(<span class="k">True</span>, alpha=<span class="n">0.4</span>)
@@ -8141,17 +8138,18 @@ which libraries, and what to install.</p></div>
 <details class="qa"><summary><span class="tag">Planner</span>What is A*&#x27;s complexity?</summary><div class="answer"><p>O(E log V) with a binary heap; V = voxels expanded (at most all free ones), E ≤ 26·V. Memory:
  g, parent and closed per voxel (~9 bytes).</p></div></details>
 <h3>Safety</h3>
-<details class="qa"><summary><span class="tag">Safety</span>How did you choose the safety radius?</summary><div class="answer"><p>Drone radius 0.33 m (body 0.35 m square, propellers at ±0.15 m) + ~0.12 m tracking error =
- 0.45 m. It was confirmed by measurement: with the old 0.30 m the closest approach to a rack was
- 0.37 m (4 cm from the props); with 0.45 m it was 0.61 m.</p></div></details>
+<details class="qa"><summary><span class="tag">Safety</span>How did you choose the safety radius?</summary><div class="answer"><p>0.30 m. Drone radius is 0.33 m (body 0.35 m square, propellers at ±0.15 m), but routes run
+ through voxel centres, so the measured closest approach to a rack was 0.37 m (4 cm from the props).
+ 0.45 m gave 0.61 m but closes narrow passages and waypoints near walls. It is a parameter, so it can
+ be raised at the defence.</p></div></details>
 <details class="qa"><summary><span class="tag">Safety</span>How do you prove there were no collisions?</summary><div class="answer"><p><code>plot_a1_2.py</code> computes, for every logged pose, the distance to the nearest map
  point (walls, pillars, trusses, floor excluded) or rack surface with a k-d tree, and reports the
  minimum against the drone radius. All logged missions stayed above 0.33 m (minimum 0.37 m, over
  the rack). The final recording is in <code>results/</code>.</p></div></details>
-<details class="qa"><summary><span class="tag">Safety</span>Your safety radius is 0.45 m, so why was the clearance only 0.37 m?</summary><div class="answer"><p>Voxel quantization. Inflation grows spheres around voxel centres, but the real obstacle
- surface can be up to half a voxel (0.075 m) closer than the centre of its voxel. A route at the
- edge of the inflated space can therefore be ≈ 0.45 − 0.075 ≈ 0.37 m from the real surface. The
- drone followed the route exactly there. For a guaranteed 0.45 m, use 0.45 + half a voxel ≈ 0.53 m.</p></div></details>
+<details class="qa"><summary><span class="tag">Safety</span>Why does the measured clearance differ from the safety radius?</summary><div class="answer"><p>Voxel quantization. Inflation grows spheres around voxel centres, but the real obstacle
+ surface can be up to half a voxel (0.075 m) closer than the centre of its voxel. Conversely, the route runs
+ through free voxel centres, so it can also be farther. For a guaranteed clearance r, use
+ r + half a voxel.</p></div></details>
 <details class="qa"><summary><span class="tag">Safety</span>What is the weakest point of your solution?</summary><div class="answer"><p>Clearance over the racks: 0.37–0.38 m, only 4–5 cm more than the drone radius, from voxel
  quantization and, in <code>test_over_racks</code>, from the drone sinking ~0.15 m below its route on a
  descent. Options: a larger safety radius (0.5 m) at the cost
@@ -8175,7 +8173,7 @@ which libraries, and what to install.</p></div>
  <code>/occupancy_result</code> (<code>true</code> = blocked in the inflated map or outside the grid).
  Inside, the point is converted to a voxel index and looked up in the hash set (or the dense array).</p></div></details>
 <details class="qa"><summary><span class="tag">A1.1</span>What are the map&#x27;s bounding box and voxel counts?</summary><div class="answer"><p>x −0.30…17.95, y −1.15…13.20, z 0…5.95 m; 620 311 points → 62 689 after the 0.15 m VoxelGrid;
- 73 069 occupied voxels with the filled racks; 261 759 after inflating by 0.45 m; dense A* grid
+ 73 069 occupied voxels with the filled racks; 234 353 after inflating by 0.30 m; dense A* grid
  128 × 102 × 46.</p></div></details>
 <details class="qa"><summary><span class="tag">A1.1</span>Why is a voxel grid not &#x27;stacked 2D layers&#x27;?</summary><div class="answer"><p>Occupancy and the search are in 3D: A* moves to all 26 neighbours, including diagonals up and
  down, and inflation is a 3D sphere. A route can climb diagonally over a rack, which no stack of 2D
@@ -8250,7 +8248,7 @@ which libraries, and what to install.</p></div>
 <tr><td>Yaw reached</td><td>5° for 0.5 s</td><td>yaw tasks and alignment</td></tr>
 <tr><td>Carrot</td><td>1 m/s, ≤ 1 m ahead</td><td>straight-line tracking</td></tr>
 <tr><td>Voxel size</td><td>0.15 m</td><td>map and A* resolution</td></tr>
-<tr><td>Safety radius</td><td>0.45 m</td><td>0.33 drone + 0.12 tracking</td></tr>
+<tr><td>Safety radius</td><td>0.30 m</td><td>planner.yaml, change with --safety-radius</td></tr>
 <tr><td>Snap radius</td><td>5 voxels = 0.75 m</td><td>blocked start/goal</td></tr>
 <tr><td>Map ↔ local rotation</td><td>90°</td><td>map x = north</td></tr>
 <tr><td>GPS stable</td><td>5 s</td><td>before GUIDED/arm</td></tr>
@@ -8259,7 +8257,7 @@ which libraries, and what to install.</p></div>
 <tr><td>Drone radius</td><td>0.33 m</td><td>centre to prop tip (body 0.35 m square, props at ±0.15 m)</td></tr>
 <tr><td>Measured hard arrival error</td><td>2.9–7.6 cm</td><td>three missions with logging</td></tr>
 <tr><td>Measured min clearance</td><td>0.37 / 0.61 / 0.38 m</td><td>hangar_example (final) / east aisle / over racks</td></tr>
-<tr><td>Voxel quantization</td><td>≈ 0.075 m</td><td>real clearance can be 0.45 − 0.075 ≈ 0.37 m</td></tr>
+<tr><td>Voxel quantization</td><td>≈ 0.075 m</td><td>real clearance can differ from the radius by ~half a voxel</td></tr>
 </table>
 </section>
 <section class="chapter prose" id="glossary"><h2><span class="num">31</span>Glossary</h2>

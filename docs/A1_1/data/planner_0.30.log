@@ -1,12 +1,12 @@
-[INFO] [1792331175.824480311] [map_planner_node]: Map bounds: x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]
-[INFO] [1792331175.869513464] [map_planner_node]: Filled rack box 0 (5419 new voxels)
-[INFO] [1792331175.873014546] [map_planner_node]: Filled rack box 1 (5893 new voxels)
-[INFO] [1792331175.955594657] [map_planner_node]: Saved inflated voxel centers (including racks) to /tmp/a1_1_occupancy_0.30.pcd
-[INFO] [1792331175.986053757] [map_planner_node]: Voxelized points: 62689; occupied voxels: 73069; inflated: 234353
-[INFO] [1792331175.986098758] [map_planner_node]: 3D planning grid: 128 x 102 x 46
-[INFO] [1792331175.987857065] [map_planner_node]: Ready: plan via 'plan_request'; query inflated occupancy via 'occupancy_query'
-[INFO] [1792331175.987890632] [map_planner_node]: Map: /home/user/Zadania/LRS_Psenak_Valko/install/lrs_psenak_valko/share/lrs_psenak_valko/maps/FEI_LRS_PCD/map.pcd; raw voxels: 73069; inflated voxels: 234353; safety radius: 0.30 m
-[INFO] [1792331177.331179023] [map_planner_node]: 
+[INFO] [1792409304.735919205] [map_planner_node]: Map bounds: x=[-0.300, 17.950], y=[-1.150, 13.200], z=[0.000, 5.950]
+[INFO] [1792409304.793297575] [map_planner_node]: Filled rack box 0 (5419 new voxels)
+[INFO] [1792409304.797939827] [map_planner_node]: Filled rack box 1 (5893 new voxels)
+[INFO] [1792409304.900673123] [map_planner_node]: Saved inflated voxel centers (including racks) to /tmp/a1_1_occupancy_0.30.pcd
+[INFO] [1792409304.942058799] [map_planner_node]: Voxelized points: 62689; occupied voxels: 73069; inflated: 234353
+[INFO] [1792409304.942141674] [map_planner_node]: 3D planning grid: 128 x 102 x 46
+[INFO] [1792409304.945162837] [map_planner_node]: Ready: plan via 'plan_request'; query inflated occupancy via 'occupancy_query'
+[INFO] [1792409304.945230044] [map_planner_node]: Map: /home/user/Zadania/LRS_Psenak_Valko/install/lrs_psenak_valko/share/lrs_psenak_valko/maps/FEI_LRS_PCD/map.pcd; raw voxels: 73069; inflated voxels: 234353; safety radius: 0.30 m
+[INFO] [1792409306.169145169] [map_planner_node]: 
 ================================================================
  Štart : (13.00, 7.00, 1.50) m
  Cieľ  : (4.50, 9.10, 1.50) m
@@ -20,13 +20,13 @@
    Body po zjednodušení  : 2
    Dĺžka trasy (finálna) : 8.76 m
    Dĺžka pôvodnej trasy  : 9.42 m
-   Čas plánovania        : 13.3 ms
+   Čas plánovania        : 15.9 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m
     1  (4.50, 9.10, 1.50) m   +8.76 m   8.76 m
 ================================================================
-[INFO] [1792331177.802835003] [map_planner_node]: 
+[INFO] [1792409306.657203099] [map_planner_node]: 
 ================================================================
  Štart : (12.00, 4.00, 1.00) m
  Cieľ  : (4.30, 6.80, 4.80) m
@@ -40,14 +40,14 @@
    Body po zjednodušení  : 3
    Dĺžka trasy (finálna) : 9.12 m
    Dĺžka pôvodnej trasy  : 10.21 m
-   Čas plánovania        : 10.3 ms
+   Čas plánovania        : 24.2 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (12.00, 4.00, 1.00) m   +0.00 m   0.00 m
     1  (4.73, 6.38, 4.28) m   +8.32 m   8.32 m
     2  (4.30, 6.80, 4.80) m   +0.80 m   9.12 m
 ================================================================
-[INFO] [1792331178.272363469] [map_planner_node]: 
+[INFO] [1792409307.125727606] [map_planner_node]: 
 ================================================================
  Štart : (8.65, 2.02, 1.00) m
  Cieľ  : (4.84, 5.37, 2.00) m
@@ -61,14 +61,14 @@
    Body po zjednodušení  : 3
    Dĺžka trasy (finálna) : 5.37 m
    Dĺžka pôvodnej trasy  : 5.76 m
-   Čas plánovania        : 11.2 ms
+   Čas plánovania        : 8.3 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (8.65, 2.02, 1.00) m   +0.00 m   0.00 m
     1  (7.28, 3.83, 2.03) m   +2.49 m   2.49 m
     2  (4.84, 5.37, 2.00) m   +2.88 m   5.37 m
 ================================================================
-[INFO] [1792331178.744558046] [map_planner_node]: 
+[INFO] [1792409307.588750740] [map_planner_node]: 
 ================================================================
  Štart : (2.08, 9.74, 1.75) m
  Cieľ  : (8.84, 6.90, 2.00) m
@@ -82,14 +82,14 @@
    Body po zjednodušení  : 3
    Dĺžka trasy (finálna) : 7.41 m
    Dĺžka pôvodnej trasy  : 8.01 m
-   Čas plánovania        : 13.9 ms
+   Čas plánovania        : 4.5 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (2.08, 9.74, 1.75) m   +0.00 m   0.00 m
     1  (7.88, 7.73, 2.03) m   +6.14 m   6.14 m
     2  (8.84, 6.90, 2.00) m   +1.27 m   7.41 m
 ================================================================
-[INFO] [1792331179.214023991] [map_planner_node]: 
+[INFO] [1792409308.061269331] [map_planner_node]: 
 ================================================================
  Štart : (16.50, 1.00, 1.00) m
  Cieľ  : (1.00, 9.10, 3.00) m
@@ -103,14 +103,14 @@
    Body po zjednodušení  : 3
    Dĺžka trasy (finálna) : 18.19 m
    Dĺžka pôvodnej trasy  : 19.45 m
-   Čas plánovania        : 11.2 ms
+   Čas plánovania        : 13.1 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (16.50, 1.00, 1.00) m   +0.00 m   0.00 m
     1  (6.98, 8.33, 2.93) m   +12.17 m   12.17 m
     2  (1.00, 9.10, 3.00) m   +6.03 m   18.19 m
 ================================================================
-[WARN] [1792331179.677941364] [map_planner_node]: 
+[WARN] [1792409308.528720359] [map_planner_node]: 
 ================================================================
  Štart : (13.00, 7.00, 1.50) m
  Cieľ  : (4.32, 6.82, 1.50) m
@@ -127,7 +127,7 @@
  Čas plánovania: 0.0 ms, expanzií: 0
  Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo
 ================================================================
-[WARN] [1792331179.680225506] [map_planner_node]: 
+[WARN] [1792409308.531121479] [map_planner_node]: 
 ================================================================
  Štart : (13.00, 7.00, 1.50) m
  Cieľ  : (25.00, 7.00, 1.50) m
@@ -144,7 +144,7 @@
  Čas plánovania: 0.0 ms, expanzií: 0
  Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo
 ================================================================
-[INFO] [1792331179.692355953] [map_planner_node]: 
+[INFO] [1792409308.558529951] [map_planner_node]: 
 ================================================================
  Štart : (13.00, 7.00, 1.50) m
  Cieľ  : (9.00, 6.00, 6.35) m
@@ -158,14 +158,14 @@
    Body po zjednodušení  : 3
    Dĺžka trasy (finálna) : 6.53 m
    Dĺžka pôvodnej trasy  : 7.06 m
-   Čas plánovania        : 10.6 ms
+   Čas plánovania        : 25.6 ms
 ----------------------------------------------------------------
  BODY TRASY (#, x, y, z, úsek, kumulatívne)
     0  (13.00, 7.00, 1.50) m   +0.00 m   0.00 m
     1  (9.08, 5.78, 6.23) m   +6.26 m   6.26 m
     2  (9.00, 6.00, 6.35) m   +0.27 m   6.53 m
 ================================================================
-[WARN] [1792331180.783462796] [map_planner_node]: 
+[WARN] [1792409309.684609072] [map_planner_node]: 
 ================================================================
  Štart : (13.00, 7.00, 1.50) m
  Cieľ  : (3.00, 1.50, 0.80) m
@@ -184,7 +184,7 @@
     2) cieľ je v uzavretom priestore (za regálom / v obstacle)
     3) rack_boxes zablokovali jediný priechod -> skontroluj rozmery a yaw
 ----------------------------------------------------------------
- Čas plánovania: 633.1 ms, expanzií: 358415
+ Čas plánovania: 664.7 ms, expanzií: 358415
  Parametre: voxel_size=0.15 m, safety_radius=0.30 m, heuristic_weight=1.0, 26-susedstvo
 ================================================================
-[INFO] [1792331180.790644848] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [1792409309.690318248] [rclcpp]: signal_handler(SIGINT/SIGTERM)

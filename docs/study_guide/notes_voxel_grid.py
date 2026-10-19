@@ -5,7 +5,7 @@ needs little memory for a big, mostly empty hangar. It fills the racks and infla
 by the safety radius.</p>"""
 
 NOTES = [
-("// Copyright (c) 2026 STU FEI URK", "Header comment",
+("// voxel_occupancy_grid.h", "Header comment",
  """<p>Lists the operations and their order: <code>build()</code> → <code>addBox()</code>* →
  <code>inflate()</code>.</p>"""),
 ("#pragma once", "Includes", """<p>Standard containers and PCL point types.</p>"""),
@@ -21,7 +21,7 @@ NOTES = [
  voxels were added. Racks are solid in the map because the point cloud only has their
  surfaces.</p>"""),
 ("/// Grow every occupied voxel into a sphere of radius_m", "inflate(): the safety margin",
- """<p>Converts the radius to voxels (0.45 / 0.15 = 3), precomputes once all offsets
+ """<p>Converts the radius to voxels (0.30 / 0.15 = 2), precomputes once all offsets
  (dx, dy, dz) inside that sphere, then adds every occupied voxel + every offset to the inflated set.
  It is spherical and 3D, so it also covers above and below obstacles. After this the drone can be
  treated as a point.</p>"""),

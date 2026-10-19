@@ -3,7 +3,8 @@
 doc_figures.py -- result figures for docs/A1_1 and docs/A1_2 (from recorded data only).
 
 A1.1 needs docs/A1_1/data/benchmark.json and benchmark_raw.json (tools/a1_1_benchmark.py) and the
-inflated occupancy saved by that run (/tmp/a1_1_occupancy_0.45.pcd, optional).
+inflated occupancy saved by that run (/tmp/a1_1_occupancy_<r>.pcd, optional), where r is
+safety_radius from config/planner.yaml.
 A1.2 uses the recorded mission in results/.
 
     python3 tools/doc_figures.py
@@ -64,7 +65,7 @@ def route(data, radius, name):
 
 
 # ------------------------------------------------------------------ A1.1
-def a1_1(cloud, boxes):
+def a1_1(cloud, boxes, safety):
     bench = json.load(open(os.path.join(A11, "data", "benchmark.json"), encoding="utf-8"))
     raw = json.load(open(os.path.join(A11, "data", "benchmark_raw.json"), encoding="utf-8"))
     band = map_band(cloud)
@@ -111,21 +112,21 @@ def a1_1(cloud, boxes):
     names = ["úsek misie wp2→wp3", "dlhá diagonála hangárom"]
     fig, axs = plt.subplots(1, 2, figsize=(13, 5.2))
     for ax, n in zip(axs, names):
-        draw_floor(ax, band, boxes, 0.45)
-        rr, ss = route(raw, 0.45, n), route(bench, 0.45, n)
+        draw_floor(ax, band, boxes, safety)
+        rr, ss = route(raw, safety, n), route(bench, safety, n)
         pr, ps = np.array(rr["path"]), np.array(ss["path"])
         ax.plot(pr[:, 0], pr[:, 1], ".", color=ORANGE, ms=6, label=f"A* surová: {len(pr)} bodov, {rr['length_m']:.2f} m")
         ax.plot(ps[:, 0], ps[:, 1], "-o", color=BLUE, lw=2, ms=6,
                 label=f"po zjednodušení: {len(ps)} body, {ss['length_m']:.2f} m")
         ax.set_title(n)
         ax.legend(fontsize=8, loc="upper right")
-    fig.suptitle("Zjednodušenie trasy (priama viditeľnosť) pri safety_radius 0.45 m")
+    fig.suptitle(f"Zjednodušenie trasy (priama viditeľnosť) pri safety_radius {safety:.2f} m")
     fig.tight_layout()
     fig.savefig(os.path.join(img, "zjednodusenie.png"), dpi=170)
     plt.close(fig)
 
     # 3) occupancy slice at z = 2 m: raw voxels + filled racks vs inflated
-    occ_file = "/tmp/a1_1_occupancy_0.45.pcd"
+    occ_file = f"/tmp/a1_1_occupancy_{safety:.2f}.pcd"
     sys.path.insert(0, ROOT)
     import view_3d_a1_2 as V
     if os.path.exists(occ_file):
@@ -135,7 +136,7 @@ def a1_1(cloud, boxes):
         sl_raw = rawv[np.abs(rawv[:, 2] - z0) < 0.076]
         sl_occ = occ[np.abs(occ[:, 2] - z0) < 0.076]
         fig, ax = plt.subplots(figsize=(10, 7.4))
-        ax.scatter(sl_occ[:, 0], sl_occ[:, 1], s=5, marker="s", c="#f6c9b7", label="nafúknuté (0.45 m) = zakázané pre stred drona")
+        ax.scatter(sl_occ[:, 0], sl_occ[:, 1], s=5, marker="s", c="#f6c9b7", label=f"nafúknuté ({safety:.2f} m) = zakázané pre stred drona")
         ax.scatter(sl_raw[:, 0], sl_raw[:, 1], s=5, marker="s", c="#52514e", label="obsadené voxely (mapa + vyplnené regály)")
         ax.set_aspect("equal")
         ax.set_xlabel("x [m]")
@@ -149,7 +150,7 @@ def a1_1(cloud, boxes):
 
     # 4) 3D view of the tested routes (VTK screenshot)
     tmp = tempfile.mkdtemp()
-    ok = [x for x in route_list(bench, 0.45) if x["ok"] and "strechou" not in x["name"]]
+    ok = [x for x in route_list(bench, safety) if x["ok"] and "strechou" not in x["name"]]
     with open(os.path.join(tmp, "planned_paths.csv"), "w") as f:
         f.write("leg,waypoint,point,x,y,z\n")
         for leg, x in enumerate(ok, start=1):
@@ -189,10 +190,10 @@ def a1_2():
 
 def main():
     cloud = P.load_pcd_ascii(P.DEFAULT_MAP)
-    _, boxes = P.load_planner_yaml(P.DEFAULT_YAML)
+    safety, boxes = P.load_planner_yaml(P.DEFAULT_YAML)
     os.makedirs(os.path.join(A11, "img"), exist_ok=True)
     os.makedirs(os.path.join(A12, "img"), exist_ok=True)
-    a1_1(cloud, boxes)
+    a1_1(cloud, boxes, safety)
     a1_2()
     print("figures written to docs/A1_1/img and docs/A1_2/img")
 

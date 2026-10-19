@@ -127,7 +127,7 @@ back. It also converts frames: MAVLink uses <b>NED</b>, ROS uses <b>ENU</b>.</p>
 <ul>
 <li><b>Point cloud</b>: the hangar scanned as 620 k 3D points (<code>map.pcd</code>).</li>
 <li><b>Voxel</b>: a 0.15 m cube. Occupied if a map point falls into it.</li>
-<li><b>Inflation</b>: grow every obstacle voxel by a sphere of the safety radius (0.45 m). Then the drone can be treated as a point: any free voxel is safe for its centre.</li>
+<li><b>Inflation</b>: grow every obstacle voxel by a sphere of the safety radius (0.30 m). Then the drone can be treated as a point: any free voxel is safe for its centre.</li>
 <li><b>A*</b>: best-first graph search with f = g + h; with an admissible, consistent h the result is the shortest path on the grid.</li>
 <li><b>26-connectivity</b>: each voxel has 26 neighbours (faces, edges, corners); steps cost 1, √2, √3 voxels.</li>
 <li><b>Octile heuristic</b>: the exact path length in empty space on that grid.</li>
@@ -192,9 +192,9 @@ reasons. Startup went from ~5 min to ~1.5 min.</p>
 the FCU refused, and the refusal was treated as fatal. <b>Fix:</b> wait for LAND mode to disarm by
 itself; send our own disarm only after a grace period and retry it.</p>
 <h4>4. Too close to a rack</h4>
-<p><b>Cause:</b> <code>safety_radius</code> was 0.30 m, smaller than the drone (0.33 m to the prop
-tips); the clearance plot showed 0.37 m to a rack (4 cm margin). <b>Fix:</b> 0.45 m; the same route
-then kept 0.61 m.</p>
+<p><b>Observation:</b> with <code>safety_radius</code> 0.30 m the clearance plot showed 0.37 m to a
+rack, 4 cm above the drone radius (0.33 m). 0.45 m gave 0.61 m on the same route, but blocks more
+waypoints near obstacles. <b>Choice:</b> 0.30 m (same as A1.1); raise it for more margin.</p>
 <h4>5. Drone left the straight line</h4>
 <p><b>Cause:</b> the setpoint jumped to the segment end; ArduCopter mixed different horizontal and
 vertical speed limits (0.56 m off the route, descending early). <b>Fix:</b> carrot following.</p>
@@ -233,7 +233,7 @@ NUMBERS = """
 <tr><td>Yaw reached</td><td>5° for 0.5 s</td><td>yaw tasks and alignment</td></tr>
 <tr><td>Carrot</td><td>1 m/s, ≤ 1 m ahead</td><td>straight-line tracking</td></tr>
 <tr><td>Voxel size</td><td>0.15 m</td><td>map and A* resolution</td></tr>
-<tr><td>Safety radius</td><td>0.45 m</td><td>0.33 drone + 0.12 tracking</td></tr>
+<tr><td>Safety radius</td><td>0.30 m</td><td>planner.yaml, change with --safety-radius</td></tr>
 <tr><td>Snap radius</td><td>5 voxels = 0.75 m</td><td>blocked start/goal</td></tr>
 <tr><td>Map ↔ local rotation</td><td>90°</td><td>map x = north</td></tr>
 <tr><td>GPS stable</td><td>5 s</td><td>before GUIDED/arm</td></tr>
@@ -242,7 +242,7 @@ NUMBERS = """
 <tr><td>Drone radius</td><td>0.33 m</td><td>centre to prop tip (body 0.35 m square, props at ±0.15 m)</td></tr>
 <tr><td>Measured hard arrival error</td><td>2.9–7.6 cm</td><td>three missions with logging</td></tr>
 <tr><td>Measured min clearance</td><td>0.37 / 0.61 / 0.38 m</td><td>hangar_example (final) / east aisle / over racks</td></tr>
-<tr><td>Voxel quantization</td><td>≈ 0.075 m</td><td>real clearance can be 0.45 − 0.075 ≈ 0.37 m</td></tr>
+<tr><td>Voxel quantization</td><td>≈ 0.075 m</td><td>real clearance can differ from the radius by ~half a voxel</td></tr>
 </table>
 """
 

@@ -1,6 +1,3 @@
-// Copyright (c) 2026 STU FEI URK
-// SPDX-License-Identifier: MIT
-//
 // voxel_occupancy_grid.h
 //
 // Sparse 3D occupancy grid (hash set of occupied voxels) with

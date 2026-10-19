@@ -111,7 +111,7 @@ NOTES = [
  hard, 0.55 soft).</p>"""),
 ("    ax = axs[2, 1]", "Route deviation panel",
  """<p>Distance to the planned route while navigating, with the margin the safety radius leaves
- beyond the drone radius (0.45 − 0.33 = 0.12 m). The maximum is printed.</p>"""),
+ beyond the drone radius (safety_radius − 0.33 m). The maximum is printed.</p>"""),
 ("    for a in axs[:2].ravel():", "Finish and save",
  """<p>Axis labels and grids, the title, the explanation of the gaps at the bottom
  (<code>fig.text</code>), <code>tight_layout</code> leaving room for it, save

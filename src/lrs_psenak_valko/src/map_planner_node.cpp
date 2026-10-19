@@ -50,7 +50,7 @@ public:
     const std::string occupancy_pcd_path =
       declare_parameter<std::string>("occupancy_pcd_path", "map_voxels_with_racks_inflated.pcd");
     const double leaf_size = declare_parameter<double>("voxel_size", 0.15);
-    const double safety_radius = declare_parameter<double>("safety_radius", 0.45);
+    const double safety_radius = declare_parameter<double>("safety_radius", 0.30);
     const std::vector<double> rack_boxes =
       declare_parameter<std::vector<double>>("rack_boxes", std::vector<double>{});
     // Only this specific map (FEI hangar) must never start without its racks filled.

@@ -9,9 +9,9 @@ NOTES = [
  """<p>The top-level key must equal the node name; <code>ros__parameters</code> holds the values.
  <code>map_path</code> is relative to the installed package.</p>"""),
 ("    voxel_size: 0.15", "Voxel size and safety radius",
- """<p><b>voxel_size 0.15 m</b>: resolution of the map and of A*. <b>safety_radius 0.45 m</b> = 0.33 m
- drone radius (centre to propeller tip) + ~0.12 m tracking margin; raised from 0.30 after a test
- flight passed 0.37 m from a rack.</p>"""),
+ """<p><b>voxel_size 0.15 m</b>: resolution of the map and of A*. <b>safety_radius 0.30 m</b>: keeps narrow
+ passages and waypoints near walls usable; measured flight clearance stayed above the 0.33 m drone
+ radius (min 0.37 m) because routes run through voxel centres.</p>"""),
 ("    occupancy_pcd_path:", "Saved occupancy and racks",
  """<p>Where the inflated occupancy is saved (the script overrides it with an absolute path).
  <code>require_rack_boxes</code>: refuse to start without racks. <code>rack_boxes</code>: two racks,
