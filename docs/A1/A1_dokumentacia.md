@@ -282,36 +282,3 @@ Uzol beží v jednom vlákne (`rclcpp::spin`), takže netreba mutex.
 ![Štvorec](img/a13_vysledok_stvorec.png)
 
 ![Osmička](img/a13_vysledok_osmicka.png)
-
----
-
-## Pokrytie požiadaviek A1.4
-
-| Téma zo zadania | Kde v dokumente |
-|---|---|
-| reprezentácia mapy, rozlíšenie | A1.1 › Mapa: voxelová mriežka 0.15 m |
-| nafúknutie, hodnota polomeru, regály | A1.1 › Regály, Nafúknutie (0.45 m, overené letom) |
-| algoritmus, heuristika, čas, optimalita | A1.1 › A*, Výsledky A1.1 |
-| zjednodušenie, počty bodov, kolízie | A1.1 › Zjednodušenie, Výsledky A1.1 |
-| regulátor polohy, hard/soft, „príchod“, medziľahlé body | A1.2 › Mrkva, Presnosť hard a soft |
-| smer nosa, unwrap | A1.2 › Mrkva a smer nosa; A1.3 › Osmička |
-| geodetický prevod a jeho chyba | A1.3 › Počiatok z GPS |
-| konvencie uhlov (ENU, NED, kompas) | A1.2 › Misia a konvencie; A1.3 › Uhly a výška |
-| parametre osmičky (ω, rýchlosť, geofence) | A1.3 › Osmička |
-| diagramy (tok dát, ROS) | Celkový diagram riešenia |
-
-## Čo nefunguje dokonale
-
-- **A1.1 – diery v streche mračna:** pozdĺž hrebeňa strechy chýbajú body, cieľ nad strechou (9, 6, 6.35)
-  našiel trasu von. Body misie sú v hangári; diery by sa dali zakryť ďalším kvádrom alebo stropom.
-- **A1.1 – zaokrúhlenie voxelov a ostré rohy:** reálny odstup nad regálom 0.37 m namiesto 0.45 m (zaručených
-  0.45 m by chcelo ~0.53 m); bez spline vyhladenia, dron sa v ostrých rohoch na chvíľu zastaví a otočí.
-- **A1.1 – NO_PATH** trvá ~0.6 s, lebo A* musí prehľadať celý dosiahnuteľný priestor.
-- **A1.2 – malá rezerva pri zostupe z regálu:** dron klesá rýchlejšie, než sa posúva do strany (~0.15 m pod
-  trasou); s 0.45 m stále 4–5 cm nad polomerom drona.
-- **A1.2 – po soft bode** začína ďalší úsek v strede bodu, prvý meter je dron až 0.4 m od nakreslenej trasy.
-- **A1.2 – pomalá simulácia:** na našom PC beží Gazebo na 0.2–0.3× reálneho času (štart ~1.5 min, misia
-  ~7 min); Gazebo sa nesmie pozastaviť (SITL je v lock-stepe).
-- **A1.3 – nos na koncoch slučiek osmičky** zaostáva až o ~24° (otáčanie blízko limitu ArduPilota); predstih
-  0.5 s pre yaw je odhad zo SITL, na reálnom drone ho treba doladiť.
-- **A1.3 – GPS skok počas priemerovania** by posunul celú misiu.

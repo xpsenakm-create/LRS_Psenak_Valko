@@ -289,39 +289,3 @@ switches nothing. The node runs in one thread (`rclcpp::spin`), so no mutex is n
 ![Square](img/a13_vysledok_stvorec.png)
 
 ![Figure-8](img/a13_vysledok_osmicka.png)
-
----
-
-## Coverage of the A1.4 requirements
-
-| Topic from the assignment | Where in this document |
-|---|---|
-| map representation, resolution | A1.1 › Map: 0.15 m voxel grid |
-| inflation, radius value, racks | A1.1 › Racks, Obstacle inflation (0.45 m, verified in flight) |
-| algorithm, heuristic, time, optimality | A1.1 › A*, A1.1 results |
-| simplification, point counts, collisions | A1.1 › Path simplification, A1.1 results |
-| position controller, hard/soft, "arrived", intermediate points | A1.2 › Carrot following, Hard and soft precision |
-| heading policy, unwrapping | A1.2 › Carrot following and heading; A1.3 › Figure-8 |
-| geodetic conversion and its error | A1.3 › Origin from GPS |
-| angle conventions (ENU, NED, compass) | A1.2 › Mission file and conventions; A1.3 › Angles and altitude |
-| figure-8 parameters (ω, speed, geofence) | A1.3 › Figure-8 |
-| diagrams (data flow, ROS) | Overall solution diagram |
-
-## Known limitations
-
-- **A1.1 – holes in the roof of the cloud:** points are missing along the roof ridge; a goal above the roof
-  (9, 6, 6.35) found a route outside. Mission points are inside the hangar; the holes could be closed with
-  another box or a ceiling.
-- **A1.1 – voxel rounding and sharp corners:** real clearance over the rack is 0.37 m instead of 0.45 m (a
-  guaranteed 0.45 m would need ~0.53 m); no spline smoothing, so the drone briefly stops and turns at sharp
-  corners.
-- **A1.1 – NO_PATH** takes ~0.6 s, because A* has to search the whole reachable space.
-- **A1.2 – small margin on the descent from the rack:** the drone sinks faster than it moves sideways
-  (~0.15 m below the route); with 0.45 m still 4–5 cm above the drone radius.
-- **A1.2 – after a soft waypoint** the next leg starts at the waypoint centre, so for the first metre the drone
-  can be up to 0.4 m from the drawn route.
-- **A1.2 – slow simulation:** on our PC Gazebo runs at 0.2–0.3× real time (start-up ~1.5 min, mission ~7 min);
-  Gazebo must not be paused (SITL runs in lock-step).
-- **A1.3 – nose at the figure-8 loop ends** lags up to ~24° (turn rate near ArduPilot's limit); the 0.5 s yaw
-  look-ahead is an SITL estimate and needs tuning on the real drone.
-- **A1.3 – a GPS jump during averaging** would shift the whole mission.
