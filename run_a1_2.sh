@@ -22,6 +22,10 @@
 #   A1_2_SHOW_PLOTS        1 = also open the plot windows (needs a display)                [1]
 #   A1_2_SHOW_3D           1 = also open the 3D voxel view of the route (view_3d_a1_2.py)  [1]
 #   A1_2_RVIZ              1 = open RViz with the map, racks, planned and flown path       [0]
+#   A1_2_GZ_CAMERAS        1 = keep the drone's stereo cameras in the Gazebo world          [0]
+#                          (A1.2 does not use them; without a GPU they slow Gazebo ~10x)
+#   A1_2_GZ_HEADLESS       1 = start only the Gazebo server, no GUI window                  [0]
+#   A1_2_MAVROS_CONN_TIMEOUT seconds without FCU heartbeat before MAVROS reports a lost link [30]
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,6 +49,9 @@ PLOT="${A1_2_PLOT:-1}"
 SHOW_PLOTS="${A1_2_SHOW_PLOTS:-1}"
 SHOW_3D="${A1_2_SHOW_3D:-1}"
 RVIZ="${A1_2_RVIZ:-0}"
+GZ_CAMERAS="${A1_2_GZ_CAMERAS:-0}"
+GZ_HEADLESS="${A1_2_GZ_HEADLESS:-0}"
+MAVROS_CONN_TIMEOUT="${A1_2_MAVROS_CONN_TIMEOUT:-30}"
 PLANNER_PID=""
 EXECUTOR_PID=""
 BAG_PID=""
@@ -100,7 +107,7 @@ if [[ ! -f "$MISSION_FILE" ]]; then
   printf 'Mission file not found: %s\n' "$MISSION_FILE" >&2
   exit 2
 fi
-for name in RTF_TIMEOUT SITL_BOOT_TIMEOUT READY_TIMEOUT POLL_INTERVAL; do
+for name in RTF_TIMEOUT SITL_BOOT_TIMEOUT READY_TIMEOUT POLL_INTERVAL MAVROS_CONN_TIMEOUT; do
   value="${!name}"
   if ! is_uint "$value" || ((value < 1)); then
     printf 'A1_2_%s must be a positive integer number of seconds.\n' "$name" >&2
@@ -108,7 +115,7 @@ for name in RTF_TIMEOUT SITL_BOOT_TIMEOUT READY_TIMEOUT POLL_INTERVAL; do
   fi
 done
 if ! is_number "$MIN_RTF"; then printf 'A1_2_MIN_RTF must be a number, e.g. 0.8\n' >&2; exit 2; fi
-for name in START_SIM STOP_SIM SKIP_BUILD RECORD PLOT SHOW_PLOTS SHOW_3D RVIZ; do
+for name in START_SIM STOP_SIM SKIP_BUILD RECORD PLOT SHOW_PLOTS SHOW_3D RVIZ GZ_CAMERAS GZ_HEADLESS; do
   if [[ "${!name}" != 0 && "${!name}" != 1 ]]; then
     printf 'A1_2_%s must be 0 or 1.\n' "$name" >&2
     exit 2
@@ -205,8 +212,9 @@ pick_terminal() {
   printf '%s' "$t"
 }
 
-# launch_component NAME SCRIPT: runs $URK_DIR/scripts/SCRIPT in its own terminal window and copies
-# its output to $LOG_DIR/NAME.log (through `script`, so the program still sees a real terminal).
+# launch_component NAME SCRIPT: runs SCRIPT (relative to $URK_DIR, or absolute) in its own terminal
+# window and copies its output to $LOG_DIR/NAME.log (through `script`, so the program still sees a
+# real terminal).
 launch_component() {
   local name="$1" script_name="$2" launcher="$LOG_DIR/launch_$1.sh" logfile="$LOG_DIR/$1.log" term run
   term="$(pick_terminal)"
@@ -217,8 +225,8 @@ launch_component() {
   fi
   mkdir -p "$LOG_DIR"
   : > "$logfile"
-  run="scripts/$script_name"
-  if command -v script >/dev/null 2>&1; then run="script -qefc 'scripts/$script_name' '$logfile'"; fi
+  run="$script_name"
+  if command -v script >/dev/null 2>&1; then run="script -qefc '$script_name' '$logfile'"; fi
   cat > "$launcher" <<LAUNCHER
 #!/usr/bin/env bash
 cd "$URK_DIR" || exit 1
@@ -279,7 +287,29 @@ if [[ "$START_SIM" == 1 ]]; then
   if [[ -n "$GZ_TOPIC" ]]; then
     log "Gazebo already running ($GZ_TOPIC)"
   else
-    launch_component gazebo run_gazebo.sh
+    if [[ "$GZ_CAMERAS" == 1 && "$GZ_HEADLESS" == 0 ]]; then
+      launch_component gazebo scripts/run_gazebo.sh
+    else
+      # Same world and models as scripts/run_gazebo.sh, but optionally without the stereo cameras
+      # (rendered on the CPU without a GPU driver, they hold Gazebo at ~0.1x real time, SITL's
+      # heartbeat then arrives every ~10 s and MAVROS keeps dropping the link) and/or the GUI.
+      GZ_WORLD="$URK_DIR/worlds/fei_lrs_gazebo.world"
+      GZ_FLAGS="-r -v 4"
+      if [[ "$GZ_HEADLESS" == 1 ]]; then GZ_FLAGS="-s $GZ_FLAGS"; fi
+      if [[ "$GZ_CAMERAS" == 0 ]]; then
+        awk '/<sensor [^>]*type=.camera./ { skip = 1 } !skip { print } skip && /<\/sensor>/ { skip = 0 }' \
+          "$URK_DIR/worlds/fei_lrs_gazebo.world" > "$LOG_DIR/fei_lrs_gazebo_nocam.world"
+        GZ_WORLD="$LOG_DIR/fei_lrs_gazebo_nocam.world"
+        log "Gazebo world without stereo cameras: $GZ_WORLD"
+      fi
+      cat > "$LOG_DIR/run_gazebo_a1_2.sh" <<GZRUN
+#!/usr/bin/env bash
+export GZ_SIM_RESOURCE_PATH="$URK_DIR/models:\${GZ_SIM_RESOURCE_PATH:-}"
+exec gz sim $GZ_FLAGS "$GZ_WORLD"
+GZRUN
+      chmod +x "$LOG_DIR/run_gazebo_a1_2.sh"
+      launch_component gazebo "$LOG_DIR/run_gazebo_a1_2.sh"
+    fi
     log "Waiting for Gazebo world (timeout 120s)"
     deadline=$((SECONDS + 120))
     while ((SECONDS < deadline)) && [[ -z "$GZ_TOPIC" ]]; do
@@ -297,7 +327,7 @@ if [[ "$START_SIM" == 1 ]]; then
   if sitl_running; then
     log "SITL already running - reusing it"
   else
-    launch_component sitl run_sitl.sh
+    launch_component sitl scripts/run_sitl.sh
     SITL_LOG="$LOG_DIR/sitl.log"
     log "Waiting for SITL to boot (first build can take minutes; timeout ${SITL_BOOT_TIMEOUT}s)"
     # MAVProxy's --console sends FCU messages (PreArm, EKF) to its own window, not to stdout, so
@@ -328,7 +358,7 @@ if [[ "$START_SIM" == 1 ]]; then
   if mavros_running; then
     log "MAVROS already running"
   else
-    launch_component mavros run_mavros.sh
+    launch_component mavros scripts/run_mavros.sh
   fi
 fi
 
@@ -369,6 +399,14 @@ while ((SECONDS < READY_DEADLINE)); do
 
   FCU_CONNECTED=0
   POSE_READY=0
+  # MAVROS counts its 10 s heartbeat timeout in wall-clock time, but SITL sends heartbeats in sim
+  # time; a slow Gazebo then makes the link flap and the parameter download never finishes.
+  if ((SERVICES_READY)) && [[ -z "${CONN_TIMEOUT_SET:-}" ]]; then
+    if timeout 10s ros2 param set /mavros/sys conn_timeout "$MAVROS_CONN_TIMEOUT.0" >/dev/null 2>&1; then
+      log "MAVROS heartbeat timeout set to ${MAVROS_CONN_TIMEOUT}s"
+      CONN_TIMEOUT_SET=1
+    fi
+  fi
   if ((SERVICES_READY)); then
     FCU_STATE="$(timeout 7s ros2 topic echo --once /mavros/state 2>/dev/null || true)"
     if [[ "$FCU_STATE" != *"connected: true"* ]]; then
