@@ -1,0 +1,35 @@
+digraph G {
+  rankdir=TB; bgcolor=white; pad=0.25; nodesep=0.3; ranksep=0.35; newrank=true;
+  node [shape=box, style="rounded,filled", fillcolor="#eef4fc", color="#2a78d6", penwidth=1.3, fontname="DejaVu Sans", fontsize=12, margin="0.14,0.07"];
+  edge [color="#52514e", penwidth=1.2, arrowsize=0.8, fontname="DejaVu Sans", fontsize=10, fontcolor="#3f3f3f"];
+  subgraph cluster_a11 { label="A1.1  map_planner_node (raz pri štarte + na požiadanie)"; fontname="DejaVu Sans"; fontsize=13; style=rounded; color="#2a78d6";
+    pcd [label="map.pcd\n620 311 bodov", shape=note, fillcolor="#f4f4f2", color="#888888"];
+    yaml [label="planner.yaml\nvoxel 0.15 m, safety 0.45 m,\nrack_boxes", shape=note, fillcolor="#f4f4f2", color="#888888"];
+    vg [label="PCL VoxelGrid 0.15 m\n62 689 bodov"];
+    occ [label="hash množina\nobsadených voxelov"];
+    rack [label="regály ako\nplné kvádre"];
+    infl [label="nafúknutie\nguľa r = 0.45 m"];
+    dense [label="husté pole\n128 × 102 × 46"];
+    astar [label="A* (26 susedov,\noktilová heuristika)"];
+    simp [label="priama viditeľnosť\n+ kontrola kolízií"];
+    pcd -> vg -> occ -> rack -> infl -> dense -> astar -> simp; yaml -> rack; yaml -> infl;
+  }
+  subgraph cluster_a12 { label="A1.2  mission_executor_node (20 Hz)"; fontname="DejaVu Sans"; fontsize=13; style=rounded; color="#2a78d6";
+    csv [label="misia.csv\nx,y,z,presnosť,úloha", shape=note, fillcolor="#f4f4f2", color="#888888"];
+    sm [label="stavový automat\n(cieľ = bod misie)"];
+    car [label="mrkva po úsekoch\n1 m/s, ≤ 1 m pred dronom\nyaw = smer úseku"];
+    m2l [label="map → MAVROS local\n(otočenie o 90°)"];
+    csv -> sm -> car -> m2l;
+  }
+  subgraph cluster_a13 { label="A1.3  outdoor_mission_node (30 Hz)"; fontname="DejaVu Sans"; fontsize=13; style=rounded; color="#2a78d6";
+    gps [label="GPS fixy (≥ 8 sat., ≤ 2 m)\npriemer 3 s → počiatok", shape=note, fillcolor="#f4f4f2", color="#888888"];
+    ltp [label="lat/lon ↔ ENU\n(dotyková rovina WGS-84)"];
+    geo [label="POI, rohy štvorca,\nosmička okolo POI"];
+    mot [label="mrkva (štvorec) / θ = ωt (osmička)\nyaw na POI / dotyčnica"];
+    gps -> ltp -> geo -> mot;
+  }
+  sp [label="setpointy\n→ MAVROS → ArduCopter SITL", shape=box3d, fillcolor="#f4f4f2", color="#888888"];
+  log [label="CSV logy + rosbag\n→ grafy, kontrola odstupu", shape=cylinder, fillcolor="#f4f4f2", color="#888888"];
+  sm -> astar [label="plan_request"]; simp -> car [label="planned_path"];
+  m2l -> sp; mot -> sp; sp -> log [style=dashed];
+}

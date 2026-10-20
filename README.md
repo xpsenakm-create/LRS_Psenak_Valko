@@ -37,6 +37,7 @@ Recordings (rosbag, logs, PNG plots) are in `results/A1_2/`, one folder per safe
 
 | | Slovak | English |
 |---|---|---|
+| **A1 (all parts, for submission)** | [docs/A1/A1_dokumentacia.pdf](docs/A1/A1_dokumentacia.pdf) | [docs/A1/A1_documentation_EN.pdf](docs/A1/A1_documentation_EN.pdf) |
 | A1.1 | [docs/A1_1/A1_1_mapa_a_planovanie.pdf](docs/A1_1/A1_1_mapa_a_planovanie.pdf) | [docs/A1_1/A1_1_map_and_planning_EN.pdf](docs/A1_1/A1_1_map_and_planning_EN.pdf) |
 | A1.2 | [docs/A1_2/A1_2_indoor_misia.pdf](docs/A1_2/A1_2_indoor_misia.pdf) | [docs/A1_2/A1_2_indoor_mission_EN.pdf](docs/A1_2/A1_2_indoor_mission_EN.pdf) |
 | A1.3 | `docs/A1_3/` on branch `A1_3` | |
