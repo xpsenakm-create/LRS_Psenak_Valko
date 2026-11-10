@@ -19,6 +19,8 @@
 //   VO body velocity  z = Rz(yaw)^T v          H = dh/d(v, yaw)                EKF Jacobian
 //                     (or, as an option, the linear-KF approximation: z' = Rz(yaw_est) z_body
 //                      compared with v, H = [0 I3 0 0])
+//   gyro at rest      z = w_z                  H = e_bg^T                       static alignment:
+//                     only from initialisation until the first motion (true yaw rate = 0)
 //
 // Every update: r = z - h(x), S = H P H^T + R, d2 = r^T S^-1 r (the gate statistic),
 // K = P H^T S^-1 (solved with LDLT, never inverted), Joseph-form covariance update.
@@ -66,10 +68,10 @@ inline Vec3 bodyToWorld(const Vec3& v, double yaw)
 /// Continuous-time process noise densities.
 struct ProcessNoise
 {
-  double accel_xy = 0.3;       // [m/s^2/sqrt(Hz)] white acceleration: how wrong "constant velocity" is
+  double accel_xy = 0.2;       // [m/s^2/sqrt(Hz)] white acceleration: how wrong "constant velocity" is
   double accel_z = 0.3;        // [m/s^2/sqrt(Hz)]
-  double yaw_rate = 0.002;     // [rad/s/sqrt(Hz)] gyro white noise (+ tilt coupling) integrated into yaw
-  double gyro_bias_rw = 1e-4;  // [rad/s/sqrt(s)]  gyro bias random walk
+  double yaw_rate = 0.005;     // [rad/s/sqrt(Hz)] gyro white noise (+ tilt coupling) integrated into yaw
+  double gyro_bias_rw = 2e-5;  // [rad/s/sqrt(s)]  gyro bias random walk
 };
 
 /// Chi-square innovation gate with a lock-out guard.
@@ -227,6 +229,20 @@ public:
     return update<1>(r, H, R, gate, res);
   }
 
+  /// Zero angular rate update (static alignment): while the drone is known to stand still the
+  /// true yaw rate is 0, so the raw gyro sample measures the bias directly: z = w_z, h(x) = b_g.
+  UpdateResult updateGyroBias(double t, double w_z, double variance, Gate* gate)
+  {
+    UpdateResult res;
+    if (!prepare(t, res)) return res;
+    Eigen::Matrix<double, 1, N> H = Eigen::Matrix<double, 1, N>::Zero();
+    H(0, BG) = 1.0;
+    Eigen::Matrix<double, 1, 1> r, R;
+    r(0) = w_z - x_(BG);
+    R(0, 0) = variance;
+    return update<1>(r, H, R, gate, res);
+  }
+
   /// VO linear twist, expressed in base_link.  ekf = true: genuine nonlinear model
   /// h(x) = Rz(yaw)^T v with its Jacobian.  ekf = false: linear-KF approximation, the
   /// measurement is rotated into ENU with the CURRENT yaw estimate (yaw uncertainty ignored).
@@ -324,13 +340,20 @@ struct FusionConfig
   bool gps_use_message_covariance = true;
   // VO: inflated above the per-sample noise in the message (0.03 m/s, 0.3 deg) because the real
   // VO error is dominated by its slowly drifting bias, which a white R cannot describe.
-  double vo_velocity_std = 0.2, vo_yaw_std = 0.1;
+  double vo_velocity_std = 0.2, vo_yaw_std = 0.5;
   bool use_vo_velocity = true, use_vo_yaw = true;
   bool vo_velocity_ekf = true;
   // gates (d2 thresholds, <= 0 disables)
   double gps_gate = 16.27, vo_velocity_gate = 0.0, vo_yaw_gate = 0.0;
   int gate_max_consecutive = 5;
   double max_lag_s = 0.05;
+  // static alignment (zero angular rate update) from initialisation until the drone first moves
+  bool zaru_enabled = true;
+  double zaru_rate_std = 0.005;       // [rad/s] R of "true yaw rate = 0" (gyro noise 0.004 + margin)
+  double zaru_motion_speed = 0.15;    // [m/s] low-passed VO speed above this = motion, alignment ends
+  double zaru_filter_tau = 0.5;       // [s]   low-pass time constant of the VO speed
+  double zaru_gate = 10.83;           // d2 gate (1 DOF, 99.9 %): a larger gyro residual = rotation
+  int zaru_rotation_samples = 3;      // this many gated samples in a row also end the alignment
 };
 
 enum class Sensor : int { GPS = 0, VO_VELOCITY = 1, VO_YAW = 2, IMU = 3 };
@@ -350,6 +373,7 @@ public:
     gps_gate_ = Gate{cfg.gps_gate, cfg.gate_max_consecutive, 0};
     vel_gate_ = Gate{cfg.vo_velocity_gate, cfg.gate_max_consecutive, 0};
     yaw_gate_ = Gate{cfg.vo_yaw_gate, cfg.gate_max_consecutive, 0};
+    zaru_gate_ = Gate{cfg.zaru_gate, 0, 0};
   }
 
   /// Forget everything (used only when simulation time jumps backwards, i.e. a world reset).
@@ -357,6 +381,12 @@ public:
   {
     ekf_.reset();
     have_gps0_ = have_yaw0_ = false;
+    static_ = true;
+    static_ended_event_ = false;
+    vo_speed_lp_ = 0.0;
+    t_vo_speed_ = -1.0;
+    zaru_updates_ = 0;
+    zaru_rejected_in_row_ = 0;
     last_.fill(-std::numeric_limits<double>::infinity());
     configure(cfg_);
   }
@@ -364,12 +394,34 @@ public:
   const Ekf8& ekf() const { return ekf_; }
   const FusionConfig& config() const { return cfg_; }
   bool ready() const { return ekf_.initialized(); }
+  /// True while the static alignment runs (initialised, the drone has not moved yet).
+  bool staticAlignment() const { return cfg_.zaru_enabled && static_; }
+  long zaruUpdates() const { return zaru_updates_; }
+  /// Reports once that the static alignment ended (for a single log line in the node).
+  bool takeStaticEnded()
+  {
+    const bool e = static_ended_event_;
+    static_ended_event_ = false;
+    return e;
+  }
 
   Input imu(double t, double w_z)
   {
     if (!fresh(Sensor::IMU, t)) return Input::DUPLICATE;
     if (!ready()) return Input::NOT_READY;
-    return ekf_.imu(t, w_z) == Ekf8::TimeStatus::TOO_OLD ? Input::TOO_OLD : Input::USED;
+    if (ekf_.imu(t, w_z) == Ekf8::TimeStatus::TOO_OLD) return Input::TOO_OLD;
+    // Standing still: the gyro sample is bias + noise.  This pins the bias before takeoff
+    // independently of the slowly drifting VO yaw.
+    if (staticAlignment()) {
+      const UpdateResult r = ekf_.updateGyroBias(t, w_z, cfg_.zaru_rate_std * cfg_.zaru_rate_std, &zaru_gate_);
+      if (r.accepted()) {
+        ++zaru_updates_;
+        zaru_rejected_in_row_ = 0;
+      } else if (r.status == UpdateResult::Status::REJECTED_GATE && ++zaru_rejected_in_row_ >= cfg_.zaru_rotation_samples) {
+        endStatic();   // the gyro sees a real rotation: not standing still any more
+      }
+    }
+    return Input::USED;
   }
 
   /// R_msg: covariance from the message (used when configured and valid).
@@ -395,6 +447,7 @@ public:
       yaw0_ = yaw; t_yaw0_ = t; have_yaw0_ = true;
       return tryInitialize() ? Input::INITIALISED : Input::NOT_READY;
     }
+    detectMotion(t, v_body);
     if (cfg_.use_vo_yaw)
       *out_yaw = ekf_.updateYaw(t, yaw, cfg_.vo_yaw_std * cfg_.vo_yaw_std, &yaw_gate_);
     if (cfg_.use_vo_velocity) {
@@ -417,6 +470,25 @@ public:
   }
 
 private:
+  /// Ends the static alignment for good once the low-passed VO speed shows motion (takeoff).
+  /// One VO sample has ~0.04 m/s noise per axis, the low-pass removes it.
+  void detectMotion(double t, const Vec3& v_body)
+  {
+    if (!static_) return;
+    const double dt = t_vo_speed_ < 0.0 ? 0.0 : t - t_vo_speed_;
+    t_vo_speed_ = t;
+    const double a = cfg_.zaru_filter_tau > 0.0 ? std::min(1.0, dt / cfg_.zaru_filter_tau) : 1.0;
+    vo_speed_lp_ += a * (v_body.norm() - vo_speed_lp_);
+    if (vo_speed_lp_ > cfg_.zaru_motion_speed) endStatic();
+  }
+
+  void endStatic()
+  {
+    if (!static_) return;
+    static_ = false;
+    static_ended_event_ = cfg_.zaru_enabled;
+  }
+
   /// Duplicate / out-of-order detection per sensor (stamps must strictly increase).
   bool fresh(Sensor s, double t)
   {
@@ -440,10 +512,14 @@ private:
 
   FusionConfig cfg_;
   Ekf8 ekf_;
-  Gate gps_gate_, vel_gate_, yaw_gate_;
+  Gate gps_gate_, vel_gate_, yaw_gate_, zaru_gate_;
   std::array<double, 4> last_{{-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(),
                                -std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()}};
   bool have_gps0_ = false, have_yaw0_ = false;
+  bool static_ = true, static_ended_event_ = false;
+  double vo_speed_lp_ = 0.0, t_vo_speed_ = -1.0;
+  long zaru_updates_ = 0;
+  int zaru_rejected_in_row_ = 0;
   Vec3 gps0_ = Vec3::Zero();
   double t_gps0_ = 0.0, yaw0_ = 0.0, t_yaw0_ = 0.0;
 };

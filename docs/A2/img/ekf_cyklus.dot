@@ -8,11 +8,14 @@ digraph ekf {
   align [label="alignTo(t):\nt > t_stavu: predikcia o dt\ns držanou w_z (ZOH)\nt_stavu − t ≤ 50 ms: hneď\ninak: príliš stará", fillcolor="#d6e9ff"];
   kind [label="IMU?", shape=diamond, fillcolor="#ffffff"];
   hold [label="podržať nové w_z\npublikovať odhad"];
+  zaru [label="dron ešte stojí?\n(statické zarovnanie)", shape=diamond, fillcolor="#ffffff"];
+  zupd [label="update biasu: z = w_z, h = b_g\n(skutočná rýchlosť otáčania = 0)\nkoniec pri pohybe (VO > 0.15 m/s\nalebo 3× mimo brány 10.83)", fillcolor="#fff2cc"];
   upd [label="r = z − h(x̂)\nS = H P Hᵀ + R\nd² = rᵀ S⁻¹ r", fillcolor="#d6e9ff"];
   gate [label="d² ≤ brána?\n(GPS 16.27)", shape=diamond, fillcolor="#ffffff"];
   rej [label="odmietnuť\n+ log s d²", fillcolor="#ffd6d6"];
   kal [label="K = P Hᵀ S⁻¹ (LDLT)\nx̂ += K r, wrap(yaw)\nP = (I−KH)P(I−KH)ᵀ + KRKᵀ", fillcolor="#e8f5e0"];
   in -> dup; dup -> drop [label="áno"]; dup -> align [label="nie"];
-  align -> kind; kind -> hold [label="áno"]; kind -> upd [label="nie"];
+  align -> kind; kind -> zaru [label="áno"]; kind -> upd [label="nie"];
+  zaru -> zupd [label="áno"]; zaru -> hold [label="nie"]; zupd -> hold;
   upd -> gate; gate -> kal [label="áno"]; gate -> rej [label="nie"];
 }

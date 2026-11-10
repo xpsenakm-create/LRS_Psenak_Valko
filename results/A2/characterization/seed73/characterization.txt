@@ -1,12 +1,12 @@
-=== seed73: /home/user/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed73/bag
+=== seed73: /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed73/bag
   frames: GPS "map", VO "vo_odom -> base_link", IMU "base_link"
-  gps  :    5.0 Hz from header stamps (sim),    1.7 Hz arrival (wall)
-  vo   :   30.0 Hz from header stamps (sim),   10.1 Hz arrival (wall)
-  imu  :  100.0 Hz from header stamps (sim),   33.7 Hz arrival (wall)
-  truth:  100.0 Hz from header stamps (sim),   33.7 Hz arrival (wall)
-  real-time factor of this run: 0.34 (wall rates = stamp rates x RTF)
-  GPS - truth (157 samples): mean (+0.06, -0.06, +0.04) m, std (0.62, 0.54, 0.77) m   [config 0.6, 0.6, 0.9]
-  VO drift over 31 s: (+0.071, +0.251, +0.189) m, rate (+1.5, +8.4, +5.6) mm/s; yaw drift +0.05 deg/min
+  gps  :    5.0 Hz from header stamps (sim),    3.1 Hz arrival (wall)
+  vo   :   30.0 Hz from header stamps (sim),   18.4 Hz arrival (wall)
+  imu  :  100.0 Hz from header stamps (sim),   61.3 Hz arrival (wall)
+  truth:  100.0 Hz from header stamps (sim),   61.3 Hz arrival (wall)
+  real-time factor of this run: 0.61 (wall rates = stamp rates x RTF)
+  GPS - truth (163 samples): mean (+0.06, -0.04, +0.04) m, std (0.62, 0.54, 0.78) m   [config 0.6, 0.6, 0.9]
+  VO drift over 32 s: (+0.087, +0.282, +0.192) m, rate (+1.5, +8.5, +5.7) mm/s; yaw drift +0.05 deg/min
   VO body velocity error: mean (+0.008, -0.002, +0.006), std (0.042, 0.044, 0.044) m/s
-  gyro Z bias (not turning, 31 s): -0.0238 rad/s, noise std 0.0041 rad/s
-  --> /home/user/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed73/a2_sensors_seed73.png
+  gyro Z bias (not turning, 32 s): -0.0238 rad/s, noise std 0.0040 rad/s
+  --> /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed73/a2_sensors_seed73.png

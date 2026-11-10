@@ -1,28 +1,34 @@
 #!/usr/bin/env bash
-# Pomocný skript pre A2 (lokalizácia, 8-stavový EKF). Spustí Gazebo (svet s lokalizačnými
-# senzormi, so seedom), SITL, MAVROS, simulátor senzorov (s tým istým seedom), náš estimátor
-# a misiu letenú na odhade. Ručné príkazy (to isté, čo skript robí) sú v README.md.
+# Zadanie 2 (lokalizácia, 8-stavový EKF) -- jeden skript spustí všetko naraz: Gazebo (svet
+# s lokalizačnými senzormi, so seedom), SITL, MAVROS, simulátor senzorov (s tým istým seedom),
+# náš estimátor a misiu letenú iba na odhade. Ručné príkazy (to isté, čo skript robí) sú v README.md.
 #
-#   ./run_a2.sh                         # okná terminálov + Gazebo GUI, seed 42
-#   ./run_a2.sh --seed 73 --record      # bag + grafy do results/A2/<NAZOV>/
-#   ./run_a2.sh --record --scenario     # + automatický "učiteľ": GPS 15 s, outlier, VO 3 s
-#   ./run_a2.sh --headless --record --scenario   # bez okien, počká na koniec misie a všetko zavrie
-#   ./run_a2.sh --characterize 40 --seed 73      # len Gazebo + senzory + estimátor, 40 s na zemi (A2 §1)
+#   ./run_assignment2.sh                          # okná terminálov + Gazebo GUI, seed 42 (testy robí učiteľ ručne)
+#   ./run_assignment2.sh --record --video         # + bag, grafy, súhrn a video do results/A2/<NAZOV>/
+#   ./run_assignment2.sh --record --scenario      # + automatický "učiteľ": GPS 15 s, outlier, VO 3 s
+#   ./run_assignment2.sh --record --scenario-random 7    # udalosti v náhodných úsekoch a časoch (seed 7)
+#   ./run_assignment2.sh --headless --record --scenario --seed 73   # bez okien, počká na pristátie a všetko zavrie
+#   ./run_assignment2.sh --characterize 30 --seed 73      # A2 §1: dron stojí, 30 s senzorov
+#   ./run_assignment2.sh --offline                # bez simulátora: unit test + offline test filtra na 20 seedoch
+#   ./run_assignment2.sh --all                    # CELÉ A2 od začiatku do konca (bez okien, ~40 min):
+#                                                 # build, test, offline, 3x charakterizácia, lety, grafy,
+#                                                 # video a tabuľka výsledkov do docs/A2/A2_lokalizacia.md
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-# Nájde koreň repozitára LRS-URK (adresár so scripts/run_gazebo.sh), rovnako ako run_a1_3.sh.
+# Nájde koreň repozitára LRS-URK (adresár so scripts/run_gazebo.sh). Poradie: LRS_URK_DIR (aj keď
+# ukazuje omylom na .../scripts alebo neexistuje), okolie tohto adresára, bežné miesta v $HOME.
+# Repo stiahnuté ako ZIP z GitHubu sa volá LRS-URK-main, preto obe mená.
 resolve_lrs_urk() {
-  local c d
+  local c d n
   local candidates=()
   if [[ -n "${LRS_URK_DIR:-}" ]]; then
     c="${LRS_URK_DIR%/}"
     candidates+=("$c" "${c%/scripts}")
   fi
-  for d in "$ROOT_DIR" "$ROOT_DIR/.." "$ROOT_DIR/../.." "$ROOT_DIR/../../.."; do
-    candidates+=("$d/LRS-URK")
+  for d in "$ROOT_DIR" "$ROOT_DIR/.." "$ROOT_DIR/../.." "$ROOT_DIR/../../.." "$HOME/Desktop/LRS" "$HOME" "$HOME/Desktop"; do
+    for n in LRS-URK LRS-URK-main; do candidates+=("$d/$n"); done
   done
-  candidates+=("$HOME/Desktop/LRS/LRS-URK" "$HOME/LRS-URK" "$HOME/Desktop/LRS-URK")
   for c in "${candidates[@]}"; do
     if [[ -f "$c/scripts/run_gazebo.sh" ]]; then
       (cd "$c" && pwd)
@@ -36,21 +42,36 @@ SEED=42
 RECORD_BAG=0
 BAG_NAME=""
 SCENARIO=0
+SCENARIO_RANDOM=""
 HEADLESS=0
 CHARACTERIZE=0
 MISSION=1
+VIDEO=0
+OVERWRITE=0
+BUILD=1
+MODE="run"
+ALL_SEEDS="42 73 7 123"
+RANDOM_SCENARIO_SEED=11
 TIMEOUT_S=900
 SCENARIO_ARGS=()
 
 usage() {
-  printf 'Použitie: %s [--seed N] [--record [NAZOV]] [--scenario] [--headless] [--no-mission]\n' "$0"
-  printf '          [--characterize SEKUNDY] [--timeout SEKUNDY] [-- ARGUMENTY_PRE_a2_scenario.py]\n'
-  printf '  --seed N            seed pre gz sim aj pre simulátor senzorov (predvolené 42)\n'
-  printf '  --record [NAZOV]    bag + grafy do results/A2/NAZOV/ (predvolene seedN_DATUM_CAS)\n'
-  printf '  --scenario          tools/a2_scenario.py: GPS vypnúť 15 s v strednom úseku, outlier, VO 3 s\n'
-  printf '  --headless          bez okien (gz server, SITL bez konzoly), čaká na koniec misie\n'
-  printf '  --no-mission        iba estimátor (bez letu)\n'
-  printf '  --characterize S    A2 §1: bez SITL/MAVROS/misie, dron stojí, nahrá S sekúnd (sim) a skončí\n'
+  printf 'Použitie: %s [--seed N] [--record [NAZOV]] [--video] [--scenario | --scenario-random S]\n' "$0"
+  printf '          [--headless] [--no-mission] [--characterize SEKUNDY] [--offline] [--all [--seeds "42 73 ..."]]\n'
+  printf '          [-- ARGUMENTY_PRE_a2_scenario.py]\n'
+  printf '  --seed N             seed pre gz sim aj pre simulátor senzorov (predvolené 42)\n'
+  printf '  --record [NAZOV]     bag + grafy + súhrn do results/A2/NAZOV/ (predvolene seedN_DATUM_CAS)\n'
+  printf '  --video              po lete vyrobí a2_flight.mp4 z bagu (vyžaduje --record)\n'
+  printf '  --scenario           tools/a2_scenario.py: GPS 15 s v strednom úseku, outlier, VO 3 s\n'
+  printf '  --scenario-random S  to isté, ale úseky a časy udalostí sa vyžrebujú zo seedu S\n'
+  printf '  --headless           bez okien (gz server, SITL bez konzoly), čaká na koniec misie\n'
+  printf '  --no-mission         iba estimátor (bez letu)\n'
+  printf '  --characterize S     A2 §1: bez SITL/MAVROS/misie, dron stojí, nahrá S sekúnd (sim) a skončí\n'
+  printf '  --offline            bez simulátora: unit test ekf8_test + offline test na 20 seedoch\n'
+  printf '  --all                celé A2 (headless): build, test, offline, charakterizácia, lety pre --seeds,\n'
+  printf '                       jeden let s náhodným scenárom, grafy, video, tabuľka do dokumentácie\n'
+  printf '  --seeds "A B ..."    seedy letov pre --all (predvolené: %s)\n' "$ALL_SEEDS"
+  printf '  --overwrite          prepíše existujúci results/A2/NAZOV/\n'
   printf '  Env: LRS_URK_DIR, ARDUPILOT_DIR (predvolene ~/ardupilot), ROS_DISTRO\n'
 }
 
@@ -61,10 +82,17 @@ while (($#)); do
       RECORD_BAG=1
       if (($# >= 2)) && [[ "$2" != -* ]]; then BAG_NAME="$2"; shift 2; else shift 1; fi
       ;;
+    --video) VIDEO=1; shift ;;
     --scenario) SCENARIO=1; shift ;;
+    --scenario-random) (($# >= 2)) || { usage >&2; exit 2; }; SCENARIO=1; SCENARIO_RANDOM="$2"; shift 2 ;;
     --headless) HEADLESS=1; shift ;;
     --no-mission) MISSION=0; shift ;;
     --characterize) (($# >= 2)) || { usage >&2; exit 2; }; CHARACTERIZE="$2"; HEADLESS=1; MISSION=0; RECORD_BAG=1; shift 2 ;;
+    --offline) MODE="offline"; shift ;;
+    --all) MODE="all"; shift ;;
+    --seeds) (($# >= 2)) || { usage >&2; exit 2; }; ALL_SEEDS="$2"; shift 2 ;;
+    --overwrite) OVERWRITE=1; shift ;;
+    --no-build) BUILD=0; shift ;;
     --timeout) (($# >= 2)) || { usage >&2; exit 2; }; TIMEOUT_S="$2"; shift 2 ;;
     --) shift; SCENARIO_ARGS=("$@"); break ;;
     -h|--help) usage; exit 0 ;;
@@ -73,15 +101,18 @@ while (($#)); do
 done
 [[ "$SEED" =~ ^[0-9]+$ ]] || { printf 'Chyba: --seed musí byť celé číslo\n' >&2; exit 2; }
 ((MISSION)) || SCENARIO=0
+[[ -n "$SCENARIO_RANDOM" ]] && SCENARIO_ARGS=(--random "$SCENARIO_RANDOM" "${SCENARIO_ARGS[@]}")
 if ((RECORD_BAG)) && [[ -z "$BAG_NAME" ]]; then
   if ((CHARACTERIZE)); then BAG_NAME="char_seed${SEED}_$(date +%Y%m%d_%H%M%S)"; else BAG_NAME="seed${SEED}_$(date +%Y%m%d_%H%M%S)"; fi
 fi
+((VIDEO && !RECORD_BAG)) && { printf 'Chyba: --video potrebuje --record\n' >&2; exit 2; }
 
 if ! LRS_URK_DIR="$(resolve_lrs_urk)"; then
   printf 'Chyba: nenašiel som repozitár LRS-URK (adresár so scripts/run_gazebo.sh).\n' >&2
   printf '  Spusti napr.: LRS_URK_DIR=/cesta/k/LRS-URK %s\n' "$0" >&2
   exit 1
 fi
+export LRS_URK_DIR
 SENSOR_PKG="$LRS_URK_DIR/localization_sensor_sim"
 WORLD="$LRS_URK_DIR/worlds/fei_lrs_gazebo_localization.world"
 [[ -f "$WORLD" && -d "$SENSOR_PKG" ]] || { printf 'Chyba: v %s chýba lokalizačný svet alebo localization_sensor_sim\n' "$LRS_URK_DIR" >&2; exit 1; }
@@ -94,17 +125,99 @@ set +u
 source "$ROS_SETUP"
 set -u
 # Náš balík + simulátor senzorov z LRS-URK sa zostavia do TOHTO workspace-u (LRS-URK ostane čisté).
-printf 'Build: lrs_psenak_valko + localization_sensor_sim\n'
-(cd "$ROOT_DIR" && colcon build --base-paths src "$SENSOR_PKG")
+if ((BUILD)); then
+  printf 'Build: lrs_psenak_valko + localization_sensor_sim\n'
+  (cd "$ROOT_DIR" && colcon build --base-paths src "$SENSOR_PKG")
+fi
 INSTALL_SETUP="$ROOT_DIR/install/setup.bash"
 set +u
 source "$INSTALL_SETUP"
 set -u
+EKF_TEST="$ROOT_DIR/install/lrs_psenak_valko/lib/lrs_psenak_valko/ekf8_test"
+EKF_REPLAY="$ROOT_DIR/install/lrs_psenak_valko/lib/lrs_psenak_valko/ekf8_replay"
+
+# ================================================================== offline: test + 20 seedov
+run_offline() {
+  local out="$ROOT_DIR/results/A2/offline" sim=(python3 "$ROOT_DIR/tools/a2_offline_sim.py" --replay "$EKF_REPLAY"
+    --sensor-sim-dir "$SENSOR_PKG" --seeds 1-20 --summary)
+  mkdir -p "$out"
+  echo "==> Unit test (ekf8_test)"
+  "$EKF_TEST"
+  echo "==> Offline test filtra: učiteľov model senzorov -> náš C++ filter, 20 seedov (-> $out)"
+  python3 "$ROOT_DIR/tools/a2_offline_sim.py" --replay "$EKF_REPLAY" --sensor-sim-dir "$SENSOR_PKG" --seeds 42 \
+    --plot "$out/offline_seed42.png" --summary > /dev/null
+  {
+    echo "### final config (config/localization.yaml), GPS 15 s + outlier + VO 3 s"; "${sim[@]}"
+    echo; echo "### vo.velocity_model: rotate (linear-KF approximation)"; "${sim[@]}" vo_velocity_ekf=0
+    echo; echo "### static alignment OFF (bias only through VO yaw)"; "${sim[@]}" zaru_enabled=0
+    echo; echo "### previous config (no static alignment, VO yaw std 0.1, yaw_rate 0.002, bias rw 1e-4, accel 0.3)"
+    "${sim[@]}" zaru_enabled=0 vo_yaw_std=0.1 yaw_rate=0.002 gyro_bias_rw=1e-4 accel_xy=0.3
+    echo; echo "### VO yaw not used"; "${sim[@]}" use_vo_yaw=0
+    echo; echo "### VO velocity std 0.03 (= message covariance)"; "${sim[@]}" vo_velocity_std=0.03
+    echo; echo "### outlier injected into the FIRST GPS sample after the 15 s outage"; "${sim[@]}" --outlier-after-outage
+    echo; echo "### clean flight (no outages)"; "${sim[@]}" --no-outage
+  } | tee "$out/offline_20_seeds.txt"
+}
+
+# ================================================================== --all: celé zadanie
+run_all() {
+  if pgrep -u "$USER" -f "gz sim|arducopter|mavros_node" > /dev/null; then
+    printf 'Chyba: už beží Gazebo / ArduPilot / MAVROS (pgrep). Zavri ich a spusti --all znova.\n' >&2
+    exit 1
+  fi
+  local self="$ROOT_DIR/run_assignment2.sh" seeds=($ALL_SEEDS) runs=() s a b
+  local started; started=$(date +%s)
+  wait_clean() {          # nič z predošlého behu nesmie bežať ďalej (port SITL, gz server)
+    for _ in $(seq 30); do pgrep -u "$USER" -f "gz sim|arducopter|mavros_node" > /dev/null || return 0; sleep 1; done
+    pkill -INT -u "$USER" -f "gz sim|arducopter|mavros_node|sim_vehicle" || true; sleep 5
+    pkill -KILL -u "$USER" -f "gz sim|arducopter|mavros_node|sim_vehicle" || true; sleep 2
+  }
+  echo "############ [1/5] unit test + offline"
+  run_offline
+
+  a="${seeds[0]}"; b="${seeds[1]:-73}"
+  echo "############ [2/5] A2 §1 charakterizácia: seed $a, seed $b, znova seed $a (30 s, dron stojí)"
+  for name in "seed$a:$a" "seed$b:$b" "seed${a}_repeat:$a"; do
+    "$self" --no-build --overwrite --characterize 30 --seed "${name#*:}" --record "characterization/${name%%:*}" || true
+    wait_clean
+  done
+  local tmp; tmp="$(mktemp -d)"
+  python3 "$ROOT_DIR/tools/a2_characterize.py" "$ROOT_DIR/results/A2/characterization/seed$a/bag" \
+    "$ROOT_DIR/results/A2/characterization/seed$b/bag" "$ROOT_DIR/results/A2/characterization/seed${a}_repeat/bag" \
+    --labels "seed$a" "seed$b" "seed${a}b" --out "$tmp" --no-show \
+    | tee "$ROOT_DIR/results/A2/characterization/comparison.txt"
+  rm -rf -- "$tmp"        # the per-run plots are already in each run directory
+
+  echo "############ [3/5] lety so scenárom (GPS 15 s, outlier, VO 3 s): seedy ${seeds[*]}"
+  for s in "${seeds[@]}"; do
+    "$self" --no-build --overwrite --headless --scenario --seed "$s" --record "flight_seed$s" || true
+    runs+=("$ROOT_DIR/results/A2/flight_seed$s")
+    wait_clean
+  done
+  echo "############ [4/5] let s náhodným scenárom (--scenario-random $RANDOM_SCENARIO_SEED, seed ${seeds[1]:-73})"
+  "$self" --no-build --overwrite --headless --scenario-random "$RANDOM_SCENARIO_SEED" --seed "${seeds[1]:-73}" \
+    --record "flight_random${RANDOM_SCENARIO_SEED}_seed${seeds[1]:-73}" || true
+  runs+=("$ROOT_DIR/results/A2/flight_random${RANDOM_SCENARIO_SEED}_seed${seeds[1]:-73}")
+  wait_clean
+
+  echo "############ [5/5] video, tabuľka výsledkov do dokumentácie"
+  python3 "$ROOT_DIR/tools/a2_video.py" "$ROOT_DIR/results/A2/flight_seed${seeds[0]}/bag" || true
+  python3 "$ROOT_DIR/tools/a2_report.py" "${runs[@]}" --doc "$ROOT_DIR/docs/A2/A2_lokalizacia.md" || true
+  echo "==> --all hotové za $(( ($(date +%s) - started) / 60 )) min. Výsledky: $ROOT_DIR/results/A2/"
+}
+
+case "$MODE" in
+  offline) run_offline; exit 0 ;;
+  all) run_all; exit 0 ;;
+esac
 
 RUN_DIR=""
 if ((RECORD_BAG)); then
   RUN_DIR="$ROOT_DIR/results/A2/$BAG_NAME"
-  [[ -e "$RUN_DIR" ]] && { printf 'Chyba: %s už existuje -- zvoľ iný názov.\n' "$RUN_DIR" >&2; exit 2; }
+  if [[ -e "$RUN_DIR" ]]; then
+    ((OVERWRITE)) || { printf 'Chyba: %s už existuje -- zvoľ iný názov alebo --overwrite.\n' "$RUN_DIR" >&2; exit 2; }
+    rm -rf -- "$RUN_DIR"
+  fi
   mkdir -p "$RUN_DIR"
 fi
 LOG_DIR="${RUN_DIR:-$ROOT_DIR/log/a2_$(date +%Y%m%d_%H%M%S)}/logs"
@@ -156,6 +269,7 @@ make_plots() {
       | tee "$RUN_DIR/summary.txt" || true
     python3 "$ROOT_DIR/tools/a2_characterize.py" "$RUN_DIR/bag" --labels "seed$SEED" --out "$RUN_DIR" --no-show \
       2>/dev/null > "$RUN_DIR/characterization.txt" || true
+    if ((VIDEO)); then python3 "$ROOT_DIR/tools/a2_video.py" "$RUN_DIR/bag" || true; fi
   fi
 }
 
@@ -194,7 +308,7 @@ sim_seconds() {         # current /clock in seconds (sim time), empty if not ava
 
 # ------------------------------------------------------------------ start everything
 echo "=========================================================="
-echo " A2 lokalizácia: seed $SEED, $( ((HEADLESS)) && echo 'headless' || echo 'okná' )$( ((CHARACTERIZE)) && echo ", charakterizácia ${CHARACTERIZE} s" )"
+echo " Zadanie 2 lokalizácia: seed $SEED, $( ((HEADLESS)) && echo 'headless' || echo 'okná' )$( ((CHARACTERIZE)) && echo ", charakterizácia ${CHARACTERIZE} s" )"
 echo "=========================================================="
 echo "[1] Gazebo (fei_lrs_gazebo_localization.world, --seed $SEED)"
 if ((HEADLESS)); then
@@ -235,6 +349,13 @@ sleep 4
 echo "[5] Estimátor$( ((MISSION)) && echo ' + misia' )"
 launch "estimator" "$ENV_CMD && exec ros2 launch lrs_psenak_valko a2_localization.launch.py mission:=$( ((MISSION)) && echo true || echo false )"
 
+if ((RECORD_BAG && MISSION)); then
+  # Dôkaz pre obhajobu: odbery estimátora a misie (žiadny truth, žiadna poloha z MAVROS).
+  start_bg "node_info" "$ENV_CMD && sleep 20 && { echo '# ros2 node info počas letu (no truth / MAVROS pose subscription)'; \
+    for n in /localization_estimator /localization_mission; do echo \"===== ros2 node info \$n\"; ros2 node info \$n; done; } \
+    > '$RUN_DIR/node_info.txt' 2>&1"
+fi
+
 if ((SCENARIO)); then
   echo "[6] Scenár učiteľa (tools/a2_scenario.py ${SCENARIO_ARGS[*]:-})"
   launch "scenario" "$ENV_CMD && exec python3 '$ROOT_DIR/tools/a2_scenario.py' ${SCENARIO_ARGS[*]:-}"
@@ -243,6 +364,7 @@ fi
 echo ""
 echo " Ručné testy učiteľa (v ďalšom termináli):"
 echo "   ros2 service call /localization/set_gps_enabled std_srvs/srv/SetBool \"{data: false}\""
+echo "   ros2 service call /localization/set_vo_enabled std_srvs/srv/SetBool \"{data: false}\""
 echo "   ros2 service call /localization/inject_gps_outlier std_srvs/srv/Trigger \"{}\""
 echo " Abort: ros2 service call /localization_mission/abort std_srvs/srv/Trigger"
 echo ""

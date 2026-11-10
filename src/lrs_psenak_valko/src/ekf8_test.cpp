@@ -99,7 +99,9 @@ int main()
   {
     std::mt19937 rng(7);
     std::normal_distribution<double> n01(0.0, 1.0);
-    SensorFusion fusion;
+    FusionConfig cfg;
+    cfg.zaru_enabled = false;                 // only the VO yaw path here (static alignment below)
+    SensorFusion fusion(cfg);
     const Vec3 p_true(-7.0, 13.0, 0.0);
     const double yaw_true = kPi / 2.0, bias = 0.02;
     UpdateResult ry, rv, rg;
@@ -120,6 +122,44 @@ int main()
     CHECK((x.segment<3>(X) - p_true).head<2>().norm() < 0.3, "xy error %.3f", (x.segment<3>(X) - p_true).head<2>().norm());
     CHECK(std::sqrt(fusion.ekf().P()(BG, BG)) < 0.003, "bias std %.4f", std::sqrt(fusion.ekf().P()(BG, BG)));
     CHECK(covarianceHealthy(fusion.ekf().P()), "P after 30 s of updates");
+  }
+
+  // ---- static alignment: on the ground the gyro pins the bias, VO yaw drift does not leak in ----
+  // VO yaw drifts -3 deg/min (like seed 42); without the zero-rate update the bias estimate
+  // absorbs that drift, with it the bias is the gyro mean.  The first motion ends the alignment.
+  {
+    const double bias = -0.0171, drift = -3.0 / 60.0 * kPi / 180.0;
+    double err[2] = {0.0, 0.0};
+    for (int zaru = 0; zaru < 2; ++zaru) {
+      std::mt19937 rng(5);
+      std::normal_distribution<double> n01(0.0, 1.0);
+      FusionConfig cfg;
+      cfg.zaru_enabled = (zaru == 1);
+      SensorFusion fusion(cfg);
+      UpdateResult ry, rv, rg;
+      for (int k = 0; k <= 3000; ++k) {        // 30 s at rest
+        const double t = 0.01 * k;
+        fusion.imu(t, bias + 0.004 * n01(rng));
+        if (k % 20 == 0) fusion.gps(t, Vec3(0.6 * n01(rng), 0.6 * n01(rng), 0.9 * n01(rng)), nullptr, &rg);
+        if (k % 3 == 0) fusion.vo(t, 1.0 + drift * t, 0.04 * Vec3(n01(rng), n01(rng), n01(rng)), &ry, &rv);
+      }
+      err[zaru] = std::fabs(fusion.ekf().x()(BG) - bias);
+      CHECK(fusion.staticAlignment() == (zaru == 1), "alignment still running at rest (zaru=%d)", zaru);
+      if (zaru == 1) {
+        CHECK(fusion.zaruUpdates() > 2500, "zero-rate updates %ld", fusion.zaruUpdates());
+        CHECK(covarianceHealthy(fusion.ekf().P()), "P after static alignment");
+        // takeoff: VO shows 0.5 m/s upwards -> alignment ends within the low-pass time
+        for (int k = 1; k <= 100; ++k) {
+          const double t = 30.0 + 0.01 * k;
+          fusion.imu(t, bias);
+          if (k % 3 == 0) fusion.vo(t, 1.0 + drift * t, Vec3(0.0, 0.0, 0.5), &ry, &rv);
+        }
+        CHECK(!fusion.staticAlignment(), "motion must end the static alignment");
+        CHECK(fusion.takeStaticEnded() && !fusion.takeStaticEnded(), "the end is reported exactly once");
+      }
+    }
+    CHECK(err[1] < 0.0005, "bias error with static alignment %.5f rad/s", err[1]);
+    CHECK(err[1] < 0.5 * err[0], "static alignment must beat VO yaw alone: %.5f vs %.5f", err[1], err[0]);
   }
 
   // ---- innovation gate: a 5 m GPS outlier is rejected for its d2, normal fixes are not ------

@@ -15,6 +15,7 @@ Použitie:
 """
 
 import argparse
+import json
 import math
 import os
 import sys
@@ -83,33 +84,49 @@ def main():
     gps_inn = inn[inn[:, 1] == 0] if len(inn) else np.zeros((0, 8))
     rejected = gps_inn[gps_inn[:, 2] == 2]
     exy = np.hypot(err[:, 0], err[:, 1])
+    summary = {'bag': os.path.abspath(args.bag), 'final_state': states[-1][1] if states else None}
     print(f'Bag: {args.bag}')
     print(f'  estimate frame/topic: /estimator/odometry, {len(te)} samples, {rel(te[-1]):.1f} s')
     if route:
         t_end = landed[0] if landed else te[-1]
         print(f'  ROUTE -> {states[-1][1]}: {t_end - route[0]:.1f} s (sim)')
+        summary['route_s'] = float(t_end - route[0])
     print(f'  flight RMSE: xy {np.sqrt(np.mean(exy[flying] ** 2)):.3f} m, z {np.sqrt(np.mean(err[flying, 2] ** 2)):.3f} m, '
           f'yaw {np.degrees(np.sqrt(np.mean(e_yaw[flying] ** 2))):.2f} deg; max xy {np.max(exy[flying]):.3f} m')
     inside = np.mean((np.abs(err[:, 0]) <= 3 * E['sx']) & (np.abs(err[:, 1]) <= 3 * E['sy']))
     print(f'  errors inside 3 sigma (x and y): {100 * inside:.1f} %; finite: {bool(np.all(np.isfinite(dbg)))}')
+    yaw_inside = np.mean(np.abs(e_yaw[flying]) <= 3 * E['syaw'][flying])
+    print(f'  yaw: inside 3 sigma {100 * yaw_inside:.1f} %, max |error| {np.degrees(np.max(np.abs(e_yaw[flying]))):.2f} deg')
+    summary.update(rmse_xy=float(np.sqrt(np.mean(exy[flying] ** 2))), rmse_z=float(np.sqrt(np.mean(err[flying, 2] ** 2))),
+                   rmse_yaw_deg=float(np.degrees(np.sqrt(np.mean(e_yaw[flying] ** 2)))), max_xy=float(np.max(exy[flying])),
+                   inside3_xy=float(inside), inside3_yaw=float(yaw_inside),
+                   max_yaw_deg=float(np.degrees(np.max(np.abs(e_yaw[flying])))),
+                   finite=bool(np.all(np.isfinite(dbg))), gps_gaps=[], vo_gaps=[], rejected=[])
     for a, c in gps_gaps:
         sel = (te >= a) & (te <= c)
         print(f'  GPS gap {rel(a):.1f}-{rel(c):.1f} s ({c - a:.1f} s): max xy error {np.max(exy[sel]):.3f} m, '
               f'sigma_xy at the end {np.max(E["sx"][sel]):.3f} m')
+        summary['gps_gaps'].append({'start': float(rel(a)), 'length': float(c - a), 'max_xy': float(np.max(exy[sel]))})
     for a, c in vo_gaps:
         sel = (te >= a) & (te <= c + 2.0)
         print(f'  VO gap  {rel(a):.1f}-{rel(c):.1f} s ({c - a:.1f} s): max xy error {np.max(exy[sel]):.3f} m')
+        summary['vo_gaps'].append({'start': float(rel(a)), 'length': float(c - a), 'max_xy': float(np.max(exy[sel]))})
     for r in rejected:
         print(f'  GPS REJECTED at {rel(r[0]):.2f} s: d2 = {r[3]:.1f} > gate {r[4]:.2f}, |r| = {np.linalg.norm(r[5:8]):.2f} m')
+        summary['rejected'].append({'t': float(rel(r[0])), 'd2': float(r[3]), 'r': float(np.linalg.norm(r[5:8]))})
     if len(gps_inn):
         ok = gps_inn[gps_inn[:, 2] == 0]
         print(f'  GPS updates: {len(gps_inn)}, rejected {len(rejected)}, mean d2 of accepted {np.mean(ok[:, 3]):.2f} (ideal 3)')
     print(f'  gyro bias estimate at the end: {E["bg"][-1]:+.4f} +- {E["sbg"][-1]:.4f} rad/s')
+    summary['bias_end'] = float(E['bg'][-1])
     if landed and route:
         sel = te >= landed[0]
         if np.any(sel):
             o = p_true[np.argmax(te >= route[0])]
             print(f'  landed (truth) {np.hypot(*(p_true[sel][0, :2] - o[:2])):.2f} m from the route start')
+            summary['landed_from_start'] = float(np.hypot(*(p_true[sel][0, :2] - o[:2])))
+    with open(os.path.join(out, 'summary.json'), 'w', encoding='utf-8') as f:
+        json.dump(summary, f, indent=1)
 
     # ---------------------------------------------------------------- shading helper
     def shade(ax):

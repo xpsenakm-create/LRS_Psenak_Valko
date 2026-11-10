@@ -38,3 +38,15 @@ map_voxels_with_racks_inflated.pcd/
 /plot_*.png
 /outdoor_flight_bag_*/
 !results/**/*.mcap
+
+# A2: do gitu ide iba to, na čo odkazuje dokumentácia, a textové súhrny všetkých behov.
+# Bagy, logy, videá a ostatné grafy ostávajú lokálne; znova ich vytvorí ./run_assignment2.sh --all
+results/A2/**/bag/
+results/A2/**/logs/
+results/A2/**/*.mp4
+results/A2/**/*.png
+results/A2/flight_*/characterization.txt
+!results/A2/flight_seed42/a2_trajectory.png
+!results/A2/flight_seed42/a2_errors.png
+!results/A2/flight_seed42/a2_filter.png
+!results/A2/characterization/seed42/a2_sensors_seed42.png

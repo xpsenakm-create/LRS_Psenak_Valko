@@ -1,0 +1,36 @@
+{
+ "bag": "/home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/flight_random11_seed73/bag",
+ "final_state": "DONE",
+ "route_s": 67.56678632115216,
+ "rmse_xy": 0.14692334247283667,
+ "rmse_z": 0.1274386451412688,
+ "rmse_yaw_deg": 1.141650046952784,
+ "max_xy": 0.6897559109080833,
+ "inside3_xy": 1.0,
+ "inside3_yaw": 1.0,
+ "max_yaw_deg": 1.9144412472114993,
+ "finite": true,
+ "gps_gaps": [
+  {
+   "start": 61.599999999999994,
+   "length": 15.200000000000003,
+   "max_xy": 0.23565306865581426
+  }
+ ],
+ "vo_gaps": [
+  {
+   "start": 29.97,
+   "length": 3.030000000000001,
+   "max_xy": 0.6897559109080833
+  }
+ ],
+ "rejected": [
+  {
+   "t": 54.599999999999994,
+   "d2": 85.68853227204751,
+   "r": 5.639711290688227
+  }
+ ],
+ "bias_end": -0.02370738518537843,
+ "landed_from_start": 0.16912929243406374
+}

@@ -47,7 +47,12 @@ def default_sensor_sim_dir():
     env = os.environ.get('LRS_URK_DIR', '').rstrip('/')
     if env:
         candidates += [env, env[:-len('/scripts')] if env.endswith('/scripts') else env]
-    candidates += [os.path.expanduser('~/LRS-URK'), os.path.expanduser('~/Desktop/LRS/LRS-URK')]
+    here = os.path.dirname(os.path.abspath(__file__))
+    for up in ('..', '../..', '../../..'):
+        for name in ('LRS-URK', 'LRS-URK-main'):
+            candidates.append(os.path.normpath(os.path.join(here, up, name)))
+    candidates += [os.path.expanduser(p) for p in ('~/LRS-URK', '~/LRS-URK-main', '~/Desktop/LRS/LRS-URK',
+                                                   '~/Desktop/LRS/LRS-URK-main')]
     for c in candidates:
         d = os.path.join(c, 'localization_sensor_sim')
         if os.path.isfile(os.path.join(d, 'localization_sensor_sim', 'sensor_model.py')):
@@ -106,7 +111,8 @@ def make_truth(rng, laps=2, speed=0.5, accel=0.5):
 
     t = np.array(t)
     pos = np.array(pos)
-    airborne = pos[:, 2] > 0.05
+    # the hover wobble fades in over 1 s after liftoff (a real drone does not jump 1 deg in 10 ms)
+    airborne = np.convolve((pos[:, 2] > 0.05).astype(float), np.ones(100) / 100.0)[:len(t)]
 
     def wobble(amplitude):
         """Slow position-hold error (sum of 3 sinusoids, periods 3-10 s), like a real multicopter."""
@@ -216,6 +222,7 @@ def evaluate(t, pos, yaw, est, inn, bias, windows, outlier_stamp):
     jump = np.linalg.norm(dp - dtrue, axis=1)
     finite = all(np.all(np.isfinite(est[k])) for k in est)
     inside3 = np.mean((np.abs(e[:, 0]) <= 3 * est['sx']) & (np.abs(e[:, 1]) <= 3 * est['sy']))
+    yaw_inside3 = np.mean(np.abs(e_yaw[air]) <= 3 * est['syaw'][air])
     return {
         'finite': finite,
         'rmse_xy': float(np.sqrt(np.mean(exy[air] ** 2))),
@@ -234,6 +241,8 @@ def evaluate(t, pos, yaw, est, inn, bias, windows, outlier_stamp):
         'false_rejections': normal_rej,
         'gps_nis_mean': float(np.mean(nis)) if len(nis) else float('nan'),
         'inside_3sigma': float(inside3),
+        'yaw_inside_3sigma': float(yaw_inside3),
+        'max_yaw_deg': float(np.degrees(np.max(np.abs(e_yaw[air])))),
     }
 
 
@@ -348,7 +357,8 @@ def main():
 
     cols = ['seed', 'rmse_xy', 'rmse_z', 'rmse_yaw_deg', 'max_xy', 'outage_max_xy', 'outage_end_sxy',
             'vo_outage_max_xy', 'recovery_jump', 'step_rms_mm', 'bias', 'bias_err', 'outlier_d2',
-            'outlier_rejected', 'false_rejections', 'gps_nis_mean', 'inside_3sigma', 'finite']
+            'outlier_rejected', 'false_rejections', 'gps_nis_mean', 'inside_3sigma', 'yaw_inside_3sigma',
+            'max_yaw_deg', 'finite']
     if not args.summary:
         print(' '.join(f'{c[:13]:>13}' for c in cols))
         for r in results:
@@ -357,6 +367,9 @@ def main():
     print('mean over seeds: rmse_xy=%.3f rmse_z=%.3f rmse_yaw=%.2f deg step_rms=%.2f mm inside3σ=%.2f outage_end_σ=%.2f'
           % tuple(np.nanmean([r[c] for r in ok]) for c in
                   ('rmse_xy', 'rmse_z', 'rmse_yaw_deg', 'step_rms_mm', 'inside_3sigma', 'outage_end_sxy')))
+    print('yaw: inside3σ=%.2f (worst seed %.2f), max |yaw error| %.2f deg; mean |bias_err| %.5f rad/s'
+          % (np.mean([r['yaw_inside_3sigma'] for r in ok]), min(r['yaw_inside_3sigma'] for r in ok),
+             max(r['max_yaw_deg'] for r in ok), np.mean([abs(r['bias_err']) for r in ok])))
     print('worst vo_outage_max_xy=%.3f m' % np.nanmax([r['vo_outage_max_xy'] for r in ok]))
     print('\nworst over seeds: max_xy=%.3f m, outage_max_xy=%.3f m, recovery_jump=%.3f m, |bias_err|=%.4f rad/s'
           % (max(r['max_xy'] for r in ok), np.nanmax([r['outage_max_xy'] for r in ok]),

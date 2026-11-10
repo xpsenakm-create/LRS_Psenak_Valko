@@ -89,6 +89,8 @@ public:
       "(lock-out guard after %d), VO gates %.2f / %.2f, max lag %.3f s",
       c.std0_pos_xy, c.std0_pos_z, c.std0_vel, c.std0_yaw, c.std0_bias, c.gps_gate, c.gate_max_consecutive,
       c.vo_velocity_gate, c.vo_yaw_gate, c.max_lag_s);
+    RCLCPP_INFO(get_logger(), "Static alignment: %s (zero-rate std %.4f rad/s until VO speed > %.2f m/s or the gyro "
+      "shows rotation, gate %.2f)", c.zaru_enabled ? "ON" : "OFF", c.zaru_rate_std, c.zaru_motion_speed, c.zaru_gate);
     event(Level::INFO, "Estimator waiting for the first GPS fix and the first VO yaw (initialisation)");
   }
 
@@ -153,6 +155,10 @@ private:
 
     c.gate_max_consecutive = static_cast<int>(declare_parameter<int64_t>("gate_max_consecutive_rejects", c.gate_max_consecutive));
     c.max_lag_s = declare_parameter<double>("max_measurement_lag_s", c.max_lag_s);
+    c.zaru_enabled = declare_parameter<bool>("static_alignment.enabled", c.zaru_enabled);
+    c.zaru_rate_std = declare_parameter<double>("static_alignment.rate_std", c.zaru_rate_std);
+    c.zaru_motion_speed = declare_parameter<double>("static_alignment.motion_speed", c.zaru_motion_speed);
+    c.zaru_gate = declare_parameter<double>("static_alignment.gate_d2", c.zaru_gate);
 
     gps_.name = "GPS";
     vo_.name = "VO";
@@ -170,7 +176,7 @@ private:
 
     if (c.q.accel_xy <= 0.0 || c.q.accel_z <= 0.0 || c.q.yaw_rate <= 0.0 || c.q.gyro_bias_rw < 0.0)
       throw std::invalid_argument("process noise must be > 0");
-    if (c.gps_std.minCoeff() <= 0.0 || c.vo_velocity_std <= 0.0 || c.vo_yaw_std <= 0.0)
+    if (c.gps_std.minCoeff() <= 0.0 || c.vo_velocity_std <= 0.0 || c.vo_yaw_std <= 0.0 || c.zaru_rate_std <= 0.0)
       throw std::invalid_argument("measurement standard deviations must be > 0");
     if (c.max_lag_s < 0.0 || stats_period_s_ <= 0.0) throw std::invalid_argument("max lag / stats period");
   }
@@ -252,6 +258,12 @@ private:
     if (in == SensorFusion::Input::DUPLICATE) { ++imu_.dropped; return; }
     if (in == SensorFusion::Input::TOO_OLD) { ++imu_.dropped; return; }
     if (in != SensorFusion::Input::USED) return;
+    if (fusion_.takeStaticEnded()) {
+      const auto& P = fusion_.ekf().P();
+      event(Level::INFO, "Static alignment ended at t=%.2f (motion detected) after %ld zero-rate updates: "
+        "gyro bias %+.5f +- %.5f rad/s", t, fusion_.zaruUpdates(), fusion_.ekf().x()(loc::BG),
+        std::sqrt(P(loc::BG, loc::BG)));
+    }
     publishEstimate();
   }
 
@@ -376,9 +388,9 @@ private:
     const auto& x = fusion_.ekf().x();
     const auto& P = fusion_.ekf().P();
     RCLCPP_INFO(get_logger(),
-      "[t=%.1f] rates from header stamps: %s | p=(%.2f, %.2f, %.2f) yaw=%.1f deg b_g=%+.4f rad/s | "
+      "[t=%.1f]%s rates from header stamps: %s | p=(%.2f, %.2f, %.2f) yaw=%.1f deg b_g=%+.4f rad/s | "
       "sigma xy=%.2f z=%.2f m yaw=%.2f deg b_g=%.4f | GPS rejected %ld late %ld dropped %ld | VO late %ld dropped %ld",
-      fusion_.ekf().time(), rates, x(loc::X), x(loc::Y), x(loc::Z), x(loc::YAW) * kRad2Deg, x(loc::BG), sigmaXY(),
+      fusion_.ekf().time(), fusion_.staticAlignment() ? " [static alignment]" : "", rates, x(loc::X), x(loc::Y), x(loc::Z), x(loc::YAW) * kRad2Deg, x(loc::BG), sigmaXY(),
       std::sqrt(P(loc::Z, loc::Z)), std::sqrt(P(loc::YAW, loc::YAW)) * kRad2Deg, std::sqrt(P(loc::BG, loc::BG)),
       gps_.rejected, gps_.late, gps_.dropped, vo_.late, vo_.dropped);
   }

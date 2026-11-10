@@ -1,0 +1,13 @@
+Bag: /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/flight_seed7/bag
+  estimate frame/topic: /estimator/odometry, 8694 samples, 86.9 s
+  ROUTE -> DONE: 68.2 s (sim)
+  flight RMSE: xy 0.179 m, z 0.163 m, yaw 0.52 deg; max xy 0.690 m
+  errors inside 3 sigma (x and y): 99.8 %; finite: True
+  yaw: inside 3 sigma 100.0 %, max |error| 0.97 deg
+  GPS gap 28.8-44.0 s (15.2 s): max xy error 0.171 m, sigma_xy at the end 0.182 m
+  VO gap  58.7-61.7 s (3.0 s): max xy error 0.690 m
+  GPS REJECTED at 52.79 s: d2 = 76.2 > gate 16.27, |r| = 7.89 m
+  GPS updates: 359, rejected 1, mean d2 of accepted 2.92 (ideal 3)
+  gyro bias estimate at the end: +0.0125 +- 0.0002 rad/s
+  landed (truth) 0.33 m from the route start
+--> grafy: /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/flight_seed7/a2_trajectory.png, a2_errors.png, a2_filter.png

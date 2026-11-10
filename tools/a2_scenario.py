@@ -13,7 +13,12 @@ Legs are the waypoint indices of /mission/leg: 0..3 = lap 1 corners, 4..7 = lap 
 Usage (sim time, so the 15 s are simulation seconds):
     python3 tools/a2_scenario.py                       # GPS 15 s at leg 2, outlier at leg 5, VO 3 s at leg 6
     python3 tools/a2_scenario.py --outlier-leg -1      # -1 disables an event
+    python3 tools/a2_scenario.py --gps-leg 5 --gps-delay-s 3.5   # the outage elsewhere, not at a leg start
+    python3 tools/a2_scenario.py --random 7            # legs and delays drawn from seed 7 (like an
+                                                       # unannounced teacher; GPS and VO never overlap)
 """
+
+import random
 
 import argparse
 import sys
@@ -41,8 +46,9 @@ class Scenario(Node):
         self.finished = False
         self.timers_ = []
         self.get_logger().info(
-            f'Scenario: GPS off {args.gps_outage_s:.0f} s at leg {args.gps_leg} (+{args.delay_s:.1f} s), '
-            f'outlier at leg {args.outlier_leg}, VO off {args.vo_outage_s:.0f} s at leg {args.vo_leg}')
+            f'Scenario: GPS off {args.gps_outage_s:.0f} s at leg {args.gps_leg} (+{args.gps_delay_s:.1f} s), '
+            f'outlier at leg {args.outlier_leg} (+{args.outlier_delay_s:.1f} s), '
+            f'VO off {args.vo_outage_s:.0f} s at leg {args.vo_leg} (+{args.vo_delay_s:.1f} s)')
 
     def later(self, seconds, fn):
         """One-shot timer on the node clock (simulation time)."""
@@ -75,13 +81,13 @@ class Scenario(Node):
         self.done_legs.add(leg)
         a = self.args
         if leg == a.gps_leg:
-            self.later(a.delay_s, lambda: self.set_gps(False))
-            self.later(a.delay_s + a.gps_outage_s, lambda: self.set_gps(True))
+            self.later(a.gps_delay_s, lambda: self.set_gps(False))
+            self.later(a.gps_delay_s + a.gps_outage_s, lambda: self.set_gps(True))
         if leg == a.outlier_leg:
-            self.later(a.delay_s, lambda: self.call(self.outlier, Trigger.Request(), 'GPS OUTLIER injected'))
+            self.later(a.outlier_delay_s, lambda: self.call(self.outlier, Trigger.Request(), 'GPS OUTLIER injected'))
         if leg == a.vo_leg:
-            self.later(a.delay_s, lambda: self.set_vo(False))
-            self.later(a.delay_s + a.vo_outage_s, lambda: self.set_vo(True))
+            self.later(a.vo_delay_s, lambda: self.set_vo(False))
+            self.later(a.vo_delay_s + a.vo_outage_s, lambda: self.set_vo(True))
 
     def on_state(self, msg):
         if msg.data in ('DONE', 'ABORTED', 'STOPPED', 'FAULT'):
@@ -98,8 +104,25 @@ def main():
     ap.add_argument('--outlier-leg', type=int, default=5)
     ap.add_argument('--vo-leg', type=int, default=6)
     ap.add_argument('--vo-outage-s', type=float, default=3.0)
-    ap.add_argument('--delay-s', type=float, default=1.0, help='seconds after the leg starts')
+    ap.add_argument('--delay-s', type=float, default=1.0, help='seconds after the leg starts (all events)')
+    ap.add_argument('--gps-delay-s', type=float, help='own delay of the GPS outage (default --delay-s)')
+    ap.add_argument('--outlier-delay-s', type=float, help='own delay of the outlier (default --delay-s)')
+    ap.add_argument('--vo-delay-s', type=float, help='own delay of the VO loss (default --delay-s)')
+    ap.add_argument('--random', type=int, metavar='SEED',
+                    help='draw legs and delays from SEED: GPS in a middle leg of one lap, VO in the other lap')
     args = ap.parse_args()
+    for name in ('gps', 'outlier', 'vo'):
+        if getattr(args, f'{name}_delay_s') is None:
+            setattr(args, f'{name}_delay_s', args.delay_s)
+    if args.random is not None:
+        rng = random.Random(args.random)
+        args.gps_leg = rng.choice([1, 2, 5, 6])            # a middle leg of lap 1 or lap 2
+        other_lap = [5, 6] if args.gps_leg < 4 else [1, 2]
+        args.vo_leg = rng.choice(other_lap)                # never during the GPS outage
+        args.outlier_leg = rng.choice([leg for leg in range(1, 8) if leg not in (args.vo_leg,)])
+        args.gps_delay_s = round(rng.uniform(0.5, 4.0), 1)
+        args.vo_delay_s = round(rng.uniform(0.5, 3.0), 1)
+        args.outlier_delay_s = round(rng.uniform(0.5, 3.0), 1)
     rclpy.init()
     node = Scenario(args)
     try:

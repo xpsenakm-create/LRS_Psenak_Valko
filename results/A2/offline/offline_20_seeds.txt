@@ -1,42 +1,63 @@
 ### final config (config/localization.yaml), GPS 15 s + outlier + VO 3 s
-mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.56 deg step_rms=12.79 mm inside3σ=0.97 outage_end_σ=0.17
-worst vo_outage_max_xy=0.952 m
+mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.02 deg step_rms=11.71 mm inside3σ=0.98 outage_end_σ=0.18
+yaw: inside3σ=1.00 (worst seed 0.93), max |yaw error| 3.97 deg; mean |bias_err| 0.00012 rad/s
+worst vo_outage_max_xy=0.893 m
 
-worst over seeds: max_xy=0.952 m, outage_max_xy=0.669 m, recovery_jump=0.138 m, |bias_err|=0.0012 rad/s
+worst over seeds: max_xy=0.893 m, outage_max_xy=0.642 m, recovery_jump=0.143 m, |bias_err|=0.0004 rad/s
 outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
 
 ### vo.velocity_model: rotate (linear-KF approximation)
-mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.57 deg step_rms=12.78 mm inside3σ=0.97 outage_end_σ=0.17
+mean over seeds: rmse_xy=0.213 rmse_z=0.168 rmse_yaw=1.12 deg step_rms=11.61 mm inside3σ=0.98 outage_end_σ=0.17
+yaw: inside3σ=0.99 (worst seed 0.94), max |yaw error| 4.11 deg; mean |bias_err| 0.00012 rad/s
+worst vo_outage_max_xy=0.893 m
+
+worst over seeds: max_xy=0.893 m, outage_max_xy=0.639 m, recovery_jump=0.137 m, |bias_err|=0.0004 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
+
+### static alignment OFF (bias only through VO yaw)
+mean over seeds: rmse_xy=0.216 rmse_z=0.168 rmse_yaw=1.45 deg step_rms=11.78 mm inside3σ=0.98 outage_end_σ=0.19
+yaw: inside3σ=0.99 (worst seed 0.87), max |yaw error| 4.78 deg; mean |bias_err| 0.00042 rad/s
+worst vo_outage_max_xy=0.893 m
+
+worst over seeds: max_xy=0.893 m, outage_max_xy=0.688 m, recovery_jump=0.150 m, |bias_err|=0.0009 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
+
+### previous config (no static alignment, VO yaw std 0.1, yaw_rate 0.002, bias rw 1e-4, accel 0.3)
+mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.56 deg step_rms=12.79 mm inside3σ=0.98 outage_end_σ=0.17
+yaw: inside3σ=0.59 (worst seed 0.13), max |yaw error| 5.49 deg; mean |bias_err| 0.00052 rad/s
 worst vo_outage_max_xy=0.952 m
 
-worst over seeds: max_xy=0.952 m, outage_max_xy=0.668 m, recovery_jump=0.138 m, |bias_err|=0.0012 rad/s
+worst over seeds: max_xy=0.952 m, outage_max_xy=0.673 m, recovery_jump=0.138 m, |bias_err|=0.0012 rad/s
 outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
 
 ### VO yaw not used
-mean over seeds: rmse_xy=0.254 rmse_z=0.168 rmse_yaw=6.81 deg step_rms=15.17 mm inside3σ=0.98 outage_end_σ=0.36
-worst vo_outage_max_xy=0.953 m
+mean over seeds: rmse_xy=0.227 rmse_z=0.168 rmse_yaw=1.64 deg step_rms=12.24 mm inside3σ=0.97 outage_end_σ=0.22
+yaw: inside3σ=1.00 (worst seed 1.00), max |yaw error| 9.50 deg; mean |bias_err| 0.00014 rad/s
+worst vo_outage_max_xy=0.892 m
 
-worst over seeds: max_xy=1.241 m, outage_max_xy=1.230 m, recovery_jump=0.415 m, |bias_err|=0.0016 rad/s
+worst over seeds: max_xy=0.908 m, outage_max_xy=0.903 m, recovery_jump=0.179 m, |bias_err|=0.0004 rad/s
 outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
 
 ### VO velocity std 0.03 (= message covariance)
-mean over seeds: rmse_xy=0.325 rmse_z=0.228 rmse_yaw=1.56 deg step_rms=11.31 mm inside3σ=0.55 outage_end_σ=0.06
-worst vo_outage_max_xy=1.239 m
+mean over seeds: rmse_xy=0.316 rmse_z=0.229 rmse_yaw=1.26 deg step_rms=10.07 mm inside3σ=0.58 outage_end_σ=0.08
+yaw: inside3σ=0.98 (worst seed 0.61), max |yaw error| 4.91 deg; mean |bias_err| 0.00012 rad/s
+worst vo_outage_max_xy=1.295 m
 
-worst over seeds: max_xy=1.239 m, outage_max_xy=0.962 m, recovery_jump=0.023 m, |bias_err|=0.0011 rad/s
-outliers rejected: 20/20, false GPS rejections total: 10, all finite: True, mean NIS 3.17 (ideal 3)
+worst over seeds: max_xy=1.295 m, outage_max_xy=0.968 m, recovery_jump=0.030 m, |bias_err|=0.0004 rad/s
+outliers rejected: 20/20, false GPS rejections total: 11, all finite: True, mean NIS 3.16 (ideal 3)
 
 ### outlier injected into the FIRST GPS sample after the 15 s outage
-mean over seeds: rmse_xy=0.210 rmse_z=0.168 rmse_yaw=1.55 deg step_rms=12.79 mm inside3σ=0.98 outage_end_σ=0.17
-worst vo_outage_max_xy=0.958 m
+mean over seeds: rmse_xy=0.209 rmse_z=0.168 rmse_yaw=1.01 deg step_rms=11.71 mm inside3σ=0.98 outage_end_σ=0.18
+yaw: inside3σ=1.00 (worst seed 0.94), max |yaw error| 3.90 deg; mean |bias_err| 0.00012 rad/s
+worst vo_outage_max_xy=0.889 m
 
-worst over seeds: max_xy=0.958 m, outage_max_xy=0.669 m, recovery_jump=0.135 m, |bias_err|=0.0013 rad/s
+worst over seeds: max_xy=0.889 m, outage_max_xy=0.642 m, recovery_jump=0.147 m, |bias_err|=0.0004 rad/s
 outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.96 (ideal 3)
 
 ### clean flight (no outages)
-mean over seeds: rmse_xy=0.158 rmse_z=0.152 rmse_yaw=1.57 deg step_rms=6.57 mm inside3σ=0.99 outage_end_σ=nan
+mean over seeds: rmse_xy=0.154 rmse_z=0.152 rmse_yaw=1.02 deg step_rms=6.75 mm inside3σ=1.00 outage_end_σ=nan
+yaw: inside3σ=1.00 (worst seed 1.00), max |yaw error| 3.42 deg; mean |bias_err| 0.00012 rad/s
 worst vo_outage_max_xy=nan m
 
-worst over seeds: max_xy=0.390 m, outage_max_xy=nan m, recovery_jump=nan m, |bias_err|=0.0011 rad/s
-outliers rejected: 0/0, false GPS rejections total: 4, all finite: True, mean NIS 2.99 (ideal 3)
-
+worst over seeds: max_xy=0.370 m, outage_max_xy=nan m, recovery_jump=nan m, |bias_err|=0.0004 rad/s
+outliers rejected: 0/0, false GPS rejections total: 4, all finite: True, mean NIS 2.98 (ideal 3)

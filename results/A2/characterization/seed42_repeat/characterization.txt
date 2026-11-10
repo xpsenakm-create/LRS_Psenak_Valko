@@ -1,12 +1,12 @@
-=== seed42: /home/user/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed42_repeat/bag
+=== seed42: /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed42_repeat/bag
   frames: GPS "map", VO "vo_odom -> base_link", IMU "base_link"
-  gps  :    5.0 Hz from header stamps (sim),    1.7 Hz arrival (wall)
-  vo   :   30.0 Hz from header stamps (sim),   10.1 Hz arrival (wall)
-  imu  :  100.0 Hz from header stamps (sim),   33.7 Hz arrival (wall)
-  truth:  100.0 Hz from header stamps (sim),   33.7 Hz arrival (wall)
-  real-time factor of this run: 0.34 (wall rates = stamp rates x RTF)
-  GPS - truth (159 samples): mean (-0.07, -0.02, -0.06) m, std (0.62, 0.61, 0.86) m   [config 0.6, 0.6, 0.9]
-  VO drift over 32 s: (-0.180, -0.230, +0.273) m, rate (-5.3, -7.4, +8.5) mm/s; yaw drift -3.02 deg/min
-  VO body velocity error: mean (-0.009, +0.006, +0.011), std (0.041, 0.042, 0.043) m/s
-  gyro Z bias (not turning, 32 s): -0.0171 rad/s, noise std 0.0040 rad/s
-  --> /home/user/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed42_repeat/a2_sensors_seed42.png
+  gps  :    5.0 Hz from header stamps (sim),    3.1 Hz arrival (wall)
+  vo   :   29.9 Hz from header stamps (sim),   18.4 Hz arrival (wall)
+  imu  :   99.7 Hz from header stamps (sim),   61.0 Hz arrival (wall)
+  truth:   99.7 Hz from header stamps (sim),   61.0 Hz arrival (wall)
+  real-time factor of this run: 0.62 (wall rates = stamp rates x RTF)
+  GPS - truth (170 samples): mean (+0.03, -0.00, +0.04) m, std (0.61, 0.67, 0.89) m   [config 0.6, 0.6, 0.9]
+  VO drift over 34 s: (-0.216, -0.273, +0.265) m, rate (-6.6, -8.2, +7.8) mm/s; yaw drift -2.61 deg/min
+  VO body velocity error: mean (-0.007, +0.009, +0.007), std (0.042, 0.042, 0.043) m/s
+  gyro Z bias (not turning, 34 s): -0.0171 rad/s, noise std 0.0040 rad/s
+  --> /home/user/Desktop/LRS/Zadania/LRS_Psenak_Valko/results/A2/characterization/seed42_repeat/a2_sensors_seed42.png

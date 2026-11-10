@@ -43,6 +43,10 @@ static bool applyOverride(FusionConfig& c, const std::string& key, double v)
     {"vo_yaw_gate", [&](double x) { c.vo_yaw_gate = x; }},
     {"gate_max_consecutive", [&](double x) { c.gate_max_consecutive = static_cast<int>(x); }},
     {"max_lag_s", [&](double x) { c.max_lag_s = x; }},
+    {"zaru_enabled", [&](double x) { c.zaru_enabled = x != 0.0; }},
+    {"zaru_rate_std", [&](double x) { c.zaru_rate_std = x; }},
+    {"zaru_motion_speed", [&](double x) { c.zaru_motion_speed = x; }},
+    {"zaru_gate", [&](double x) { c.zaru_gate = x; }},
   };
   const auto it = setters.find(key);
   if (it == setters.end()) return false;

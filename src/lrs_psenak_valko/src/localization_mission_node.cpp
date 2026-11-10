@@ -10,6 +10,9 @@
 //           The position loop is closed HERE, on the estimate:
 //               v_cmd = v_carrot + Kp (carrot - p_est),   yaw_rate = K_yaw wrap(yaw_hold - yaw_est)
 //           so if the estimate moves, the drone moves with it.  ArduPilot only tracks velocity.
+// DEGRADED ESTIMATE: when sigma_xy of the estimate grows (VO tracking loss: GPS alone cannot carry the
+//           velocity), the carrot slows down and stops, and the feedback gain drops, so the drone
+//           holds still instead of chasing a noisy estimate.  Full speed again once sigma recovers.
 //
 // ROUTE: relative ENU offsets from the ORIGIN = the first valid estimated position (estimate
 // initialised AND its sigma below origin_max_std_*), flown laps times at flight_altitude_m.
@@ -70,6 +73,8 @@ public:
       offsets_.size(), p_.laps, p_.flight_altitude, p_.cruise_speed, p_.max_accel, p_.estimate_topic.c_str());
     RCLCPP_INFO(get_logger(), "Control: Kp_xy=%.2f Kp_z=%.2f 1/s, |v_xy|<=%.2f |v_z|<=%.2f m/s, Kp_yaw=%.2f 1/s, "
       "|yaw rate|<=%.0f deg/s", p_.kp_xy, p_.kp_z, p_.max_vel_xy, p_.max_vel_z, p_.kp_yaw, p_.max_yaw_rate_deg);
+    RCLCPP_INFO(get_logger(), "Degraded estimate: sigma_xy > %.2f m slows the route, > %.2f m holds it "
+      "(feedback gain down to x%.2f)", p_.degraded_std_xy, p_.hold_std_xy, p_.degraded_kp_factor);
     RCLCPP_INFO(get_logger(), "State: %s", stateName(state_));
     publishState();
   }
@@ -105,6 +110,7 @@ private:
     double kp_xy = 1.0, kp_z = 1.0, max_vel_xy = 1.0, max_vel_z = 0.5;
     double kp_yaw = 1.0, max_yaw_rate_deg = 30.0;
     double waypoint_tol = 0.3, max_lead = 1.0;
+    double degraded_std_xy = 0.2, hold_std_xy = 0.28, degraded_kp_factor = 0.3;
     double takeoff_tol = 0.5, stabilize_time = 2.0, stabilize_speed = 0.15;
     double origin_max_std_xy = 0.15, origin_max_std_z = 0.2;
     double max_horizontal = 6.0, max_altitude = 3.5, max_tracking_error = 2.0, max_estimate_std = 2.0;
@@ -133,6 +139,9 @@ private:
     p_.max_yaw_rate_deg = declare_parameter<double>("max_yaw_rate_deg_s", p_.max_yaw_rate_deg);
     p_.waypoint_tol = declare_parameter<double>("waypoint_tolerance_m", p_.waypoint_tol);
     p_.max_lead = declare_parameter<double>("max_lead_m", p_.max_lead);
+    p_.degraded_std_xy = declare_parameter<double>("degraded_std_xy_m", p_.degraded_std_xy);
+    p_.hold_std_xy = declare_parameter<double>("hold_std_xy_m", p_.hold_std_xy);
+    p_.degraded_kp_factor = declare_parameter<double>("degraded_kp_factor", p_.degraded_kp_factor);
     p_.takeoff_tol = declare_parameter<double>("takeoff_tolerance_m", p_.takeoff_tol);
     p_.stabilize_time = declare_parameter<double>("stabilize_time_s", p_.stabilize_time);
     p_.stabilize_speed = declare_parameter<double>("stabilize_speed_mps", p_.stabilize_speed);
@@ -160,6 +169,8 @@ private:
     if (p_.max_accel <= 0.0 || p_.kp_xy <= 0.0 || p_.kp_z <= 0.0 || p_.kp_yaw <= 0.0) bad("gains / accel must be > 0");
     if (p_.control_rate_hz < 10.0 || p_.control_rate_hz > 50.0) bad("control_rate_hz must be in [10, 50]");
     if (p_.waypoint_tol <= 0.0 || p_.max_lead <= p_.waypoint_tol) bad("need 0 < waypoint_tolerance < max_lead");
+    if (p_.degraded_std_xy <= 0.0 || p_.hold_std_xy <= p_.degraded_std_xy) bad("need 0 < degraded_std_xy_m < hold_std_xy_m");
+    if (p_.degraded_kp_factor <= 0.0 || p_.degraded_kp_factor > 1.0) bad("0 < degraded_kp_factor <= 1");
     if (p_.abort_mode != "LAND" && p_.abort_mode != "RTL" && p_.abort_mode != "LOITER" && p_.abort_mode != "BRAKE")
       bad("abort_mode must be one of LAND, RTL, LOITER, BRAKE");
     for (const Vec3& o : offsets_)
@@ -344,7 +355,10 @@ private:
     const double d = (goal - carrot_).norm();
     if ((est_pos_ - carrot_).norm() >= p_.max_lead) carrot_speed_ = 0.0;   // wait for the drone
     else if (d > 1e-9) {
-      carrot_speed_ = std::min({p_.cruise_speed, carrot_speed_ + p_.max_accel * dt, std::sqrt(2.0 * p_.max_accel * d)});
+      // a degraded estimate lowers the speed limit; the carrot brakes towards it with max_accel
+      const double v_lim = p_.cruise_speed * quality_;
+      carrot_speed_ = std::min({carrot_speed_ + p_.max_accel * dt, std::sqrt(2.0 * p_.max_accel * d),
+                                std::max(v_lim, carrot_speed_ - p_.max_accel * dt)});
       const double step = std::min(carrot_speed_ * dt, d);
       const Vec3 u = (goal - carrot_) * (1.0 / d);
       carrot_ = carrot_ + u * step;
@@ -357,7 +371,8 @@ private:
   void computeCommand()
   {
     const Vec3 e = carrot_ - est_pos_;
-    Vec3 v{carrot_vel_.x + p_.kp_xy * e.x, carrot_vel_.y + p_.kp_xy * e.y, carrot_vel_.z + p_.kp_z * e.z};
+    const double kp_xy = p_.kp_xy * (p_.degraded_kp_factor + (1.0 - p_.degraded_kp_factor) * quality_);
+    Vec3 v{carrot_vel_.x + kp_xy * e.x, carrot_vel_.y + kp_xy * e.y, carrot_vel_.z + p_.kp_z * e.z};
     const double vxy = v.normXY();
     if (vxy > p_.max_vel_xy) { v.x *= p_.max_vel_xy / vxy; v.y *= p_.max_vel_xy / vxy; }
     v.z = std::clamp(v.z, -p_.max_vel_z, p_.max_vel_z);
@@ -519,8 +534,24 @@ private:
     transition(State::ROUTE);
   }
 
+  /// Estimate quality from sigma_xy: 1 = normal, 0 = hold.  Logged once per transition.
+  void updateQuality()
+  {
+    quality_ = std::clamp((p_.hold_std_xy - est_std_xy_) / (p_.hold_std_xy - p_.degraded_std_xy), 0.0, 1.0);
+    const int mode = quality_ >= 1.0 ? 0 : (quality_ > 0.0 ? 1 : 2);
+    // hysteresis: back to a better mode only 0.02 m below its threshold
+    const bool better = mode < quality_mode_ &&
+      est_std_xy_ < (quality_mode_ == 2 ? p_.hold_std_xy : p_.degraded_std_xy) - 0.02;
+    if (mode > quality_mode_ || better) {
+      static const char* names[] = {"NORMAL (full speed)", "DEGRADED (slowing down)", "HOLD (carrot stopped)"};
+      RCLCPP_WARN(get_logger(), "Estimate sigma_xy = %.2f m -> route %s", est_std_xy_, names[mode]);
+      quality_mode_ = mode;
+    }
+  }
+
   void tickRoute(double dt)
   {
+    updateQuality();
     const Vec3& goal = waypoints_[wp_index_];
     if (!moveCarrotTo(goal, dt)) return;
     const size_t per_lap = offsets_.size();
@@ -610,6 +641,8 @@ private:
   bool origin_valid_ = false;
   Vec3 origin_, carrot_, carrot_vel_, cmd_vel_;
   double yaw_hold_ = 0.0, carrot_speed_ = 0.0, cmd_yaw_rate_ = 0.0;
+  double quality_ = 1.0;
+  int quality_mode_ = 0;
   size_t wp_index_ = 0;
 
   rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr state_sub_;
