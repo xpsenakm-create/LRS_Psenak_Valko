@@ -1,0 +1,27 @@
+digraph ros_graf {
+  rankdir=LR; fontname="DejaVu Sans"; ranksep=0.5; nodesep=0.25;
+  node [fontname="DejaVu Sans", fontsize=10];
+  edge [fontname="DejaVu Sans", fontsize=8, arrowsize=0.6];
+  node [shape=ellipse, style=filled, fillcolor="#d6e9ff"];
+  sim [label="/sensor_simulator", fillcolor="#eeeeee"];
+  est [label="/localization_estimator"];
+  mis [label="/localization_mission", fillcolor="#ffe9c7"];
+  mav [label="/mavros", fillcolor="#e8f5e0"];
+  scn [label="a2_scenario.py\n(iba naše testy)", fillcolor="#ffffff", style="dashed"];
+  rec [label="ros2 bag record", fillcolor="#ffffff", style="dashed"];
+  node [shape=box, style="rounded", fillcolor="#ffffff"];
+  t_gps [label="/localization/gps"]; t_vo [label="/localization/vo"]; t_imu [label="/localization/imu"];
+  t_odom [label="/estimator/odometry"]; t_dbg [label="/estimator/debug\n/estimator/innovation\n/estimator/events"];
+  t_sp [label="/mavros/setpoint_raw/local"]; t_st [label="/mavros/state"];
+  t_ms [label="/mission/state\n/mission/leg\n/mission/carrot"];
+  t_tr [label="/evaluation/ground_truth"];
+  srv [label="služby /localization/set_gps_enabled\nset_vo_enabled, inject_gps_outlier", shape=note];
+  sim -> t_gps; sim -> t_vo; sim -> t_imu; sim -> t_tr;
+  t_gps -> est; t_vo -> est; t_imu -> est;
+  est -> t_odom; est -> t_dbg;
+  t_odom -> mis; t_st -> mis; mav -> t_st;
+  mis -> t_sp -> mav;
+  mis -> t_ms;
+  t_ms -> scn [style=dashed]; scn -> srv [style=dashed]; srv -> sim [style=dashed];
+  t_tr -> rec [style=dashed]; t_odom -> rec [style=dashed]; t_dbg -> rec [style=dashed];
+}

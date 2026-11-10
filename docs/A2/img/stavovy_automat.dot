@@ -1,0 +1,18 @@
+digraph stavy {
+  rankdir=LR; fontname="DejaVu Sans"; nodesep=0.3;
+  node [fontname="DejaVu Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="#f2f2f2"];
+  edge [fontname="DejaVu Sans", fontsize=8];
+  W [label="WAIT_ESTIMATE\nodhad inicializovaný\nσxy ≤ 0.15, σz ≤ 0.2 m"];
+  M [label="SET_MODE\nGUIDED"]; A [label="ARM"];
+  T [label="TAKEOFF\nMAVROS takeoff 2 m\npotvrdí ODHAD"];
+  R [label="ROUTE\n2 kolá, 0.5 m/s\nrýchlosť + yaw rate", fillcolor="#ffe9c7"];
+  L [label="LAND"]; D [label="DONE", fillcolor="#e8f5e0"];
+  AB [label="ABORTING → ABORTED\n(LAND)", fillcolor="#ffd6d6"];
+  S [label="STOPPED\n(žiadne setpointy)", fillcolor="#ffd6d6"];
+  W -> M [label="ORIGIN = prvý\nplatný odhad"]; M -> A -> T;
+  T -> R [label="výška ±0.5 m,\nv < 0.15 m/s, 2 s"];
+  R -> L [label="8. roh\n(späť na origin)"]; L -> D [label="odzbrojený"];
+  R -> AB [style=dashed, label="geofence, tracking error,\nodhad starý / σ > 2 m,\nabort služba, timeout"];
+  T -> AB [style=dashed];
+  R -> S [style=dashed, label="iný režim (RC),\nodzbrojenie, strata FCU"];
+}

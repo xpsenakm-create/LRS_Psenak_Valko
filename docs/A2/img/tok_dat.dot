@@ -1,0 +1,25 @@
+digraph tok_dat {
+  rankdir=LR; fontname="DejaVu Sans"; nodesep=0.35; ranksep=0.6;
+  node [fontname="DejaVu Sans", fontsize=11, shape=box, style="rounded,filled", fillcolor="#f2f2f2"];
+  edge [fontname="DejaVu Sans", fontsize=9];
+
+  subgraph cluster_sen { label="localization_sensor_sim (učiteľ)"; style="rounded,dashed"; color="#888888";
+    gps [label="GPS\n/localization/gps\n5 Hz, map, σ 0.6/0.6/0.9 m"];
+    vo  [label="VO\n/localization/vo\n30 Hz, vo_odom→base_link\n(drift)"];
+    imu [label="IMU\n/localization/imu\n100 Hz, iba w_z (+bias)"];
+  }
+  ekf [label="localization_estimator\n8-stavový EKF\nx=[x y z vx vy vz yaw b_g]", fillcolor="#d6e9ff"];
+  ctl [label="localization_mission\npolohová slučka na ODHADE\nv = v_carrot + Kp(carrot − p̂)", fillcolor="#ffe9c7"];
+  mav [label="MAVROS → ArduPilot\n(sleduje iba rýchlosť)", fillcolor="#e8f5e0"];
+  truth [label="/evaluation/ground_truth\n(iba bag + grafy offline)", fillcolor="#ffffff", color="#aaaaaa", fontcolor="#777777"];
+  forb [label="/mavros/local_position/*\n/mavros/global_position/*\n/mavros/imu/*, Gazebo pose", fillcolor="#ffffff", color="#cc0000", fontcolor="#cc0000"];
+
+  imu -> ekf [label="predikcia\n(každá vzorka)"];
+  vo  -> ekf [label="yaw + rýchlosť\nv base_link (EKF)"];
+  gps -> ekf [label="poloha\n(χ² brána)"];
+  ekf -> ctl [label="/estimator/odometry\nmap, 100 Hz"];
+  ctl -> mav [label="/mavros/setpoint_raw/local\nrýchlosť + yaw rate"];
+  mav -> ctl [label="/mavros/state\n(armed, mode)", style=dashed];
+  truth -> ekf [style=dashed, color="#cc0000", fontcolor="#cc0000", label="NIE", constraint=false];
+  forb -> ctl [style=dashed, color="#cc0000", fontcolor="#cc0000", label="NIE"];
+}

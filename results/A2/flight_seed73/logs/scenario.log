@@ -1,0 +1,9 @@
+[INFO] [1794305935.329095618] [a2_scenario]: Scenario: GPS off 15 s at leg 2 (+1.0 s), outlier at leg 5, VO off 3 s at leg 6
+[WARN] [1794306024.863872880] [a2_scenario]: [sim t=47.58] GPS DISABLED
+[WARN] [1794306061.077410413] [a2_scenario]: [sim t=62.58] GPS ENABLED
+[WARN] [1794306082.539603725] [a2_scenario]: [sim t=71.38] GPS OUTLIER injected
+[WARN] [1794306097.546050858] [a2_scenario]: [sim t=77.31] VO DISABLED
+[WARN] [1794306104.770869929] [a2_scenario]: [sim t=80.31] VO ENABLED
+[INFO] [1794306149.433787094] [a2_scenario]: Mission ended (DONE); restoring both sensors and exiting
+[WARN] [1794306149.434947060] [a2_scenario]: [sim t=98.75] GPS ENABLED
+[WARN] [1794306149.435906474] [a2_scenario]: [sim t=98.75] VO ENABLED

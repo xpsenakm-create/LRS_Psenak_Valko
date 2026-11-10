@@ -1,0 +1,42 @@
+### final config (config/localization.yaml), GPS 15 s + outlier + VO 3 s
+mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.56 deg step_rms=12.79 mm inside3σ=0.97 outage_end_σ=0.17
+worst vo_outage_max_xy=0.952 m
+
+worst over seeds: max_xy=0.952 m, outage_max_xy=0.669 m, recovery_jump=0.138 m, |bias_err|=0.0012 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
+
+### vo.velocity_model: rotate (linear-KF approximation)
+mean over seeds: rmse_xy=0.214 rmse_z=0.168 rmse_yaw=1.57 deg step_rms=12.78 mm inside3σ=0.97 outage_end_σ=0.17
+worst vo_outage_max_xy=0.952 m
+
+worst over seeds: max_xy=0.952 m, outage_max_xy=0.668 m, recovery_jump=0.138 m, |bias_err|=0.0012 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
+
+### VO yaw not used
+mean over seeds: rmse_xy=0.254 rmse_z=0.168 rmse_yaw=6.81 deg step_rms=15.17 mm inside3σ=0.98 outage_end_σ=0.36
+worst vo_outage_max_xy=0.953 m
+
+worst over seeds: max_xy=1.241 m, outage_max_xy=1.230 m, recovery_jump=0.415 m, |bias_err|=0.0016 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.95 (ideal 3)
+
+### VO velocity std 0.03 (= message covariance)
+mean over seeds: rmse_xy=0.325 rmse_z=0.228 rmse_yaw=1.56 deg step_rms=11.31 mm inside3σ=0.55 outage_end_σ=0.06
+worst vo_outage_max_xy=1.239 m
+
+worst over seeds: max_xy=1.239 m, outage_max_xy=0.962 m, recovery_jump=0.023 m, |bias_err|=0.0011 rad/s
+outliers rejected: 20/20, false GPS rejections total: 10, all finite: True, mean NIS 3.17 (ideal 3)
+
+### outlier injected into the FIRST GPS sample after the 15 s outage
+mean over seeds: rmse_xy=0.210 rmse_z=0.168 rmse_yaw=1.55 deg step_rms=12.79 mm inside3σ=0.98 outage_end_σ=0.17
+worst vo_outage_max_xy=0.958 m
+
+worst over seeds: max_xy=0.958 m, outage_max_xy=0.669 m, recovery_jump=0.135 m, |bias_err|=0.0013 rad/s
+outliers rejected: 20/20, false GPS rejections total: 5, all finite: True, mean NIS 2.96 (ideal 3)
+
+### clean flight (no outages)
+mean over seeds: rmse_xy=0.158 rmse_z=0.152 rmse_yaw=1.57 deg step_rms=6.57 mm inside3σ=0.99 outage_end_σ=nan
+worst vo_outage_max_xy=nan m
+
+worst over seeds: max_xy=0.390 m, outage_max_xy=nan m, recovery_jump=nan m, |bias_err|=0.0011 rad/s
+outliers rejected: 0/0, false GPS rejections total: 4, all finite: True, mean NIS 2.99 (ideal 3)
+

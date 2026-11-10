@@ -1,0 +1,57 @@
+# ros2 node info during flight_seed42 (no truth / MAVROS pose subscription)
+===== ros2 node info /localization_estimator
+/localization_estimator
+  Subscribers:
+    /clock: rosgraph_msgs/msg/Clock
+    /localization/gps: geometry_msgs/msg/PoseWithCovarianceStamped
+    /localization/imu: sensor_msgs/msg/Imu
+    /localization/vo: nav_msgs/msg/Odometry
+  Publishers:
+    /estimator/debug: std_msgs/msg/Float64MultiArray
+    /estimator/events: std_msgs/msg/String
+    /estimator/innovation: std_msgs/msg/Float64MultiArray
+    /estimator/odometry: nav_msgs/msg/Odometry
+    /rosout: rcl_interfaces/msg/Log
+  Service Servers:
+    /localization_estimator/describe_parameters: rcl_interfaces/srv/DescribeParameters
+    /localization_estimator/get_parameter_types: rcl_interfaces/srv/GetParameterTypes
+    /localization_estimator/get_parameters: rcl_interfaces/srv/GetParameters
+    /localization_estimator/get_type_description: type_description_interfaces/srv/GetTypeDescription
+    /localization_estimator/list_parameters: rcl_interfaces/srv/ListParameters
+    /localization_estimator/set_parameters: rcl_interfaces/srv/SetParameters
+    /localization_estimator/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically
+  Service Clients:
+
+  Action Servers:
+
+  Action Clients:
+
+===== ros2 node info /localization_mission
+/localization_mission
+  Subscribers:
+    /clock: rosgraph_msgs/msg/Clock
+    /estimator/odometry: nav_msgs/msg/Odometry
+    /mavros/state: mavros_msgs/msg/State
+  Publishers:
+    /mavros/setpoint_raw/local: mavros_msgs/msg/PositionTarget
+    /mission/carrot: geometry_msgs/msg/PointStamped
+    /mission/leg: std_msgs/msg/UInt32
+    /mission/state: std_msgs/msg/String
+    /rosout: rcl_interfaces/msg/Log
+  Service Servers:
+    /localization_mission/abort: std_srvs/srv/Trigger
+    /localization_mission/describe_parameters: rcl_interfaces/srv/DescribeParameters
+    /localization_mission/get_parameter_types: rcl_interfaces/srv/GetParameterTypes
+    /localization_mission/get_parameters: rcl_interfaces/srv/GetParameters
+    /localization_mission/get_type_description: type_description_interfaces/srv/GetTypeDescription
+    /localization_mission/list_parameters: rcl_interfaces/srv/ListParameters
+    /localization_mission/set_parameters: rcl_interfaces/srv/SetParameters
+    /localization_mission/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically
+  Service Clients:
+    /mavros/cmd/arming: mavros_msgs/srv/CommandBool
+    /mavros/cmd/takeoff: mavros_msgs/srv/CommandTOL
+    /mavros/set_mode: mavros_msgs/srv/SetMode
+  Action Servers:
+
+  Action Clients:
+

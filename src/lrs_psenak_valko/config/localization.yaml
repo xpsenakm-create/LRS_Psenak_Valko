@@ -1,0 +1,84 @@
+# A2 -- eight-state EKF localisation and the mission flown on it.
+# Values were tuned offline on 20 seeds with tools/a2_offline_sim.py (the teacher's sensor model),
+# see docs/A2.  All times are simulation time (use_sim_time: true).
+
+localization_estimator:
+  ros__parameters:
+    use_sim_time: true
+    output_topic: /estimator/odometry      # nav_msgs/Odometry, frame "map", child "base_link"
+
+    # Q -- continuous white-noise densities, discretised exactly for every dt from the stamps
+    process_noise:
+      accel_xy: 0.3          # [m/s^2/sqrt(Hz)] how far reality is from "constant velocity"
+      accel_z: 0.3           # [m/s^2/sqrt(Hz)]
+      yaw_rate: 0.002        # [rad/s/sqrt(Hz)] gyro white noise (0.004 rad/s at 100 Hz = 4e-4) x5 margin
+      gyro_bias_rw: 1.0e-4   # [rad/s/sqrt(s)] the bias is static, a small walk keeps it adjustable
+
+    # P0 -- position from the first GPS fix, yaw from the first VO yaw, velocity 0, bias 0
+    initial_std:
+      position_xy: 0.6       # [m]     = GPS sigma (one fix)
+      position_z: 0.9        # [m]
+      velocity: 0.5          # [m/s]   drone may already move
+      yaw: 0.1               # [rad]   VO starts aligned with the map, small drift since its start
+      gyro_bias: 0.05        # [rad/s] |bias| ~ 0.02 +- 0.004, sign unknown
+
+    # R -- GPS: message covariance (0.6, 0.6, 0.9 m) when valid, these values otherwise
+    gps:
+      position_std: [0.6, 0.6, 0.9]   # [m]
+      use_message_covariance: true
+      gate_d2: 16.27                  # chi-square 3 DOF, 99.9 %: d2 = r^T S^-1 r, S = H P H^T + R
+
+    # R -- VO: inflated above the per-sample noise (0.03 m/s, 0.3 deg) because the VO error is a
+    # slowly drifting bias that a white R cannot describe (offline: 97 % of errors inside 3 sigma)
+    vo:
+      use_velocity: true
+      use_yaw: true
+      velocity_model: ekf    # ekf: h(x) = Rz(yaw)^T v with Jacobian | rotate: linear-KF approximation
+      velocity_std: 0.2      # [m/s]
+      yaw_std: 0.1           # [rad]
+      velocity_gate_d2: 0.0  # <= 0: no gate (optional, e.g. 16.27)
+      yaw_gate_d2: 0.0       # <= 0: no gate (optional, e.g. 10.83 = 1 DOF 99.9 %)
+
+    gate_max_consecutive_rejects: 5   # lock-out guard: the 6th rejection in a row is accepted
+    max_measurement_lag_s: 0.05       # older than the state by up to this: applied at the state time
+    timeouts:                         # LOST / BACK transitions in the log
+      gps_s: 1.0
+      vo_s: 0.5
+      imu_s: 0.2
+    time_reset_threshold_s: 1.0       # stamps jumping back more than this = world reset -> restart
+    stats_period_s: 5.0
+    frames:
+      map: map
+      vo: vo_odom
+      body: base_link
+
+localization_mission:
+  ros__parameters:
+    use_sim_time: true
+    estimate_topic: /estimator/odometry
+    flight_altitude_m: 2.0
+    route_offsets_xy: [0.0, -4.0, 2.5, -4.0, 2.5, 0.0, 0.0, 0.0]   # relative ENU from the origin
+    laps: 2
+    cruise_speed_mps: 0.5
+    max_accel_mps2: 0.5
+    control_rate_hz: 30.0
+    kp_xy: 1.0               # [1/s] position error -> velocity
+    kp_z: 1.0
+    max_velocity_xy_mps: 1.0
+    max_velocity_z_mps: 0.5
+    kp_yaw: 1.0              # [1/s] yaw error -> yaw rate
+    max_yaw_rate_deg_s: 30.0
+    waypoint_tolerance_m: 0.3
+    max_lead_m: 1.0
+    takeoff_tolerance_m: 0.5
+    stabilize_time_s: 2.0
+    stabilize_speed_mps: 0.15
+    origin_max_std_xy_m: 0.15  # "first VALID estimate": converged at least this far (~5 s on the ground)
+    origin_max_std_z_m: 0.2    # the altitude is relative to the origin z
+    max_horizontal_from_origin_m: 6.0
+    max_altitude_m: 3.5
+    max_tracking_error_m: 2.0
+    max_estimate_std_m: 2.0
+    estimate_timeout_s: 0.5
+    abort_mode: LAND
+    route_timeout_s: 240.0

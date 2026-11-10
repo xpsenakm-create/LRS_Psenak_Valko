@@ -23,6 +23,7 @@ find_package(PCL REQUIRED COMPONENTS common io filters)
 find_package(mavros_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_executable(outdoor_mission_node src/outdoor_mission_node.cpp)
 ament_target_dependencies(outdoor_mission_node
@@ -42,7 +43,26 @@ ament_target_dependencies(map_planner_node ament_index_cpp rclcpp geometry_msgs 
 
 install(TARGETS map_planner_node DESTINATION lib/${PROJECT_NAME})
 
+# A2: eight-state EKF (ekf8.h, Eigen only), its ROS node, the mission flown on it,
+# and two ROS-free tools: the unit test and the offline replay (tools/a2_offline_sim.py).
+add_executable(localization_estimator_node src/localization_estimator_node.cpp)
+target_link_libraries(localization_estimator_node Eigen3::Eigen)
+ament_target_dependencies(localization_estimator_node rclcpp geometry_msgs nav_msgs sensor_msgs std_msgs)
+
+add_executable(localization_mission_node src/localization_mission_node.cpp)
+ament_target_dependencies(localization_mission_node
+  rclcpp mavros_msgs geometry_msgs nav_msgs std_msgs std_srvs)
+
+add_executable(ekf8_test src/ekf8_test.cpp)
+target_link_libraries(ekf8_test Eigen3::Eigen)
+add_executable(ekf8_replay src/ekf8_replay.cpp)
+target_link_libraries(ekf8_replay Eigen3::Eigen)
+
+install(TARGETS localization_estimator_node localization_mission_node ekf8_test ekf8_replay
+  DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY maps/ DESTINATION share/${PROJECT_NAME}/maps)
+install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
 
 ament_package()
