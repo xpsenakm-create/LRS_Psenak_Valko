@@ -17,7 +17,8 @@ so `~/LRS-URK` stays unchanged.
 One script starts everything at once (like the A1 scripts):
 
 ```bash
-./run_assignment2.sh                              # windows: Gazebo GUI, SITL, MAVROS, sensors, estimator + mission (seed 42)
+./run_assignment2.sh                              # windows: Gazebo GUI, SITL, MAVROS, sensors, estimator + mission,
+                                                  # live dashboard tools/a2_live.py (seed 42; --no-live without it)
 ./run_assignment2.sh --seed 73 --record --video   # + bag, plots, summary and a2_flight.mp4 in results/A2/seed73_<date>/
 ./run_assignment2.sh --record --scenario          # + tools/a2_scenario.py: GPS off 15 s (middle leg), outlier, VO off 3 s
 ./run_assignment2.sh --record --scenario-random 7 # the same events in legs/times drawn from seed 7
@@ -153,6 +154,7 @@ aligned with `map`), velocity 0 and bias 0 with wide uncertainty. The truth topi
 | `src/lrs_psenak_valko/src/ekf8_replay.cpp`, `tools/a2_offline_sim.py` | offline: the teacher's sensor model → our filter, many seeds in seconds |
 | `src/lrs_psenak_valko/config/localization.yaml`, `launch/a2_localization.launch.py` | parameters, launch |
 | `tools/a2_plot.py`, `tools/a2_characterize.py`, `tools/a2_scenario.py` | plots vs. truth (+ `summary.json`), §1 characterisation, scripted teacher tests (fixed or `--random` legs/times) |
+| `tools/a2_live.py` | live dashboard during the run: map, error with ±3σ, GPS d² vs. gate, sensor ON/OFF, mission state, events (view only, publishes nothing) |
 | `tools/a2_video.py`, `tools/a2_report.py` | mp4 of a flight from its bag (map, errors, sensor ON/OFF, events), results table into the docs |
 | `run_assignment2.sh` | starts everything at once; `--all` runs the whole assignment end to end |
 | `results/A2/` | recorded flights and the characterisation runs (plots, summaries, one video; bags and logs stay local, see `.gitignore`) |

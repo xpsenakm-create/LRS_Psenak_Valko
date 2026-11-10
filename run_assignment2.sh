@@ -3,7 +3,8 @@
 # s lokalizačnými senzormi, so seedom), SITL, MAVROS, simulátor senzorov (s tým istým seedom),
 # náš estimátor a misiu letenú iba na odhade. Ručné príkazy (to isté, čo skript robí) sú v README.md.
 #
-#   ./run_assignment2.sh                          # okná terminálov + Gazebo GUI, seed 42 (testy robí učiteľ ručne)
+#   ./run_assignment2.sh                          # okná terminálov + Gazebo GUI + živý dashboard, seed 42
+#                                                 # (testy robí učiteľ ručne; --no-live bez dashboardu)
 #   ./run_assignment2.sh --record --video         # + bag, grafy, súhrn a video do results/A2/<NAZOV>/
 #   ./run_assignment2.sh --record --scenario      # + automatický "učiteľ": GPS 15 s, outlier, VO 3 s
 #   ./run_assignment2.sh --record --scenario-random 7    # udalosti v náhodných úsekoch a časoch (seed 7)
@@ -47,6 +48,7 @@ HEADLESS=0
 CHARACTERIZE=0
 MISSION=1
 VIDEO=0
+LIVE=1
 OVERWRITE=0
 BUILD=1
 MODE="run"
@@ -62,6 +64,7 @@ usage() {
   printf '  --seed N             seed pre gz sim aj pre simulátor senzorov (predvolené 42)\n'
   printf '  --record [NAZOV]     bag + grafy + súhrn do results/A2/NAZOV/ (predvolene seedN_DATUM_CAS)\n'
   printf '  --video              po lete vyrobí a2_flight.mp4 z bagu (vyžaduje --record)\n'
+  printf '  --no-live            bez živého dashboardu (tools/a2_live.py; v okennom režime je zapnutý)\n'
   printf '  --scenario           tools/a2_scenario.py: GPS 15 s v strednom úseku, outlier, VO 3 s\n'
   printf '  --scenario-random S  to isté, ale úseky a časy udalostí sa vyžrebujú zo seedu S\n'
   printf '  --headless           bez okien (gz server, SITL bez konzoly), čaká na koniec misie\n'
@@ -83,6 +86,7 @@ while (($#)); do
       if (($# >= 2)) && [[ "$2" != -* ]]; then BAG_NAME="$2"; shift 2; else shift 1; fi
       ;;
     --video) VIDEO=1; shift ;;
+    --no-live) LIVE=0; shift ;;
     --scenario) SCENARIO=1; shift ;;
     --scenario-random) (($# >= 2)) || { usage >&2; exit 2; }; SCENARIO=1; SCENARIO_RANDOM="$2"; shift 2 ;;
     --headless) HEADLESS=1; shift ;;
@@ -348,6 +352,12 @@ sleep 4
 
 echo "[5] Estimátor$( ((MISSION)) && echo ' + misia' )"
 launch "estimator" "$ENV_CMD && exec ros2 launch lrs_psenak_valko a2_localization.launch.py mission:=$( ((MISSION)) && echo true || echo false )"
+
+if ((LIVE && !HEADLESS)); then
+  # Živý dashboard: samostatný proces iba na pozeranie (nič nepublikuje, truth iba na zobrazenie chyby).
+  echo "[LIVE] Dashboard (tools/a2_live.py)"
+  launch "Live dashboard" "$ENV_CMD && exec python3 '$ROOT_DIR/tools/a2_live.py'"
+fi
 
 if ((RECORD_BAG && MISSION)); then
   # Dôkaz pre obhajobu: odbery estimátora a misie (žiadny truth, žiadna poloha z MAVROS).

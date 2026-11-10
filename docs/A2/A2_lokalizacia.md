@@ -6,7 +6,8 @@ spája do jedného odhadu polohy a natočenia. Dron potom podľa **tohto odhadu*
 2 m, preletí dve kolá obdĺžnika 2.5 × 4 m a pristane. Lokalizačné výstupy MAVROS ani Gazeba
 regulátor nepoužíva.
 
-**Spustenie:** jeden skript spustí všetko naraz: `./run_assignment2.sh` (okná, testy robí učiteľ ručne),
+**Spustenie:** jeden skript spustí všetko naraz: `./run_assignment2.sh` (okná + živý dashboard
+`tools/a2_live.py`, testy robí učiteľ ručne),
 `./run_assignment2.sh --record --scenario --video` (automatický „učiteľ“, bag, grafy a video do
 `results/A2/<beh>/`), `--headless` (bez okien; počká na pristátie a všetko zavrie). Iný seed: `--seed 73`.
 **Celé zadanie od začiatku do konca:** `./run_assignment2.sh --all` (unit test, offline test, 3×
@@ -406,6 +407,12 @@ s presnosťou ±0.0003 rad/s:
 Porovnanie so starou verziou (rovnaký scenár, seed 42): RMSE yaw 3.42° → 0.90°, yaw v ±3σ
 0 % → 100 %, xy v ±3σ 96 % → 99 %, max chyba pri výpadku VO 0.91 → 0.76 m, pristátie 0.29 →
 0.17 m od štartu.
+
+**Živý dashboard** (`tools/a2_live.py`, spúšťa sa s oknami automaticky): počas letu ukazuje pôdorys
+(truth, odhad, GPS, carrot, 3σ), chybu xy a yaw s ±3σ, d² GPS voči bráne, stav GPS/VO, frekvencie
+zo stampov, stav misie a udalosti estimátora. Je to samostatný proces, ktorý nič nepublikuje.
+Ground truth číta iba na zobrazenie chyby (zadanie to plotovaciemu procesu dovoľuje,
+`--no-truth` ho vypne).
 
 **Video letu** (náhrada nahrávky obrazovky): `./run_assignment2.sh --record --video` alebo
 `python3 tools/a2_video.py results/A2/<beh>/bag` vyrobí `a2_flight.mp4` s pôdorysom, chybou s ±3σ,
