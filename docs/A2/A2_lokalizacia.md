@@ -344,11 +344,29 @@ estimátora. ArduPilot iba sleduje rýchlosť.
 o ~1–2 cm, pri Kp = 1 je to skok príkazu ~1–2 cm/s). − ArduPilot vnútri stále používa vlastný odhad rýchlosti, to sa však v SITL zmeniť
 nedá.
 
+### Natočenie v smere letu
+
+**Čo:** dron sa na každom úseku pozerá dopredu: `yaw_hold = atan2(Δy, Δx)` úseku. Na začiatku
+úseku stojí carrot, kým nie je chyba natočenia pod 20° (`heading_tolerance_deg`). Dron sa teda
+najprv otočí kratšou cestou (`wrap` do [−π, π)), potom letí. Otáčanie riadi P regulátor na
+odhadnutom yaw (`kp_yaw` 1.5 1/s, max 45°/s). Parameter `face_direction: false` vráti pôvodné
+správanie (stále natočenie z originu).
+
+**Prečo:** trasa juh → východ → sever → západ → juh znamená, že yaw v každom kole prejde 360°
+a pri lete na západ aj cez hranicu ±π. Zabalenie yaw (kritérium §2) sa tak reálne preverí počas
+letu, nielen v teste. Pri otáčaní sa uplatní aj Jakobián `∂h/∂yaw` rýchlosti z VO. Offline
+(20 seedov, dron sa otáča) dal EKF model RMSE yaw 1.27° a lineárna aproximácia 1.49°. Pri lete
+bez otáčania bol rozdiel nemerateľný.
+
+**Plusy / mínusy:** + prirodzený let (kamera, ak by bola, mieri dopredu), + preverené zabalenie
+yaw a nelineárny model. − Otočky v rohoch predĺžia let o ~10–15 s. − Počas otáčania sa dron
+nepohybuje (jednoduchšie a bezpečnejšie ako zatáčať za letu).
+
 ### Origin, vzlet, pristátie
 
 **Čo:** origin misie je **prvý platný odhad**: filter je inicializovaný a σ_xy ≤ 0.15 m,
 σ_z ≤ 0.2 m (na zemi ~8 s po inicializácii). Z neho sa spočítajú rohy (relatívne ENU offsety) a výška
-`z_origin + 2 m`. Natočenie z originu sa drží celý let. Vzlet robí ArduPilot (služba
+`z_origin + 2 m`. Natočenie z originu sa drží počas vzletu, na trase sa dron natáča v smere letu. Vzlet robí ArduPilot (služba
 `/mavros/cmd/takeoff` na 2 m). Hotový je, keď **náš odhad** ukazuje výšku 2 ± 0.5 m
 a rýchlosť < 0.15 m/s počas 2 s. Po 8. rohu (späť nad originom) sa prepne na LAND.
 

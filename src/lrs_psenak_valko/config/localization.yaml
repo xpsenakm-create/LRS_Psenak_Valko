@@ -74,8 +74,10 @@ localization_mission:
     kp_z: 1.0
     max_velocity_xy_mps: 1.0
     max_velocity_z_mps: 0.5
-    kp_yaw: 1.0              # [1/s] yaw error -> yaw rate
-    max_yaw_rate_deg_s: 30.0
+    kp_yaw: 1.5              # [1/s] yaw error -> yaw rate
+    max_yaw_rate_deg_s: 45.0
+    face_direction: true       # nose along each leg (yaw = leg direction); false = hold the origin yaw
+    heading_tolerance_deg: 20.0  # the carrot starts moving once the heading error is below this
     waypoint_tolerance_m: 0.3
     max_lead_m: 1.0
     # degraded estimate (VO loss: sigma_xy 0.1 -> 0.3 m in 3 s; a 15 s GPS outage reaches ~0.18 m)

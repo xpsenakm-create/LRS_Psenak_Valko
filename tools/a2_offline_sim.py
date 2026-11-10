@@ -74,15 +74,28 @@ def load_sensor_model(sensor_sim_dir):
 
 
 # ----------------------------------------------------------------------------- truth trajectory
-def make_truth(rng, laps=2, speed=0.5, accel=0.5):
-    """Piecewise trajectory sampled at 100 Hz.  Returns t, pos (n,3), yaw (n), leg (n)."""
-    t, pos, leg = [0.0], [P0.copy()], [-1]
+def make_truth(rng, laps=2, speed=0.5, accel=0.5, face_direction=True, yaw_rate=math.radians(45.0)):
+    """Piecewise trajectory sampled at 100 Hz.  Returns t, pos (n,3), yaw (n), leg (n).
+    face_direction: like the mission, turn on the spot to each leg's heading (shortest way), then fly."""
+    t, pos, leg, yw = [0.0], [P0.copy()], [-1], [YAW0]
 
     def hold(seconds, leg_id):
         for _ in range(int(round(seconds / DT))):
             t.append(t[-1] + DT)
             pos.append(pos[-1].copy())
             leg.append(leg_id)
+            yw.append(yw[-1])
+
+    def turn(heading, leg_id):
+        delta = float(wrap(heading - yw[-1]))
+        n = int(math.ceil(abs(delta) / (yaw_rate * DT)))
+        y0 = yw[-1]
+        for k in range(1, n + 1):
+            t.append(t[-1] + DT)
+            pos.append(pos[-1].copy())
+            leg.append(leg_id)
+            s = k / n
+            yw.append(y0 + delta * (3 * s * s - 2 * s ** 3))     # smooth start and stop
 
     def move(target, v_max, a_max, leg_id):
         start = pos[-1].copy()
@@ -95,6 +108,7 @@ def make_truth(rng, laps=2, speed=0.5, accel=0.5):
             t.append(t[-1] + DT)
             pos.append(start + u * s)
             leg.append(leg_id)
+            yw.append(yw[-1])
 
     hold(10.0, -1)                                            # on the ground, estimator converges
     move(P0 + [0, 0, 2.0], 1.0, 1.0, -1)                      # guided takeoff
@@ -102,7 +116,11 @@ def make_truth(rng, laps=2, speed=0.5, accel=0.5):
     i = 0
     for _ in range(laps):
         for (dx, dy) in ROUTE:
-            move(P0 + [dx, dy, 2.0], speed, accel, i)
+            target = P0 + [dx, dy, 2.0]
+            if face_direction:
+                d = target - pos[-1]
+                turn(math.atan2(d[1], d[0]), i)
+            move(target, speed, accel, i)
             hold(0.8, i)                                      # arrival tolerance / settling
             i += 1
     hold(2.0, i)
@@ -123,7 +141,7 @@ def make_truth(rng, laps=2, speed=0.5, accel=0.5):
     pos[:, 0] += wobble(0.04)
     pos[:, 1] += wobble(0.04)
     pos[:, 2] += wobble(0.03)
-    yaw = YAW0 + wobble(math.radians(1.0))
+    yaw = np.array(yw) + wobble(math.radians(1.0))
     return t, pos, wrap(yaw), np.array(leg)
 
 

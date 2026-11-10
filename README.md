@@ -66,7 +66,9 @@ Sensor characterisation: `python3 tools/a2_characterize.py <bag> [<bag> ...]`.
 
 **Inputs: only** `/localization/gps`, `/localization/vo`, `/localization/imu` (sensor-data QoS).
 The controller (`localization_mission`) subscribes to `/estimator/odometry` and `/mavros/state`
-only. It publishes velocity + yaw-rate setpoints to `/mavros/setpoint_raw/local` and uses the
+only. The nose points along each leg (`face_direction: true`): at a corner the drone first turns
+(shortest way, max 45°/s) and moves on below 20° heading error, so every lap turns through 360° and
+across ±π. It publishes velocity + yaw-rate setpoints to `/mavros/setpoint_raw/local` and uses the
 MAVROS mode/arming/takeoff services. Ground truth is read only by the offline tools in `tools/`.
 Check: `ros2 node info /localization_estimator`, `ros2 node info /localization_mission`.
 

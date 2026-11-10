@@ -10,6 +10,9 @@
 //           The position loop is closed HERE, on the estimate:
 //               v_cmd = v_carrot + Kp (carrot - p_est),   yaw_rate = K_yaw wrap(yaw_hold - yaw_est)
 //           so if the estimate moves, the drone moves with it.  ArduPilot only tracks velocity.
+// HEADING: with face_direction the nose points along each leg (yaw = atan2 of the leg).  At a corner
+//           the carrot waits until |heading error| < heading_tolerance, so the drone first turns
+//           (shortest way, wrapped), then flies.  One lap turns through 360 deg and across +-pi.
 // DEGRADED ESTIMATE: when sigma_xy of the estimate grows (VO tracking loss: GPS alone cannot carry the
 //           velocity), the carrot slows down and stops, and the feedback gain drops, so the drone
 //           holds still instead of chasing a noisy estimate.  Full speed again once sigma recovers.
@@ -73,6 +76,11 @@ public:
       offsets_.size(), p_.laps, p_.flight_altitude, p_.cruise_speed, p_.max_accel, p_.estimate_topic.c_str());
     RCLCPP_INFO(get_logger(), "Control: Kp_xy=%.2f Kp_z=%.2f 1/s, |v_xy|<=%.2f |v_z|<=%.2f m/s, Kp_yaw=%.2f 1/s, "
       "|yaw rate|<=%.0f deg/s", p_.kp_xy, p_.kp_z, p_.max_vel_xy, p_.max_vel_z, p_.kp_yaw, p_.max_yaw_rate_deg);
+    if (p_.face_direction)
+      RCLCPP_INFO(get_logger(), "Heading: nose along each leg, the carrot starts below %.0f deg heading error",
+        p_.heading_tol_deg);
+    else
+      RCLCPP_INFO(get_logger(), "Heading: held at the origin yaw");
     RCLCPP_INFO(get_logger(), "Degraded estimate: sigma_xy > %.2f m slows the route, > %.2f m holds it "
       "(feedback gain down to x%.2f)", p_.degraded_std_xy, p_.hold_std_xy, p_.degraded_kp_factor);
     RCLCPP_INFO(get_logger(), "State: %s", stateName(state_));
@@ -109,6 +117,8 @@ private:
     double control_rate_hz = 30.0;
     double kp_xy = 1.0, kp_z = 1.0, max_vel_xy = 1.0, max_vel_z = 0.5;
     double kp_yaw = 1.0, max_yaw_rate_deg = 30.0;
+    bool face_direction = true;
+    double heading_tol_deg = 20.0;
     double waypoint_tol = 0.3, max_lead = 1.0;
     double degraded_std_xy = 0.2, hold_std_xy = 0.28, degraded_kp_factor = 0.3;
     double takeoff_tol = 0.5, stabilize_time = 2.0, stabilize_speed = 0.15;
@@ -137,6 +147,8 @@ private:
     p_.max_vel_z = declare_parameter<double>("max_velocity_z_mps", p_.max_vel_z);
     p_.kp_yaw = declare_parameter<double>("kp_yaw", p_.kp_yaw);
     p_.max_yaw_rate_deg = declare_parameter<double>("max_yaw_rate_deg_s", p_.max_yaw_rate_deg);
+    p_.face_direction = declare_parameter<bool>("face_direction", p_.face_direction);
+    p_.heading_tol_deg = declare_parameter<double>("heading_tolerance_deg", p_.heading_tol_deg);
     p_.waypoint_tol = declare_parameter<double>("waypoint_tolerance_m", p_.waypoint_tol);
     p_.max_lead = declare_parameter<double>("max_lead_m", p_.max_lead);
     p_.degraded_std_xy = declare_parameter<double>("degraded_std_xy_m", p_.degraded_std_xy);
@@ -356,7 +368,7 @@ private:
     if ((est_pos_ - carrot_).norm() >= p_.max_lead) carrot_speed_ = 0.0;   // wait for the drone
     else if (d > 1e-9) {
       // a degraded estimate lowers the speed limit; the carrot brakes towards it with max_accel
-      const double v_lim = p_.cruise_speed * quality_;
+      const double v_lim = headingReady() ? p_.cruise_speed * quality_ : 0.0;
       carrot_speed_ = std::min({carrot_speed_ + p_.max_accel * dt, std::sqrt(2.0 * p_.max_accel * d),
                                 std::max(v_lim, carrot_speed_ - p_.max_accel * dt)});
       const double step = std::min(carrot_speed_ * dt, d);
@@ -530,8 +542,27 @@ private:
     carrot_ = {origin_.x, origin_.y, origin_.z + p_.flight_altitude};   // start of the route, above the origin
     carrot_speed_ = 0.0;
     wp_index_ = 0;
+    setLegHeading();
     publishLeg();
     transition(State::ROUTE);
+  }
+
+  /// True when the nose is close enough to the leg heading for the carrot to move.
+  bool headingReady() const
+  {
+    return !p_.face_direction || std::fabs(wrapPi(yaw_hold_ - est_yaw_)) * kRad2Deg <= p_.heading_tol_deg;
+  }
+
+  /// Leg heading: from the previous waypoint (or the start above the origin) to the current goal.
+  void setLegHeading()
+  {
+    if (!p_.face_direction) return;
+    const Vec3 from = wp_index_ == 0 ? Vec3{origin_.x, origin_.y, 0.0} : waypoints_[wp_index_ - 1];
+    const Vec3 d = waypoints_[wp_index_] - from;
+    if (d.normXY() < 1e-3) return;
+    yaw_hold_ = wrapPi(std::atan2(d.y, d.x));
+    RCLCPP_INFO(get_logger(), "Leg %zu: heading %.0f deg (turning %.0f deg from %.0f deg)", wp_index_ + 1,
+      yaw_hold_ * kRad2Deg, wrapPi(yaw_hold_ - est_yaw_) * kRad2Deg, est_yaw_ * kRad2Deg);
   }
 
   /// Estimate quality from sigma_xy: 1 = normal, 0 = hold.  Logged once per transition.
@@ -564,6 +595,7 @@ private:
       transition(State::LAND);
       return;
     }
+    setLegHeading();
     publishLeg();
   }
 
