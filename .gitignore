@@ -50,3 +50,8 @@ results/A2/flight_*/characterization.txt
 !results/A2/flight_seed42/a2_errors.png
 !results/A2/flight_seed42/a2_filter.png
 !results/A2/characterization/seed42/a2_sensors_seed42.png
+
+# Jeden kompletný let na finálnom kóde (seed 5, scenár: GPS 15 s, outlier, VO 3 s) je v gite celý:
+# bag + grafy + súhrn. Je to odovzdávaná nahrávka letu.
+!results/A2/flight_seed5/bag/
+!results/A2/flight_seed5/*.png

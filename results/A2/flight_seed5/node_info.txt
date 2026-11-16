@@ -1,0 +1,34 @@
+# ros2 node info počas letu (no truth / MAVROS pose subscription)
+===== ros2 node info /localization_estimator
+Unable to find node '/localization_estimator'
+===== ros2 node info /localization_mission
+/localization_mission
+  Subscribers:
+    /clock: rosgraph_msgs/msg/Clock
+    /estimator/odometry: nav_msgs/msg/Odometry
+    /mavros/state: mavros_msgs/msg/State
+    /parameter_events: rcl_interfaces/msg/ParameterEvent
+  Publishers:
+    /mavros/setpoint_raw/local: mavros_msgs/msg/PositionTarget
+    /mission/carrot: geometry_msgs/msg/PointStamped
+    /mission/leg: std_msgs/msg/UInt32
+    /mission/state: std_msgs/msg/String
+    /parameter_events: rcl_interfaces/msg/ParameterEvent
+    /rosout: rcl_interfaces/msg/Log
+  Service Servers:
+    /localization_mission/abort: std_srvs/srv/Trigger
+    /localization_mission/describe_parameters: rcl_interfaces/srv/DescribeParameters
+    /localization_mission/get_parameter_types: rcl_interfaces/srv/GetParameterTypes
+    /localization_mission/get_parameters: rcl_interfaces/srv/GetParameters
+    /localization_mission/get_type_description: type_description_interfaces/srv/GetTypeDescription
+    /localization_mission/list_parameters: rcl_interfaces/srv/ListParameters
+    /localization_mission/set_parameters: rcl_interfaces/srv/SetParameters
+    /localization_mission/set_parameters_atomically: rcl_interfaces/srv/SetParametersAtomically
+  Service Clients:
+    /mavros/cmd/arming: mavros_msgs/srv/CommandBool
+    /mavros/cmd/takeoff: mavros_msgs/srv/CommandTOL
+    /mavros/set_mode: mavros_msgs/srv/SetMode
+  Action Servers:
+
+  Action Clients:
+

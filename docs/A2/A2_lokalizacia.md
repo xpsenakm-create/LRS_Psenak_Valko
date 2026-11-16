@@ -434,8 +434,9 @@ Ground truth číta iba na zobrazenie chyby (zadanie to plotovaciemu procesu dov
 
 **Video letu** (náhrada nahrávky obrazovky): `./run_assignment2.sh --record --video` alebo
 `python3 tools/a2_video.py results/A2/<beh>/bag` vyrobí `a2_flight.mp4` s pôdorysom, chybou s ±3σ,
-stavom GPS/VO a udalosťami estimátora (LOST / BACK / REJECTED) v čase. Bagy a videá kvôli veľkosti
-nie sú v gite, ukážeme ich na obhajobe z lokálneho disku.
+stavom GPS/VO a udalosťami estimátora (LOST / BACK / REJECTED) v čase. Jeden celý let na finálnom
+kóde je v gite aj s bagom: `results/A2/flight_seed5/` (seed 5, GPS 15 s, outlier, VO 3 s, trasa 83.7 s,
+koniec DONE). Ostatné bagy a videá kvôli veľkosti v gite nie sú, ukážeme ich na obhajobe z lokálneho disku.
 
 ![Pôdorys seed 42](../../results/A2/flight_seed42/a2_trajectory.png)
 
