@@ -33,9 +33,11 @@ def scenario_of(run_dir):
 
 
 def table(run_dirs):
-    rows = ['| beh | seed | scenár | koniec | trasa | RMSE xy / z | max xy | RMSE yaw | yaw v ±3σ | '
-            'max chyba počas GPS výpadku | max chyba pri VO výpadku | outlier (d²) | xy v ±3σ | pristátie od štartu |',
-            '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
+    # compact (fits an A4 page in the PDF); the scenario text is printed below the table
+    rows = ['| beh | koniec | trasa | RMSE xy / z | max xy | RMSE yaw | xy / yaw v ±3σ | '
+            'max chyba GPS výpadok | max chyba VO výpadok | outlier d² | pristátie od štartu |',
+            '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+    notes = []
     for d in run_dirs:
         p = os.path.join(d, 'summary.json')
         if not os.path.isfile(p):
@@ -44,16 +46,27 @@ def table(run_dirs):
         with open(p, encoding='utf-8') as f:
             s = json.load(f)
         name = os.path.basename(os.path.normpath(d))
-        seed = re.search(r'seed(\d+)', name)
+        if name.startswith('flight_'):
+            name = name[len('flight_'):]
         gps = ', '.join(f'{g["max_xy"]:.2f} m ({g["length"]:.0f} s)' for g in s.get('gps_gaps', [])) or '–'
         vo = ', '.join(f'{g["max_xy"]:.2f} m ({g["length"]:.0f} s)' for g in s.get('vo_gaps', [])) or '–'
         rej = ', '.join(f'{r["d2"]:.0f}' for r in s.get('rejected', [])) or '–'
-        scen = scenario_of(d).replace('|', '/') or '–'
+        scen = scenario_of(d).replace('|', '/')
+        if scen:
+            for n in notes:
+                if n[1] == scen:
+                    n[0].append(name)
+                    break
+            else:
+                notes.append(([name], scen))
         rows.append(
-            f'| `{name}` | {seed.group(1) if seed else "?"} | {scen} | {s.get("final_state", "?")} | '
+            f'| `{name}` | {s.get("final_state", "?")} | '
             f'{s.get("route_s", float("nan")):.0f} s | {s["rmse_xy"]:.2f} / {s["rmse_z"]:.2f} m | {s["max_xy"]:.2f} m | '
-            f'{s["rmse_yaw_deg"]:.2f}° | {100 * s["inside3_yaw"]:.0f} % | {gps} | {vo} | {rej} | '
-            f'{100 * s["inside3_xy"]:.0f} % | {s.get("landed_from_start", float("nan")):.2f} m |')
+            f'{s["rmse_yaw_deg"]:.2f}° | {100 * s["inside3_xy"]:.0f} / {100 * s["inside3_yaw"]:.0f} % | '
+            f'{gps} | {vo} | {rej} | {s.get("landed_from_start", float("nan")):.2f} m |')
+    if notes:
+        rows += ['', 'Scenáre: ' + '; '.join(', '.join(f'`{n}`' for n in names) + f' — {scen}'
+                                              for names, scen in notes) + '.']
     return '\n'.join(rows)
 
 
